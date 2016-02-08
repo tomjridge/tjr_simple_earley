@@ -1,0 +1,4 @@
+# Simple Earley
+
+An implementation of an Earley-like algorithm, designed for
+simplicity.
