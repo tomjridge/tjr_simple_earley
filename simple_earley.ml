@@ -162,78 +162,75 @@ let b_add: bitm_t -> bm_t -> bm_t = (
 )
 
 let step: ctxt_t -> state_t -> state_t = (
-  fun c0 ->
-    fun s0 -> (
-        match s0.todo with
-        | [] -> s0  (* finished *)
-        | itm::rest -> (
-            (* process itm *)
-            let s0 = { s0 with todo=rest } in
-            match itm with
-            | NTITM nitm -> (
-                let complete = (nitm.bs = []) in
-                match complete with
-                | true -> (
-                    let citm : citm_t = {
-                      k = nitm.i;
-                      sym = NT(nitm.nt);
-                      j = nitm.k
-                    } in
-                    let key = citm_to_key citm in
-                    (* record citm *)
-                    let s0 = { s0 with complete=(c_add citm s0.complete) } in
-                    (* process against blocked items *)
-                    let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
-                    let f1 bitm s1 = (cut bitm citm.j s1) in
-                    let s0 = Nt_item_set.fold f1 bitms s0 in
-                    s0
-                  )
-                | false -> (
-                    (* blocked, so process next sym *)
-                    let bitm = nitm in
-                    let (k,sym) = (bitm.k,List.hd nitm.bs) in
-                    let key = (k,sym) in
-                    (* record bitm *)
-                    let s0 = { s0 with blocked=(b_add bitm s0.blocked) } in
-                    (* process blocked against complete items *)
-                    let f2 j s1 = (cut bitm j s1) in
-                    let js = try Complete_map.find key s0.complete with Not_found -> Int_set.empty in
-                    let s0 = Int_set.fold f2 js s0 in
-                    (* now look at symbol we are blocked on *)
-                    match sym with
-                    | NT nt -> (
-                        let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,k) in
-                        let f3 s1 nitm = (add_todo (NTITM nitm) s1) in
-                        let s0 = List.fold_left f3 s0 nitms in
-                        s0
-                      )
-                    | TM tm -> (add_todo (TMITM({k;tm})) s0)
-                  )
-              )  (* NTITM *)
-            | TMITM titm -> (
-                let tm = titm.tm in
-                let k = titm.k in
-                let sym = TM tm in
-                let p = c0.g0.p_of_tm tm in
-                let js = p (c0.i0.str,titm.k,c0.i0.len) in
-                (* update complete items *)
-                let f5 s1 j = 
-                  { s1 with complete=(c_add {k;sym;j} s1.complete) } in
-                let s0 = List.fold_left f5 s0 js in
-                (* cut citm against blocked *)
-                let key = (k,sym) in
-                let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
-                let f8 s1 j = (
-                  let f6 bitm s1 = cut bitm j s1 in
-                  let s1 = Nt_item_set.fold f6 bitms s1 in
-                  s1)
-                in
-                let s0 = List.fold_left f8 s0 js in
-                s0
-              )  (* TMITM *)
+fun c0 s0 -> (
+match s0.todo with
+| [] -> s0  (* finished *)
+| itm::rest -> (
+    (* process itm *)
+    let s0 = { s0 with todo=rest } in
+    match itm with
+    | NTITM nitm -> (
+        let complete = (nitm.bs = []) in
+        match complete with
+        | true -> (
+            let citm : citm_t = {
+              k = nitm.i;
+              sym = NT(nitm.nt);
+              j = nitm.k
+            } in
+            let key = citm_to_key citm in
+            (* record citm *)
+            let s0 = { s0 with complete=(c_add citm s0.complete) } in
+            (* process against blocked items *)
+            let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
+            let f1 bitm s1 = (cut bitm citm.j s1) in
+            let s0 = Nt_item_set.fold f1 bitms s0 in
+            s0
           )
-      )
-)
+        | false -> (
+            (* blocked, so process next sym *)
+            let bitm = nitm in
+            let (k,sym) = (bitm.k,List.hd nitm.bs) in
+            let key = (k,sym) in
+            (* record bitm *)
+            let s0 = { s0 with blocked=(b_add bitm s0.blocked) } in
+            (* process blocked against complete items *)
+            let f2 j s1 = (cut bitm j s1) in
+            let js = try Complete_map.find key s0.complete with Not_found -> Int_set.empty in
+            let s0 = Int_set.fold f2 js s0 in
+            (* now look at symbol we are blocked on *)
+            match sym with
+            | NT nt -> (
+                let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,k) in
+                let f3 s1 nitm = (add_todo (NTITM nitm) s1) in
+                let s0 = List.fold_left f3 s0 nitms in
+                s0
+              )
+            | TM tm -> (add_todo (TMITM({k;tm})) s0)
+          )
+      )  (* NTITM *)
+    | TMITM titm -> (
+        let tm = titm.tm in
+        let k = titm.k in
+        let sym = TM tm in
+        let p = c0.g0.p_of_tm tm in
+        let js = p (c0.i0.str,titm.k,c0.i0.len) in
+        (* update complete items *)
+        let f5 s1 j = 
+          { s1 with complete=(c_add {k;sym;j} s1.complete) } in
+        let s0 = List.fold_left f5 s0 js in
+        (* cut citm against blocked *)
+        let key = (k,sym) in
+        let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
+        let f8 s1 j = (
+          let f6 bitm s1 = cut bitm j s1 in
+          let s1 = Nt_item_set.fold f6 bitms s1 in
+          s1)
+        in
+        let s0 = List.fold_left f8 s0 js in
+        s0
+      )  (* TMITM *)
+  )))
 
 
 let rec earley' ctxt s0 = (
