@@ -289,7 +289,7 @@ let nt_items_for_nt=(fun nt (s,i) ->
 let g0 = {nt_items_for_nt; p_of_tm}
 
 let i0 = (
-  let str = "111" in
+  let str = String.make 200 '1' in
   let len = String.length str in
   let str : string_t = string_to_string_t str in
   { str; len })
@@ -302,4 +302,6 @@ let earley_as_list c0 e' = (
 
 let rs = earley_as_list c0 e'
 
-let rs = List.filter (fun (x:nt_item) -> x.k=3) rs
+(* let rs = List.filter (fun (x:nt_item) -> x.k=100) rs *)
+
+(* sample timings: 2.8s for a string of length 200 *)
