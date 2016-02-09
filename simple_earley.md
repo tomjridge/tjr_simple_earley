@@ -1,5 +1,6 @@
 # Simple implementation of an Earley-like parsing algorithm
 
+
 ## Meta
 
 This document explains the OCaml code in `simple_earley.ml`. An html
@@ -9,13 +10,15 @@ version of the code is in `simple_earley.ml.html` or possibly
 The code is a minimal implementation of an Earley-like parsing
 algorithm.
 
+The source for this file is `simple_earley.md`. This markdown file can
+be processed with pandoc. An html version of this doc is in
+`simple_earley.html`.
+
 References to the code are of the form `l:bc` corresponding to a code
 comment `(* l:bc *)` (i.e. a label `bc`).
 
-This markdown file can be processed with pandoc. An html version of
-this doc is in `simple_earley.html`.
-
 We assume familiarity with Earley's algorithm.
+
 
 ## An Earley-like algorithm
 
