@@ -4,7 +4,8 @@ An implementation of an Earley-like algorithm, designed for
 simplicity.
 
 See documentation in `simple_earley.md` or as html
-[here](simple_earley.html).
+[here](simple_earley.html) or using github preview
+[here](http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/simple_earley.html).
 
   - Makefile
   - `simple_earley.html` - html version of documentation
