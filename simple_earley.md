@@ -3,7 +3,8 @@
 ## Meta
 
 This document explains the OCaml code in `simple_earley.ml`. An html
-version of the code is in `simple_earley.ml.html`.
+version of the code is in `simple_earley.ml.html` or possibly
+[here](simple_earley.ml.html).
 
 The code is a minimal implementation of an Earley-like parsing
 algorithm.

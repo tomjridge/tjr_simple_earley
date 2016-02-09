@@ -3,7 +3,8 @@
 An implementation of an Earley-like algorithm, designed for
 simplicity.
 
-See documentation in `simple_earley.md`.
+See documentation in `simple_earley.md` or as html
+[here](simple_earley.html).
 
   - Makefile
   - `simple_earley.html` - html version of documentation
