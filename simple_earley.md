@@ -49,7 +49,7 @@ $_k{}S_j$. These items arise from items of the form `X -> as.,k,j`
 which gives a complete item $_k{}X_j$ and parsed terminal items of the
 form $_k{}T_j$.
 
-Notation: `k S j` - $_k{}S_j$
+Notation: `k S j` is $_k{}S_j$
 
 At (l:de) we make the string type abstract. A substring is of the form
 $(s,i,j)$ representing the part of the string $s$ between $i$ and
@@ -93,7 +93,7 @@ At (l:ij) we implement the core Earley step. This takes a blocked item
 of the form `X -> i,(as S),j,bs`. Note that the `as` field is stored in
 "reverse" order (to make this operation more efficient).
 
-Notation: `(S bs)` - the list `bs` with `S` cons'ed on. `(as S)` - the
+Notation: `(S bs)` is the list `bs` with `S` cons'ed on. `(as S)` is the
 list `as` with `S` joined on the end.
 
 ~~~
