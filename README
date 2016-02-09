@@ -2,3 +2,5 @@
 
 An implementation of an Earley-like algorithm, designed for
 simplicity.
+
+See documentation in `simple_earley.md`.
