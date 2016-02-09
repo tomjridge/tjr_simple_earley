@@ -25,7 +25,7 @@ We assume familiarity with Earley's algorithm.
 Earley's algorithm works with items of the form `X -> as.bs,i,k` where:
 
 * `X` is a nonterminal (nt)
-* `as` and `bs` are sequeces of symbols
+* `as` and `bs` are sequences of symbols
 * `i` and `k` are indexes into the input; $i \le k$
 
 Notation: `i,j,k` are typically integer indexes where $i \le k \le j$;
@@ -40,7 +40,7 @@ as expected. N.B. the `as` are stored in "reverse" order, that is, an
 item `X -> A B C. U V W,i,k` is stored as
 `(X,[C,B,A],[U,V,W],i,k)`. At (l:ba) the type of `tm_item` is
 given. This is not standard. A terminal item is of the form $_k{}T_?$
-and corresponds to an attempt to start parsing the terimnal $T$ from
+and corresponds to an attempt to start parsing the terminal $T$ from
 index $k$ (the second subscript is "to be found"). In traditional
 Earley, the input is a sequence of characters, and each terminal
 corresponds to a character. Here, we wish to generalize this; a
