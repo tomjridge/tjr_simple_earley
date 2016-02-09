@@ -2,13 +2,17 @@
 
 ## Meta
 
-This document explains the OCaml code in `simple_earley.ml`. 
+This document explains the OCaml code in `simple_earley.ml`. An html
+version of the code is in `simple_earley.ml.html`.
 
 The code is a minimal implementation of an Earley-like parsing
 algorithm.
 
 References to the code are of the form `l:bc` corresponding to a code
 comment `(* l:bc *)` (i.e. a label `bc`).
+
+This markdown file can be processed with pandoc. An html version of
+this doc is in `simple_earley.html`.
 
 We assume familiarity with Earley's algorithm.
 
@@ -20,11 +24,12 @@ Earley's algorithm works with items of the form `X -> as.bs,i,k` where:
 * `as` and `bs` are sequeces of symbols
 * `i` and `k` are indexes into the input; $i \le k$
 
-Notation: `i,j,k` are typically integer indexes; `as` and `bs` are
-typically sequences of symbols; `X,Y,Z` are nonterminals; `S,sym` are
-symbols, `T,tm` are terminals. `X -> i as k bs` is an alternative
-notation to the usual `X -> as.bs,i,k`. Similarly $X \rightarrow
-_i{}\alpha._k{}\beta$.
+Notation: `i,j,k` are typically integer indexes where $i \le k \le j$;
+`as` and `bs` are typically sequences of symbols; `X,Y,Z,nt` are
+nonterminals; `S,sym` are symbols, `T,tm` are terminals. `X -> i as k
+bs` is an alternative notation to the usual `X ->
+as.bs,i,k`. Similarly $X \rightarrow _i{}\alpha_k{}\beta$. Sometimes
+we use spaces instead of commas in items.
 
 At (l:bc) the type of `nt_item` (nonterminal item) is given, which is
 as expected. N.B. the `as` are stored in "reverse" order, that is, an
@@ -32,7 +37,7 @@ item `X -> A B C. U V W,i,k` is stored as
 `(X,[C,B,A],[U,V,W],i,k)`. At (l:ba) the type of `tm_item` is
 given. This is not standard. A terminal item is of the form $_k{}T_?$
 and corresponds to an attempt to start parsing the terimnal $T$ from
-index $k$ (the second subscript is to-be-found). In traditional
+index $k$ (the second subscript is "to be found"). In traditional
 Earley, the input is a sequence of characters, and each terminal
 corresponds to a character. Here, we wish to generalize this; a
 terminal may correspond to a range of the input. This enables us to
@@ -44,9 +49,11 @@ $_k{}S_j$. These items arise from items of the form `X -> as.,k,j`
 which gives a complete item $_k{}X_j$ and parsed terminal items of the
 form $_k{}T_j$.
 
+Notation: `k S j` - $_k{}S_j$
+
 At (l:de) we make the string type abstract. A substring is of the form
 $(s,i,j)$ representing the part of the string $s$ between $i$ and
-$j$. $i \le j$.
+$j$ where $i \le j$.
 
 At (l:ef) we encode a grammar as two functions. The first provides the
 nt items for a given nt, with input string and index into the
@@ -66,10 +73,11 @@ a complete item $_k{}S_j$.
 The blocked map allows us to identify, from a set of nt items, those
 that are currently blocked at position $k$ waiting for a parse of
 symbol $S$ to complete. $nitm \in bm(k,S)$ if $nitm$ is of the form $X
--> i,_as,k,S::bs$.
+\rightarrow i,\alpha,k,(S \beta)$.
 
 The state of the Earley algorithm is represented as a record with the
 following fields:
+
 * `todo_done` is the set of all items that are pending, or have
   already been processed
 * `todo` is the list of all items that are pending
@@ -81,15 +89,17 @@ At (l:hi) we add an item to the state by adding it to `todo` and
 unchanged.
 
 At (l:ij) we implement the core Earley step. This takes a blocked item
-`X -> i,as,k,S::bs` and a complete item $_k{}S_j$ and forms a new item
-of the form `X -> i,as::S,j,bs`. Note that the `as` field is stored in
+`X -> i,as,k,(S bs)` and a complete item $_k{}S_j$ and forms a new item
+of the form `X -> i,(as S),j,bs`. Note that the `as` field is stored in
 "reverse" order (to make this operation more efficient).
 
+Notation: `(S bs)` - the list `bs` with `S` cons'ed on. `(as S)` - the
+list `as` with `S` joined on the end.
 
 ~~~
-X -> i,as,k,S::bs   k S j
+X -> i,as,k,(S bs)   k S j
 ------------------------- cut
-X -> i,as::S,j,bs
+X -> i,(as S),j,bs
 ~~~
 
 We then give definitions for adding a complete item to the complete
@@ -112,7 +122,7 @@ items. This is (l:lm).
 
 At (l:mn) we are processing a terminal item. We use `p_of_tm` to
 determine which substrings of the input can be parsed as the terminal
-tm. This gives us complete items of the form $_k{}S_j$. We then update
+$T$. This gives us complete items of the form $_k{}T_j$. We then update
 the complete map. And for each complete item, we have to process the
 item against the relevant blocked items.
 
@@ -123,7 +133,17 @@ are no more items to do.
 
 At (l:op) we apply the loop function to an initial state.
 
-At (l:pq) we give an example for the grammar $E \rightarrow E\ E\ E\
-|\ \alltt{"1"}\ |\ \epsilon$
+At (l:pq) we give an example for the grammar $E \rightarrow E E E |
+'1' | \epsilon$.
 
+
+## Complexity
+
+As implemented, the algorithm is `O(n^3 log n)` because the sets and
+maps use OCaml's default sets and maps, which are implemented as
+binary trees. However, clearly given an input and a grammar, there are
+only a finite number of items that can be in any of the sets or
+maps. Thus, we can enumerate these items, and use the enumeration to
+implement e.g. a set as an array. This would give the `O(n^3)` desired
+complexity.
 
