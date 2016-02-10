@@ -148,11 +148,8 @@ At (l:pq) we give an example for the grammar $E \rightarrow E E E |
 
 ## Complexity
 
-We assume that there is a global bound on the number of results
-produced by each invocation of `p_of_tm`. This is the case when
-terminal parsers recognize a single character or epsilon (which is the
-standard use of terminal parsers): `p_of_tm` produces either 0 or 1
-results.
+We assume that there is a constant $c$ such that each invocation of
+`p_of_tm` produces at most $c * n$ results.
 
 As implemented, the algorithm is `O(n^3 log n)` because the sets and
 maps use OCaml's default sets and maps, which are implemented as
