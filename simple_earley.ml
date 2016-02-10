@@ -133,14 +133,13 @@ let add_todo: item -> state_t -> state_t = (
 )
 
 (* l:ij *)
-let cut: nt_item -> j_t -> state_t -> state_t = (
-  fun bitm j0 s0 -> (
+let cut: nt_item -> j_t -> nt_item = (
+  fun bitm j0 -> (
       let as_ = (List.hd bitm.bs)::bitm.as_ in
       let bs = List.tl bitm.bs in
       let k = j0 in
-      let itm = NTITM({bitm with k;as_;bs}) in
-      let s0 = add_todo itm s0 in
-      s0
+      let nitm ={bitm with k;as_;bs} in
+      nitm
     )
 )
 
@@ -189,7 +188,7 @@ match s0.todo with
             let s0 = { s0 with complete=(c_add citm s0.complete) } in
             (* process against blocked items *)
             let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
-            let f1 bitm s1 = (cut bitm j s1) in
+            let f1 bitm s1 = (let nitm = cut bitm j in add_todo (NTITM nitm) s1) in
             let s0 = Nt_item_set.fold f1 bitms s0 in
             s0
           )
@@ -201,7 +200,7 @@ match s0.todo with
             (* record bitm *)
             let s0 = { s0 with blocked=(b_add bitm s0.blocked) } in
             (* process blocked against complete items *)
-            let f2 j s1 = (cut bitm j s1) in
+            let f2 j s1 = (let nitm = cut bitm j in add_todo (NTITM nitm) s1) in
             let js = try Complete_map.find key s0.complete with Not_found -> Int_set.empty in
             let s0 = Int_set.fold f2 js s0 in
             (* now look at symbol we are blocked on *)  (* l:lm *)
@@ -229,7 +228,7 @@ match s0.todo with
         let key = (k,sym) in
         let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
         let f8 s1 j = (
-          let f6 bitm s1 = cut bitm j s1 in
+          let f6 bitm s1 = (let nitm = cut bitm j in add_todo (NTITM nitm) s1) in
           let s1 = Nt_item_set.fold f6 bitms s1 in
           s1)
         in
@@ -256,7 +255,7 @@ let earley c0 nt = (
 
 
 (* l:pq *)
-(* example E -> E E E | "1" | eps *)
+(** Example E -> E E E | "1" | eps *)
 
 let e' = 1
 let e = NT e'
@@ -294,8 +293,9 @@ let nt_items_for_nt=(fun nt (s,i) ->
 
 let g0 = {nt_items_for_nt; p_of_tm}
 
+let str = String.make 10 '1'
+
 let i0 = (
-  let str = String.make 200 '1' in
   let len = String.length str in
   let str : string_t = string_to_string_t str in
   { str; len })
@@ -306,8 +306,119 @@ let earley_as_list c0 e' = (
   earley c0 e' |> (fun x -> Item_set.elements x.todo_done
                           |> List.filter is_NTITM |> List.map dest_NTITM))
 
-let rs = earley_as_list c0 e'
+let earley_rs: nt_item list = earley_as_list c0 e'
 
-(* let rs = List.filter (fun (x:nt_item) -> x.k=100) rs *)
+(* let earley_rs = List.filter (fun (x:nt_item) -> x.k=100) rs *)
 
 (* sample timings: 2.8s for a string of length 200 *)
+
+
+(** Specification of Earley's algorithm *)
+
+type spec_item_t = CITM of citm_t | PITM of item (* pending *)
+
+let is_CITM x = (match x with CITM _ -> true | _ -> false)
+let dest_CITM x = (
+  match x with CITM citm -> citm | _ -> failwith "dest_CITM")
+
+let is_PITM x = (match x with PITM _ -> true | _ -> false)
+let dest_PITM x = (
+  match x with PITM itm -> itm | _ -> failwith "dest_PITM")
+
+module Spec_t =
+  Set.Make(
+  struct
+    type t = spec_item_t
+    let compare: t -> t -> int = Pervasives.compare
+  end)
+
+type spec_t = Spec_t.t
+
+let spec_to_citms : spec_t -> c_key_t -> citm_t list = (
+  fun s0 key -> 
+    let itms = Spec_t.filter is_CITM s0 in
+    let itms = Spec_t.elements itms in
+    let itms = List.map dest_CITM itms in
+    let itms = List.filter (fun citm -> citm_to_key citm = key) itms in
+    itms
+)
+
+let spec_to_bitms: spec_t -> b_key_t -> bitm_t list = (
+  fun s0 key -> 
+    let itms = Spec_t.filter is_PITM s0 in
+    let itms = Spec_t.elements itms in
+    let itms = List.map dest_PITM itms in
+    let itms = List.filter is_NTITM itms in
+    let itms = List.map dest_NTITM itms in
+    let itms = List.filter (fun x -> x.bs <> []) itms in
+    let itms = List.filter (fun bitm -> bitm_to_key bitm = key) itms in
+    itms
+)
+
+let new_items : spec_t -> spec_item_t -> spec_item_t list = (
+  fun s0 itm -> (
+      match itm with
+      | CITM citm -> (
+          let j = citm.j in
+          let key = (citm.k,citm.sym) in
+          let bitms = spec_to_bitms s0 key in
+          let f8 bitm = (let nitm = cut bitm j in PITM(NTITM nitm)) in
+          List.map f8 bitms)
+      | PITM(NTITM nitm) -> (
+          let complete = (nitm.bs = []) in
+          match complete with
+          | true -> (
+              let (k,sym,j) = (nitm.i,NT(nitm.nt),nitm.k) in
+              let citm : citm_t = {k;sym;j} in
+              [CITM citm])
+          | false -> (  
+              (* blocked, so process next sym *)
+              let bitm = nitm in
+              let (k,sym) = (bitm.k,List.hd nitm.bs) in
+              (* now look at symbol we are blocked on *)
+              match sym with
+              | NT nt -> (
+                  let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,k) in
+                  let f3 nitm = (PITM (NTITM nitm)) in
+                  List.map f3 nitms)
+              | TM tm -> [PITM (TMITM({k;tm}))]
+            )
+        )
+      | PITM(TMITM titm) -> (
+          let tm = titm.tm in
+          let k = titm.k in
+          let sym = TM tm in
+          let p = c0.g0.p_of_tm tm in
+          let js = p (c0.i0.str,titm.k,c0.i0.len) in
+          (* update complete items *)
+          let f5 j = (CITM {k;sym;j}) in
+          List.map f5 js)
+    )
+)
+
+let rec spec' ctxt s0 = (
+  let f1 itm = new_items s0 itm in
+  let itms = Spec_t.elements s0 in
+  let new_itms = List.map f1 itms |> List.concat in
+  let new_itms = Spec_t.of_list new_itms in
+  let s1 = Spec_t.union s0 new_itms in
+  if Spec_t.equal s1 s0 then s0 else spec' ctxt s1)
+
+let spec c0 nt = (
+  let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,0) in
+  let todo = List.map (fun x -> PITM(NTITM x)) nitms in
+  let s0 = Spec_t.of_list todo in
+  spec' c0 s0
+)
+
+let spec_rs = spec c0 e'
+
+let _ = (
+  let nitms = Spec_t.elements spec_rs in
+  let nitms = (nitms
+               |> (List.map
+                     (fun x -> match x with PITM(NTITM nitm) -> [nitm] | _ -> []))
+               |> List.concat)
+  in
+  assert(nitms = earley_rs)
+)
