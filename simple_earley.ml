@@ -168,6 +168,22 @@ let b_add: bitm_t -> bm_t -> bm_t = (
     )        
 )
 
+(* l:ja *)
+let process_citms key citms s0 = (
+  let f5 s1 citm = 
+    { s1 with complete=(c_add citm s1.complete) } in
+  let s0 = List.fold_left f5 s0 citms in
+  (* cut citm against blocked *)
+  let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
+  let f8 s1 citm = (
+    let f6 bitm s1 = (let nitm = cut bitm citm.j in add_todo (NTITM nitm) s1) in
+    let s1 = Nt_item_set.fold f6 bitms s1 in
+    s1)
+  in
+  let s0 = List.fold_left f8 s0 citms in
+  s0
+)
+
 (* l:jk *)
 let step: ctxt_t -> state_t -> state_t = (
 fun c0 s0 -> (
@@ -184,13 +200,7 @@ match s0.todo with
             let (k,sym,j) = (nitm.i,NT(nitm.nt),nitm.k) in
             let citm : citm_t = {k;sym;j} in
             let key = citm_to_key citm in
-            (* record citm *)
-            let s0 = { s0 with complete=(c_add citm s0.complete) } in
-            (* process against blocked items *)
-            let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
-            let f1 bitm s1 = (let nitm = cut bitm j in add_todo (NTITM nitm) s1) in
-            let s0 = Nt_item_set.fold f1 bitms s0 in
-            s0
+            process_citms key [citm] s0
           )
         | false -> (  (* l:kl *)
             (* blocked, so process next sym *)
@@ -220,20 +230,9 @@ match s0.todo with
         let sym = TM tm in
         let p = c0.g0.p_of_tm tm in
         let js = p (c0.i0.str,titm.k,c0.i0.len) in
-        (* update complete items *)
-        let f5 s1 j = 
-          { s1 with complete=(c_add {k;sym;j} s1.complete) } in
-        let s0 = List.fold_left f5 s0 js in
-        (* cut citm against blocked *)
+        let citms = List.map (fun j -> {k;sym;j}) js in
         let key = (k,sym) in
-        let bitms = try Blocked_map.find key s0.blocked with Not_found -> Nt_item_set.empty in
-        let f8 s1 j = (
-          let f6 bitm s1 = (let nitm = cut bitm j in add_todo (NTITM nitm) s1) in
-          let s1 = Nt_item_set.fold f6 bitms s1 in
-          s1)
-        in
-        let s0 = List.fold_left f8 s0 js in
-        s0
+        process_citms key citms s0
       )  (* TMITM *)
   )))
 

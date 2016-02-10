@@ -109,13 +109,18 @@ X -> i,(as S),j,bs
 We then give definitions for adding a complete item to the complete
 map, and a blocked item to the blocked map.
 
+At (l:ja) we pull out some common code to process a list of complete
+items, all of which have a given key. Processing involves adding each
+`citm` to the complete map, and cutting each item against the relevant
+blocked items.
+
 At (l:jk) we reach the core `step` part of Earley's algorithm. The
 full algorithm repeatedly applies `step` to an initial state until
 there are no further `todo` items.
 
-At (l:jp) we at processing a nt item. This item may be complete. If
-so, we record it in the complete map, and process it against any
-blocked items with the same key.
+At (l:jp) we at processing an nt item. This item may be complete. If
+so, via `process_citms` we record it in the complete map, and process
+it against any blocked items with the same key.
 
 At (l:kl) the nt item is not complete. So we record it in the blocked
 map. We then try to progress the item by cutting it with all the
@@ -126,9 +131,9 @@ items. This is (l:lm).
 
 At (l:mn) we are processing a terminal item. We use `p_of_tm` to
 determine which substrings of the input can be parsed as the terminal
-$T$. This gives us complete items of the form $_k{}T_j$. We then update
-the complete map. And for each complete item, we have to process the
-item against the relevant blocked items.
+$T$. This gives us complete items of the form $_k{}T_j$. For each
+`citm` we then update the complete map and process against blocked
+items, using `process_citms`
 
 That concludes the explanation of the core of the algorithm.
 

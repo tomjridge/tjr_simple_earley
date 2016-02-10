@@ -6,37 +6,37 @@
     <title>spec.ml</title>
 <meta name="generator" content="emacs 24.5.2; htmlfontify 0.21" />
 <style type="text/css"><!-- 
-body { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.default   { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.default a { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.string   { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.string a { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.builtin   { color: #e090d7;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.builtin a { color: #e090d7;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.constant   { color: #e9b2e3;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.constant a { color: #e9b2e3;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.variable-name   { color: #fcaf3e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.variable-name a { color: #fcaf3e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.function-name   { color: #fce94f;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.function-name a { color: #fce94f;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.comment   { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.comment a { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.comment-delimiter   { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.comment-delimiter a { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.keyword   { color: #b4fa70;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.keyword a { color: #b4fa70;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.constructor   { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.constructor a { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.operator   { color: #f0e68c;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.operator a { color: #f0e68c;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.type   { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.type a { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.doc   { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.doc a { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.module   { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.module a { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.governing   { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
+body { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.default   { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.default a { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.string   { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.string a { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.builtin   { color: #e090d7;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.builtin a { color: #e090d7;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.constant   { color: #e9b2e3;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.constant a { color: #e9b2e3;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.variable-name   { color: #fcaf3e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.variable-name a { color: #fcaf3e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.function-name   { color: #fce94f;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.function-name a { color: #fce94f;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.comment   { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.comment a { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.comment-delimiter   { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.comment-delimiter a { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.keyword   { color: #b4fa70;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.keyword a { color: #b4fa70;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.constructor   { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.constructor a { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.operator   { color: #f0e68c;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.operator a { color: #f0e68c;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.type   { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.type a { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.doc   { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.doc a { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.module   { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.module a { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.governing   { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
  --></style>
 
     <script type="text/javascript"><!--

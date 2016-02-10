@@ -45,10 +45,11 @@
 ------------------------- cut
 X -&gt; i,(as S),j,bs</code></pre>
 <p>We then give definitions for adding a complete item to the complete map, and a blocked item to the blocked map.</p>
+<p>At (l:ja) we pull out some common code to process a list of complete items, all of which have a given key. Processing involves adding each <code>citm</code> to the complete map, and cutting each item against the relevant blocked items.</p>
 <p>At (l:jk) we reach the core <code>step</code> part of Earley's algorithm. The full algorithm repeatedly applies <code>step</code> to an initial state until there are no further <code>todo</code> items.</p>
-<p>At (l:jp) we at processing a nt item. This item may be complete. If so, we record it in the complete map, and process it against any blocked items with the same key.</p>
+<p>At (l:jp) we at processing an nt item. This item may be complete. If so, via <code>process_citms</code> we record it in the complete map, and process it against any blocked items with the same key.</p>
 <p>At (l:kl) the nt item is not complete. So we record it in the blocked map. We then try to progress the item by cutting it with all the current complete items with the same key. It may be that we have yet to process all or any of the relevant complete items. So we also have to look at the symbol the nt item is blocked on, and manufacture more items. This is (l:lm).</p>
-<p>At (l:mn) we are processing a terminal item. We use <code>p_of_tm</code> to determine which substrings of the input can be parsed as the terminal <span class="math"><em>T</em></span>. This gives us complete items of the form <span class="math"><em></em><sub><em>k</em></sub><em>T</em><sub><em>j</em></sub></span>. We then update the complete map. And for each complete item, we have to process the item against the relevant blocked items.</p>
+<p>At (l:mn) we are processing a terminal item. We use <code>p_of_tm</code> to determine which substrings of the input can be parsed as the terminal <span class="math"><em>T</em></span>. This gives us complete items of the form <span class="math"><em></em><sub><em>k</em></sub><em>T</em><sub><em>j</em></sub></span>. For each <code>citm</code> we then update the complete map and process against blocked items, using <code>process_citms</code></p>
 <p>That concludes the explanation of the core of the algorithm.</p>
 <p>At (l:no) we repeatedly apply the step function in a loop until there are no more items to do.</p>
 <p>At (l:op) we apply the loop function to an initial state.</p>

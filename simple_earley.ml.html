@@ -6,37 +6,37 @@
     <title>simple_earley.ml</title>
 <meta name="generator" content="emacs 24.5.2; htmlfontify 0.21" />
 <style type="text/css"><!-- 
-body { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.default   { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.default a { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.module   { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.module a { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.string   { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.string a { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.builtin   { color: #e090d7;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.builtin a { color: #e090d7;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.constant   { color: #e9b2e3;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.constant a { color: #e9b2e3;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.variable-name   { color: #fcaf3e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.variable-name a { color: #fcaf3e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.function-name   { color: #fce94f;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.function-name a { color: #fce94f;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.comment   { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.comment a { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.comment-delimiter   { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.comment-delimiter a { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.keyword   { color: #b4fa70;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.keyword a { color: #b4fa70;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.constructor   { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.constructor a { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.doc   { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.doc a { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.operator   { color: #f0e68c;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.operator a { color: #f0e68c;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.type   { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.type a { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
-span.governing   { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: none; }
-span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-style: normal;  background: #2e3436;  font-size: 10pt;  text-decoration: underline; }
+body { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.default   { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.default a { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.module   { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.module a { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.string   { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.string a { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.builtin   { color: #e090d7;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.builtin a { color: #e090d7;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.constant   { color: #e9b2e3;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.constant a { color: #e9b2e3;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.variable-name   { color: #fcaf3e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.variable-name a { color: #fcaf3e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.function-name   { color: #fce94f;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.function-name a { color: #fce94f;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.comment   { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.comment a { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.comment-delimiter   { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.comment-delimiter a { color: #73d216;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.keyword   { color: #b4fa70;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.keyword a { color: #b4fa70;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.constructor   { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.constructor a { font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #eeeeec;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.doc   { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.doc a { color: #e9b96e;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.operator   { color: #f0e68c;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.operator a { color: #f0e68c;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.type   { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.type a { color: #8cc4ff;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
+span.governing   { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: none; }
+span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Vera Sans Mono;  font-stretch: normal;  font-style: normal;  background: #2e3436;  font-size: 8pt;  text-decoration: underline; }
  --></style>
 
     <script type="text/javascript"><!--
@@ -272,14 +272,13 @@ span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Ve
 <span class="operator">)</span>
 
 <span class="comment-delimiter">(* </span><span class="comment">l:ij </span><span class="comment-delimiter">*)</span>
-<span class="governing">let</span> <span class="variable-name">cut</span><span class="operator">:</span> <span class="type">nt_item </span><span class="operator">-&gt;</span><span class="type"> j_t </span><span class="operator">-&gt;</span><span class="type"> state_t </span><span class="operator">-&gt;</span><span class="type"> state_t </span><span class="operator">=</span> <span class="operator">(</span>
-  <span class="keyword">fun</span> <span class="variable-name">bitm j0 s0</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
+<span class="governing">let</span> <span class="variable-name">cut</span><span class="operator">:</span> <span class="type">nt_item </span><span class="operator">-&gt;</span><span class="type"> j_t </span><span class="operator">-&gt;</span><span class="type"> nt_item </span><span class="operator">=</span> <span class="operator">(</span>
+  <span class="keyword">fun</span> <span class="variable-name">bitm j0</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
       <span class="governing">let</span> <span class="variable-name">as_</span> <span class="operator">=</span> <span class="operator">(</span><span class="module">List.</span>hd bitm.bs<span class="operator">)::</span><span class="type">bitm.as_ </span><span class="governing">in</span><span class="type">
       </span><span class="governing">let</span><span class="type"> bs </span><span class="operator">=</span><span class="type"> </span><span class="module">List.</span><span class="type">tl bitm.bs </span><span class="governing">in</span><span class="type">
       </span><span class="governing">let</span><span class="type"> k </span><span class="operator">=</span><span class="type"> j0 </span><span class="governing">in</span><span class="type">
-      </span><span class="governing">let</span><span class="type"> itm </span><span class="operator">=</span><span class="type"> NTITM</span><span class="operator">({</span><span class="type">bitm </span><span class="keyword">with</span><span class="type"> k</span><span class="operator">;</span><span class="type">as_</span><span class="operator">;</span><span class="type">bs</span><span class="operator">})</span><span class="type"> </span><span class="governing">in</span><span class="type">
-      </span><span class="governing">let</span><span class="type"> s0 </span><span class="operator">=</span><span class="type"> add_todo itm s0 </span><span class="governing">in</span><span class="type">
-      s0
+      </span><span class="governing">let</span><span class="type"> nitm </span><span class="operator">={</span><span class="type">bitm </span><span class="keyword">with</span><span class="type"> k</span><span class="operator">;</span><span class="type">as_</span><span class="operator">;</span><span class="type">bs</span><span class="operator">}</span><span class="type"> </span><span class="governing">in</span><span class="type">
+      nitm
     </span><span class="operator">)</span>
 <span class="operator">)</span>
 
@@ -308,6 +307,22 @@ span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Ve
     <span class="operator">)</span>        
 <span class="operator">)</span>
 
+<span class="comment-delimiter">(* </span><span class="comment">l:ja </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="function-name">process_citms</span><span class="variable-name"> key citms s0</span> <span class="operator">=</span> <span class="operator">(</span>
+  <span class="governing">let</span> <span class="function-name">f5</span><span class="variable-name"> s1 citm</span> <span class="operator">=</span> 
+    <span class="operator">{</span> s1 <span class="keyword">with</span> complete<span class="operator">=(</span>c_add citm s1.complete<span class="operator">)</span> <span class="operator">}</span> <span class="governing">in</span>
+  <span class="governing">let</span> <span class="variable-name">s0</span> <span class="operator">=</span> <span class="module">List.</span>fold_left f5 s0 citms <span class="governing">in</span>
+  <span class="comment-delimiter">(* </span><span class="comment">cut citm against blocked </span><span class="comment-delimiter">*)</span>
+  <span class="governing">let</span> <span class="variable-name">bitms</span> <span class="operator">=</span> <span class="keyword">try</span> <span class="module">Blocked_map.</span>find key s0.blocked <span class="keyword">with</span> <span class="constructor">Not_found</span> <span class="operator">-&gt;</span> <span class="module">Nt_item_set.</span>empty <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">f8</span><span class="variable-name"> s1 citm</span> <span class="operator">=</span> <span class="operator">(</span>
+    <span class="governing">let</span> <span class="function-name">f6</span><span class="variable-name"> bitm s1</span> <span class="operator">=</span> <span class="operator">(</span><span class="governing">let</span> <span class="variable-name">nitm</span> <span class="operator">=</span> cut bitm citm.j <span class="governing">in</span> add_todo <span class="operator">(</span><span class="constructor">NTITM</span> nitm<span class="operator">)</span> s1<span class="operator">)</span> <span class="governing">in</span>
+    <span class="governing">let</span> <span class="variable-name">s1</span> <span class="operator">=</span> <span class="module">Nt_item_set.</span>fold f6 bitms s1 <span class="governing">in</span>
+    s1<span class="operator">)</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="variable-name">s0</span> <span class="operator">=</span> <span class="module">List.</span>fold_left f8 s0 citms <span class="governing">in</span>
+  s0
+<span class="operator">)</span>
+
 <span class="comment-delimiter">(* </span><span class="comment">l:jk </span><span class="comment-delimiter">*)</span>
 <span class="governing">let</span> <span class="variable-name">step</span><span class="operator">:</span> <span class="type">ctxt_t </span><span class="operator">-&gt;</span><span class="type"> state_t </span><span class="operator">-&gt;</span><span class="type"> state_t </span><span class="operator">=</span> <span class="operator">(</span>
 <span class="keyword">fun</span> <span class="variable-name">c0 s0</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
@@ -324,13 +339,7 @@ span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Ve
             <span class="governing">let</span> <span class="operator">(</span><span class="variable-name">k</span><span class="operator">,</span><span class="variable-name">sym</span><span class="operator">,</span><span class="variable-name">j</span><span class="operator">)</span> <span class="operator">=</span> <span class="operator">(</span>nitm.i<span class="operator">,</span><span class="constructor">NT</span><span class="operator">(</span>nitm.nt<span class="operator">),</span>nitm.k<span class="operator">)</span> <span class="governing">in</span>
             <span class="governing">let</span> <span class="variable-name">citm</span> <span class="operator">:</span><span class="type"> citm_t </span><span class="operator">=</span><span class="type"> </span><span class="operator">{</span><span class="type">k</span><span class="operator">;</span><span class="type">sym</span><span class="operator">;</span><span class="type">j</span><span class="operator">}</span><span class="type"> </span><span class="governing">in</span><span class="type">
             </span><span class="governing">let</span><span class="type"> key </span><span class="operator">=</span><span class="type"> citm_to_key citm </span><span class="governing">in</span><span class="type">
-            </span><span class="comment-delimiter">(* </span><span class="comment">record citm </span><span class="comment-delimiter">*)</span><span class="type">
-            </span><span class="governing">let</span><span class="type"> s0 </span><span class="operator">=</span><span class="type"> </span><span class="operator">{</span><span class="type"> s0 </span><span class="keyword">with</span><span class="type"> complete</span><span class="operator">=(</span><span class="type">c_add citm s0.complete</span><span class="operator">)</span><span class="type"> </span><span class="operator">}</span><span class="type"> </span><span class="governing">in</span><span class="type">
-            </span><span class="comment-delimiter">(* </span><span class="comment">process against blocked items </span><span class="comment-delimiter">*)</span><span class="type">
-            </span><span class="governing">let</span><span class="type"> bitms </span><span class="operator">=</span><span class="type"> </span><span class="keyword">try</span><span class="type"> </span><span class="module">Blocked_map.</span><span class="type">find key s0.blocked </span><span class="keyword">with</span><span class="type"> Not_found </span><span class="operator">-&gt;</span><span class="type"> </span><span class="module">Nt_item_set.</span><span class="type">empty </span><span class="governing">in</span><span class="type">
-            </span><span class="governing">let</span><span class="type"> f1 bitm s1 </span><span class="operator">=</span><span class="type"> </span><span class="operator">(</span><span class="type">cut bitm j s1</span><span class="operator">)</span><span class="type"> </span><span class="governing">in</span><span class="type">
-            </span><span class="governing">let</span><span class="type"> s0 </span><span class="operator">=</span><span class="type"> </span><span class="module">Nt_item_set.</span><span class="type">fold f1 bitms s0 </span><span class="governing">in</span><span class="type">
-            s0
+            process_citms key </span><span class="operator">[</span><span class="type">citm</span><span class="operator">]</span><span class="type"> s0
           </span><span class="operator">)</span>
         <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="operator">(</span>  <span class="comment-delimiter">(* </span><span class="comment">l:kl </span><span class="comment-delimiter">*)</span>
             <span class="comment-delimiter">(* </span><span class="comment">blocked, so process next sym </span><span class="comment-delimiter">*)</span>
@@ -340,7 +349,7 @@ span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Ve
             <span class="comment-delimiter">(* </span><span class="comment">record bitm </span><span class="comment-delimiter">*)</span>
             <span class="governing">let</span> <span class="variable-name">s0</span> <span class="operator">=</span> <span class="operator">{</span> s0 <span class="keyword">with</span> blocked<span class="operator">=(</span>b_add bitm s0.blocked<span class="operator">)</span> <span class="operator">}</span> <span class="governing">in</span>
             <span class="comment-delimiter">(* </span><span class="comment">process blocked against complete items </span><span class="comment-delimiter">*)</span>
-            <span class="governing">let</span> <span class="function-name">f2</span><span class="variable-name"> j s1</span> <span class="operator">=</span> <span class="operator">(</span>cut bitm j s1<span class="operator">)</span> <span class="governing">in</span>
+            <span class="governing">let</span> <span class="function-name">f2</span><span class="variable-name"> j s1</span> <span class="operator">=</span> <span class="operator">(</span><span class="governing">let</span> <span class="variable-name">nitm</span> <span class="operator">=</span> cut bitm j <span class="governing">in</span> add_todo <span class="operator">(</span><span class="constructor">NTITM</span> nitm<span class="operator">)</span> s1<span class="operator">)</span> <span class="governing">in</span>
             <span class="governing">let</span> <span class="variable-name">js</span> <span class="operator">=</span> <span class="keyword">try</span> <span class="module">Complete_map.</span>find key s0.complete <span class="keyword">with</span> <span class="constructor">Not_found</span> <span class="operator">-&gt;</span> <span class="module">Int_set.</span>empty <span class="governing">in</span>
             <span class="governing">let</span> <span class="variable-name">s0</span> <span class="operator">=</span> <span class="module">Int_set.</span>fold f2 js s0 <span class="governing">in</span>
             <span class="comment-delimiter">(* </span><span class="comment">now look at symbol we are blocked on </span><span class="comment-delimiter">*)</span>  <span class="comment-delimiter">(* </span><span class="comment">l:lm </span><span class="comment-delimiter">*)</span>
@@ -360,20 +369,9 @@ span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Ve
         <span class="governing">let</span> <span class="variable-name">sym</span> <span class="operator">=</span> <span class="constructor">TM</span> tm <span class="governing">in</span>
         <span class="governing">let</span> <span class="variable-name">p</span> <span class="operator">=</span> c0.g0.p_of_tm tm <span class="governing">in</span>
         <span class="governing">let</span> <span class="variable-name">js</span> <span class="operator">=</span> p <span class="operator">(</span>c0.i0.str<span class="operator">,</span>titm.k<span class="operator">,</span>c0.i0.len<span class="operator">)</span> <span class="governing">in</span>
-        <span class="comment-delimiter">(* </span><span class="comment">update complete items </span><span class="comment-delimiter">*)</span>
-        <span class="governing">let</span> <span class="function-name">f5</span><span class="variable-name"> s1 j</span> <span class="operator">=</span> 
-          <span class="operator">{</span> s1 <span class="keyword">with</span> complete<span class="operator">=(</span>c_add <span class="operator">{</span>k<span class="operator">;</span>sym<span class="operator">;</span>j<span class="operator">}</span> s1.complete<span class="operator">)</span> <span class="operator">}</span> <span class="governing">in</span>
-        <span class="governing">let</span> <span class="variable-name">s0</span> <span class="operator">=</span> <span class="module">List.</span>fold_left f5 s0 js <span class="governing">in</span>
-        <span class="comment-delimiter">(* </span><span class="comment">cut citm against blocked </span><span class="comment-delimiter">*)</span>
+        <span class="governing">let</span> <span class="variable-name">citms</span> <span class="operator">=</span> <span class="module">List.</span>map <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">j</span> <span class="operator">-&gt;</span> <span class="operator">{</span>k<span class="operator">;</span>sym<span class="operator">;</span>j<span class="operator">})</span> js <span class="governing">in</span>
         <span class="governing">let</span> <span class="variable-name">key</span> <span class="operator">=</span> <span class="operator">(</span>k<span class="operator">,</span>sym<span class="operator">)</span> <span class="governing">in</span>
-        <span class="governing">let</span> <span class="variable-name">bitms</span> <span class="operator">=</span> <span class="keyword">try</span> <span class="module">Blocked_map.</span>find key s0.blocked <span class="keyword">with</span> <span class="constructor">Not_found</span> <span class="operator">-&gt;</span> <span class="module">Nt_item_set.</span>empty <span class="governing">in</span>
-        <span class="governing">let</span> <span class="function-name">f8</span><span class="variable-name"> s1 j</span> <span class="operator">=</span> <span class="operator">(</span>
-          <span class="governing">let</span> <span class="function-name">f6</span><span class="variable-name"> bitm s1</span> <span class="operator">=</span> cut bitm j s1 <span class="governing">in</span>
-          <span class="governing">let</span> <span class="variable-name">s1</span> <span class="operator">=</span> <span class="module">Nt_item_set.</span>fold f6 bitms s1 <span class="governing">in</span>
-          s1<span class="operator">)</span>
-        <span class="governing">in</span>
-        <span class="governing">let</span> <span class="variable-name">s0</span> <span class="operator">=</span> <span class="module">List.</span>fold_left f8 s0 js <span class="governing">in</span>
-        s0
+        process_citms key citms s0
       <span class="operator">)</span>  <span class="comment-delimiter">(* </span><span class="comment">TMITM </span><span class="comment-delimiter">*)</span>
   <span class="operator">)))</span>
 
@@ -395,7 +393,7 @@ span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Ve
 
 
 <span class="comment-delimiter">(* </span><span class="comment">l:pq </span><span class="comment-delimiter">*)</span>
-<span class="comment-delimiter">(* </span><span class="comment">example E -&gt; E E E | &quot;1&quot; | eps </span><span class="comment-delimiter">*)</span>
+<span class="doc">(** Example E -&gt; E E E | &quot;1&quot; | eps *)</span>
 
 <span class="governing">let</span> <span class="variable-name">e'</span> <span class="operator">=</span> 1
 <span class="governing">let</span> <span class="variable-name">e</span> <span class="operator">=</span> <span class="constructor">NT</span> e'
@@ -433,11 +431,12 @@ span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Ve
 
 <span class="governing">let</span> <span class="variable-name">g0</span> <span class="operator">=</span> <span class="operator">{</span>nt_items_for_nt<span class="operator">;</span> p_of_tm<span class="operator">}</span>
 
+<span class="governing">let</span> <span class="variable-name">str</span> <span class="operator">=</span> <span class="module">String.</span>make 10 <span class="string">'</span><span class="string">1</span><span class="string">'</span>
+
 <span class="governing">let</span> <span class="variable-name">i0</span> <span class="operator">=</span> <span class="operator">(</span>
-  <span class="governing">let</span> <span class="variable-name">str</span> <span class="operator">=</span> <span class="module">String.</span>make 200 <span class="string">'</span><span class="string">1</span><span class="string">'</span> <span class="governing">in</span>
   <span class="governing">let</span> <span class="variable-name">len</span> <span class="operator">=</span> <span class="module">String.</span>length str <span class="governing">in</span>
   <span class="governing">let</span> <span class="variable-name">str</span> <span class="operator">:</span><span class="type"> string_t </span><span class="operator">=</span><span class="type"> string_to_string_t str </span><span class="governing">in</span><span class="type">
-  </span><span class="operator">{</span><span class="type"> str</span><span class="operator">;</span><span class="type"> len </span><span class="operator">})</span>
+</span><span class="type">  </span><span class="operator">{</span><span class="type"> str</span><span class="operator">;</span><span class="type"> len </span><span class="operator">})</span>
 
 <span class="governing">let</span> <span class="variable-name">c0</span> <span class="operator">=</span> <span class="operator">{</span>g0<span class="operator">;</span>i0<span class="operator">}</span>
 
@@ -445,11 +444,13 @@ span.governing a { color: #f5deb3;  font-weight: 700;  font-family: Bitstream Ve
   earley c0 e' <span class="operator">|&gt;</span> <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">x</span> <span class="operator">-&gt;</span> <span class="module">Item_set.</span>elements x.todo_done
                           <span class="operator">|&gt;</span> <span class="module">List.</span>filter is_NTITM <span class="operator">|&gt;</span> <span class="module">List.</span>map dest_NTITM<span class="operator">))</span>
 
-<span class="governing">let</span> <span class="variable-name">rs</span> <span class="operator">=</span> earley_as_list c0 e'
+<span class="governing">let</span> <span class="variable-name">earley_rs</span><span class="operator">:</span> <span class="type">nt_item list </span><span class="operator">=</span> earley_as_list c0 e'
 
-<span class="comment-delimiter">(* </span><span class="comment">let rs = </span><span class="comment">List.filter (fun (x:nt_item) -&gt; x.k=</span><span class="comment">1</span><span class="comment">0</span><span class="comment">0</span><span class="comment">) rs</span><span class="comment"> </span><span class="comment-delimiter">*</span><span class="comment-delimiter">)</span>
+<span class="comment-delimiter">(* </span><span class="comment">let earley_rs = </span><span class="comment">List.filter (fun (x:nt_item) -&gt; x.k=</span><span class="comment">1</span><span class="comment">0</span><span class="comment">0</span><span class="comment">) rs</span><span class="comment"> </span><span class="comment-delimiter">*</span><span class="comment-delimiter">)</span>
 
 <span class="comment-delimiter">(* </span><span class="comment">sample timings: 2.8s for a string of length 200 </span><span class="comment-delimiter">*)</span>
+
+
 </pre>
 
  </body>
