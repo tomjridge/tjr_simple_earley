@@ -55,6 +55,7 @@ X -&gt; i,(as S),j,bs</code></pre>
 <p>At (l:op) we apply the loop function to an initial state.</p>
 <p>At (l:pq) we give an example for the grammar <span class="math"><em>E</em> → <em>E</em><em>E</em><em>E</em>|′1′|<em>ϵ</em></span>.</p>
 <h2 id="complexity">Complexity</h2>
+<p>We assume that there is a constant <span class="math"><em>c</em></span> such that each invocation of <code>p_of_tm</code> produces at most <span class="math"><em>c</em> * <em>n</em></span> results.</p>
 <p>As implemented, the algorithm is <code>O(n^3 log n)</code> because the sets and maps use OCaml's default sets and maps, which are implemented as binary trees. However, clearly given an input and a grammar, there are only a finite number of items that can be in any of the sets or maps. Thus, we can enumerate these items, and use the enumeration to implement e.g. a set as an array. This would give the <code>O(n^3)</code> desired complexity.</p>
 </body>
 </html>
