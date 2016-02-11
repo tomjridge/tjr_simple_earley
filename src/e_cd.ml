@@ -34,12 +34,11 @@ let new_items: ctxt_t -> spec_t -> spec_item_t -> spec_item_t list = (
               [CITM citm])
           | false -> (
               (* blocked, so process next sym *)
-              let bitm = nitm in
-              let (k,sym) = (bitm.k,List.hd nitm.bs) in
+              let (k,sym) = (nitm.k,List.hd nitm.bs) in
               [SITM{k;sym}]))
       | CITM citm -> (
-          let (k,sym,j) = (citm.k,citm.sym,citm.j) in
-          let key = (k,sym) in
+          let key = citm_to_key citm in
+          let j = citm.j in
           let bitms = spec_to_bitms s0 key in
           let f bitm = (cut bitm j) |> (fun x -> NTITM x) in
           List.map f bitms)
@@ -48,10 +47,8 @@ let new_items: ctxt_t -> spec_t -> spec_item_t -> spec_item_t list = (
           match sym with
           | NT nt -> (
               c0.g0.nt_items_for_nt nt (c0.i0.str,k)
-              |> List.map (fun x -> NTITM x)
-            )
+              |> List.map (fun x -> NTITM x))
           | TM tm -> (
-              let sym = TM tm in
               let p = c0.g0.p_of_tm tm in
               let js = p (c0.i0.str,k,c0.i0.len) in
               let f j = CITM {k;sym;j} in
@@ -80,5 +77,10 @@ let spec c0 nt = (
   spec' c0 s0
 )
 
-let spec_rs = (spec (c0 ()) e') |> Spec_t.elements
+let cd_rs =
+  (spec (c0 ()) e')
+  |> Spec_t.elements
+  |> List.map (function | NTITM nitm -> [nitm] | _ -> [])
+  |> List.concat
+                                   
 

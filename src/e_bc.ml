@@ -19,16 +19,6 @@ let spec_to_bitms: spec_t -> b_key_t -> bitm_t list = (
     |> List.concat)
 
 
-let cut: nt_item -> j_t -> nt_item = (
-  fun bitm j0 -> (
-      let as_ = (List.hd bitm.bs)::bitm.as_ in
-      let bs = List.tl bitm.bs in
-      let k = j0 in
-      let nitm ={bitm with k;as_;bs} in
-      nitm
-    )
-)
-
 let new_items : ctxt_t -> spec_t -> spec_item_t -> spec_item_t list = (
   fun c0 s0 nitm -> (
       let complete = (nitm.bs = []) in
@@ -79,5 +69,5 @@ let spec c0 nt = (
   spec' c0 s0
 )
 
-let spec_rs = (spec (c0 ()) e') |> Spec_t.elements
+let bc_rs = (spec (c0 ()) e') |> Spec_t.elements
 

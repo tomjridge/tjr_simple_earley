@@ -48,6 +48,10 @@ type citm_t = {
 
 type c_key_t = (k_t * sym)
 
+let citm_to_key: citm_t -> c_key_t = (
+  fun citm -> (citm.k,citm.sym))
+
+
 (* l:de *)
 type string_t
 type substring_t = (string_t * i_t * j_t)
@@ -70,6 +74,19 @@ type ctxt_t = {
   g0: grammar_t;
   i0: input_t
 }
+
+
+let cut: nt_item -> j_t -> nt_item = (
+  fun bitm j0 -> (
+      let as_ = (List.hd bitm.bs)::bitm.as_ in
+      let bs = List.tl bitm.bs in
+      let k = j0 in
+      let nitm ={bitm with k;as_;bs} in
+      nitm
+    )
+)
+
+
 
 
 module Int_set = 
