@@ -7,5 +7,8 @@ all:
 
 # simple_earley.ml.html: # use htmlfontify-buffer from emacs
 
+CLEAN:=rm -f a.out *.cmi *.cmo *.cmx *.o *~
+
 clean:
-	-rm -f a.out *.cmi *.cmo *.cmx *.o
+	-$(CLEAN)
+	-cd src && $(CLEAN)
