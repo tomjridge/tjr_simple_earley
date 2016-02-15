@@ -1,4 +1,4 @@
-(** Refine Earley by adding more items. *)
+(** Earley, staged. *)
 
 open E_common
 
@@ -237,8 +237,8 @@ let loop: ctxt_t -> state_t -> state_t = (
     )
 )
 
-(* construct initial context, apply spec' *)
-let fg c0 nt = (
+(* construct initial context, apply loop *)
+let earley c0 nt = (
   let todo = (c0.g0.nt_items_for_nt nt (c0.i0.str,0)) in
   let k = 0 in
   let todo_done = Nt_item_set.of_list todo in
@@ -253,14 +253,14 @@ let fg c0 nt = (
 )
 
 (* list of nt_items *)
-let fg_to_list s0 = Nt_item_set.elements s0.all_done
+let earley_to_list s0 = Nt_item_set.elements s0.all_done
 
-let fg_as_list c0 nt = (
-  fg c0 nt |> fg_to_list
+let earley_as_list c0 nt = (
+  earley c0 nt |> earley_to_list
 )
 
 let _ = str := (String.make 200 '1')  
-let _ = fg_as_list (c0 ()) e'
+let _ = earley_as_list (c0 ()) e'
 let _ = print_endline "Finished"
     
 (* Sample time for string length 200: 
