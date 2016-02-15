@@ -32,23 +32,36 @@ module Blocked_map =
     let compare: t -> t -> int = Pervasives.compare
   end)
 
+module Int_map = 
+  Map.Make(
+  struct
+    type t = int
+    let compare: t -> t -> int = Pervasives.compare
+  end)
+
 (* state at k *)
 type state_t = {
+  k: int;
   todo: nt_item list;
   todo_done: Nt_item_set.t;
-  todo_gt_k: unit;
+  todo_gt_k: Nt_item_set.t Int_map.t;
   ixk_done: Ixk_set.t;  (* i X k *)
   ktjs: int list option Map_tm.t;  (* k T j *)
   bitms_lt_k: Nt_item_set.t Blocked_map.t;
   bitms_at_k: Nt_item_set.t Map_nt.t;  (* bitms blocked at k,X *)
+  all_done: Nt_item_set.t;
 }
 
-(* k0 is current stage *)
-let bitms: k_t -> state_t -> (k_t * nt) -> Nt_item_set.t = (
-  fun k0 s0 (k,x) ->
-    match (k=k0) with
-    | true -> (Map_nt.find x s0.bitms_at_k)
-    | false -> (Blocked_map.find (k,x) s0.bitms_lt_k))
+let wrap find k m default = (
+  try
+    find k m
+  with Not_found -> default)
+
+let bitms: state_t -> (k_t * nt) -> Nt_item_set.t = (
+  fun s0 (k,x) ->
+    match (k=s0.k) with
+    | true -> (wrap Map_nt.find x s0.bitms_at_k Nt_item_set.empty)
+    | false -> (wrap Blocked_map.find (k,x) s0.bitms_lt_k Nt_item_set.empty))
 
 let pop_todo s0 = (
   match s0.todo with
@@ -66,10 +79,17 @@ let cut: nt_item -> j_t -> nt_item = (
 )
 
 (* k is the current stage *)
-let add_todo: k_t -> nt_item -> state_t -> state_t = 
-  fun k nitm s0 ->
+let add_todo: nt_item -> state_t -> state_t = 
+  fun nitm s0 ->
+    let k = s0.k in
     match nitm.k > k with
-    | true -> s0  (* FIXME *)
+    | true -> (
+        let nitms =
+          wrap Int_map.find nitm.k s0.todo_gt_k Nt_item_set.empty
+        in
+        let nitms = Nt_item_set.add nitm nitms in
+        { s0 with
+          todo_gt_k=(Int_map.add nitm.k nitms s0.todo_gt_k)})
     | false -> (
         match Nt_item_set.mem nitm s0.todo_done with
         | true -> s0
@@ -88,22 +108,23 @@ let mem_ixk_done: ixk_t -> state_t -> bool =
 (* nt_item blocked on nt at k *)
 let add_bitm_at_k: nt_item -> nt -> state_t -> state_t =
   fun nitm nt s0 ->
-    { s0 with bitms_at_k = (
-          let m = s0.bitms_at_k in
-          let s = Map_nt.find nt m in
-          let s' = Nt_item_set.add nitm s in
-          let m' = Map_nt.add nt s' m in
-          m' ) }
+    { s0 with
+      bitms_at_k = (
+        let m = s0.bitms_at_k in
+        let s = wrap Map_nt.find nt m Nt_item_set.empty in
+        let s' = Nt_item_set.add nitm s in
+        let m' = Map_nt.add nt s' m in
+        m' ) }
 
 let find_ktjs: tm -> state_t -> int list option =
   fun t s0 ->
-    try
-      Map_tm.find t s0.ktjs
-    with _ -> None
-
-let step_k: ctxt_t -> k_t -> state_t -> state_t = (
-  fun c0 k s0 ->       
-let bitms = bitms k s0 in
+    wrap Map_tm.find t s0.ktjs None
+      
+let step_k: ctxt_t -> state_t -> state_t = (
+  fun c0 s0 ->
+    let _ = print_endline "step_k" in
+let k = s0.k in    
+let bitms = bitms s0 in
 let (nitm,s0) = pop_todo s0 in
 let complete = nitm.bs = [] in
 match complete with
@@ -115,7 +136,7 @@ match complete with
     | true -> s0
     | false -> (
         let s0 = add_ixk_done (i,x) s0 in
-        let fm bitm s1 = (add_todo k (cut bitm k) s1) in
+        let fm bitm s1 = (add_todo (cut bitm k) s1) in
         let bitms = bitms (i,x) in
         Nt_item_set.fold fm bitms s0))
 | false -> (
@@ -135,12 +156,12 @@ match complete with
             (* do we have an item (k,Y,k) ? *)
             let complete = Ixk_set.mem (k,y) s0.ixk_done in
             let s0 = (match complete with
-                | true -> (add_todo k (cut bitm k) s0)
+                | true -> (add_todo (cut bitm k) s0)
                 | false -> s0)
             in
             (* expand y *)
             let new_itms = c0.g0.nt_items_for_nt y (c0.i0.str,k) in
-            let fn s1 nitm = add_todo k nitm s1 in
+            let fn s1 nitm = add_todo nitm s1 in
             List.fold_left fn s0 new_itms) )
     | TM t -> (
         (* have we already processed k T ? *)
@@ -152,12 +173,95 @@ match complete with
             let js = p (c0.i0.str,k,c0.i0.len) in
             let s0 = { s0 with ktjs=(Map_tm.add t (Some js) s0.ktjs) } in
             (* process blocked *)
-            let fo s1 j = add_todo k (cut bitm j) s1 in
+            let fo s1 j = add_todo (cut bitm j) s1 in
             List.fold_left fo s0 js)
         | Some js -> (
             (* process blocked *)
-            let fo s1 j = add_todo k (cut bitm j) s1 in
+            let fo s1 j = add_todo (cut bitm j) s1 in
             List.fold_left fo s0 js)
       )            
   )
 )
+
+
+(* loop at k *)
+let loop_k: ctxt_t -> state_t -> state_t = 
+  fun ctxt -> (
+      let step_k = step_k ctxt in
+      let rec f s0 = (
+        match s0.todo with
+        | [] -> s0
+        | _ -> (f (step_k s0)))
+      in
+      f)
+
+
+(* outer loop: repeatedly process items at stage k, then move to stage
+   k+1 *)
+let loop: ctxt_t -> state_t -> state_t = (
+  fun c0 -> (
+      let loop_k = loop_k c0 in
+      let rec f s0 = (
+        match s0.k > c0.i0.len + 1 with
+        | true -> s0
+        | false -> (
+            (* process items *)
+            let s0 = loop_k s0 in
+            let old_k = s0.k in
+            let k = s0.k+1 in
+            let todo =
+              wrap Int_map.find k s0.todo_gt_k Nt_item_set.empty
+            in
+            let todo_done = todo in
+            let todo = Nt_item_set.elements todo in
+            let todo_gt_k = Int_map.remove k s0.todo_gt_k in
+            let ixk_done = Ixk_set.empty in
+            let ktjs = Map_tm.empty in
+            let bitms_lt_k = (
+              let b_init = s0.bitms_lt_k in
+              let b2 = s0.bitms_at_k in
+              let f
+                  (key:nt)
+                  (v:Nt_item_set.t)
+                  (a:Nt_item_set.t Blocked_map.t)
+                = (
+                  Blocked_map.add (old_k,key) v a)
+              in
+              Map_nt.fold f b2 b_init)
+            in
+            let bitms_at_k = Map_nt.empty in
+            let all_done = Nt_item_set.union s0.all_done s0.todo_done in
+            let s1 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k;all_done}
+            in
+            f s1
+          )
+      )
+      in
+      f
+    )
+)
+
+(* construct initial context, apply spec' *)
+let fg c0 nt = (
+  let todo = (c0.g0.nt_items_for_nt nt (c0.i0.str,0)) in
+  let k = 0 in
+  let todo_done = Nt_item_set.of_list todo in
+  let todo_gt_k = Int_map.empty in
+  let ixk_done = Ixk_set.empty in
+  let ktjs = Map_tm.empty in
+  let bitms_lt_k = Blocked_map.empty in
+  let bitms_at_k = Map_nt.empty in
+  let all_done = Nt_item_set.empty in
+  let s0 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k;all_done} in
+  loop c0 s0
+)
+
+(* list of nt_items *)
+let fg_to_list s0 = Nt_item_set.elements s0.all_done
+
+let fg_as_list c0 nt = (
+  fg c0 nt |> fg_to_list
+)
+
+  
+let _ = fg_as_list (c0 ()) e'
