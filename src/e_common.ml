@@ -122,6 +122,31 @@ module Nt_set =
 
 
 
+module Map_tm =
+  Map.Make(
+  struct
+    type t = tm
+    let compare: t -> t -> int = Pervasives.compare
+  end)
+
+
+module Map_nt =
+  Map.Make(
+  struct
+    type t = nt
+    let compare: t -> t -> int = Pervasives.compare
+  end)
+
+
+
+module Int_map = 
+  Map.Make(
+  struct
+    type t = int
+    let compare: t -> t -> int = Pervasives.compare
+  end)
+
+
 
 
 (** Example E -> E E E | "1" | eps *)

@@ -2,7 +2,9 @@
 
 open E_common
 
+
 type ixk_t = (i_t * nt)  (* i X k *)
+
 
 module Ixk_set =
   Set.Make(
@@ -11,19 +13,6 @@ module Ixk_set =
     let compare: t -> t -> int = Pervasives.compare
   end)
 
-module Map_tm =
-  Map.Make(
-  struct
-    type t = tm
-    let compare: t -> t -> int = Pervasives.compare
-  end)
-
-module Map_nt =
-  Map.Make(
-  struct
-    type t = nt
-    let compare: t -> t -> int = Pervasives.compare
-  end)
 
 module Blocked_map =
   Map.Make(
@@ -32,12 +21,6 @@ module Blocked_map =
     let compare: t -> t -> int = Pervasives.compare
   end)
 
-module Int_map = 
-  Map.Make(
-  struct
-    type t = int
-    let compare: t -> t -> int = Pervasives.compare
-  end)
 
 (* state at k *)
 type state_t = {
@@ -52,10 +35,10 @@ type state_t = {
   all_done: Nt_item_set.t;
 }
 
+
 let wrap find k m default = (
-  try
-    find k m
-  with Not_found -> default)
+  try find k m with Not_found -> default)
+
 
 let bitms: state_t -> (k_t * nt) -> Nt_item_set.t = (
   fun s0 (k,x) ->
@@ -63,10 +46,12 @@ let bitms: state_t -> (k_t * nt) -> Nt_item_set.t = (
     | true -> (wrap Map_nt.find x s0.bitms_at_k Nt_item_set.empty)
     | false -> (wrap Blocked_map.find (k,x) s0.bitms_lt_k Nt_item_set.empty))
 
+
 let pop_todo s0 = (
   match s0.todo with
   | x::xs -> (x,{s0 with todo=xs})
   | _ -> (failwith "pop_todo"))
+
 
 let cut: nt_item -> j_t -> nt_item = (
   fun bitm j0 -> (
@@ -77,6 +62,7 @@ let cut: nt_item -> j_t -> nt_item = (
       nitm
     )
 )
+
 
 (* k is the current stage *)
 let add_todo: nt_item -> state_t -> state_t = 
@@ -98,12 +84,15 @@ let add_todo: nt_item -> state_t -> state_t =
               todo=(nitm::s0.todo);
               todo_done=Nt_item_set.add nitm s0.todo_done}))
       
+
 let add_ixk_done: ixk_t -> state_t -> state_t =
   fun ix s0 ->
     { s0 with ixk_done=(Ixk_set.add ix s0.ixk_done)}
 
+
 let mem_ixk_done: ixk_t -> state_t -> bool =
   fun ix s0 -> Ixk_set.mem ix s0.ixk_done 
+
 
 (* nt_item blocked on nt at k *)
 let add_bitm_at_k: nt_item -> nt -> state_t -> state_t =
@@ -116,13 +105,18 @@ let add_bitm_at_k: nt_item -> nt -> state_t -> state_t =
         let m' = Map_nt.add nt s' m in
         m' ) }
 
+
 let find_ktjs: tm -> state_t -> int list option =
   fun t s0 ->
     wrap Map_tm.find t s0.ktjs None
-      
+
+
+let debug_endline = (fun x -> ()) (* print_endline *)
+
+
 let step_k: ctxt_t -> state_t -> state_t = (
   fun c0 s0 ->
-    let _ = print_endline "step_k" in
+let _ = debug_endline "XXXstep_k" in
 let k = s0.k in    
 let bitms = bitms s0 in
 let (nitm,s0) = pop_todo s0 in
@@ -135,6 +129,7 @@ match complete with
     match already_done with
     | true -> s0
     | false -> (
+        let _ = debug_endline "processing complete" in
         let s0 = add_ixk_done (i,x) s0 in
         let fm bitm s1 = (add_todo (cut bitm k) s1) in
         let bitms = bitms (i,x) in
@@ -148,11 +143,11 @@ match complete with
         (* have we already processed k Y? *)
         let bitms = bitms (k,y) in
         let already_done = Nt_item_set.is_empty bitms in
+        (* record blocked FIXME we may already have processed k Y *)
+        let s0 = add_bitm_at_k bitm y s0 in
         match already_done with
         | true -> s0
         | false -> (
-            (* record blocked FIXME we may already have processed k Y *)
-            let s0 = add_bitm_at_k bitm y s0 in
             (* do we have an item (k,Y,k) ? *)
             let complete = Ixk_set.mem (k,y) s0.ixk_done in
             let s0 = (match complete with
@@ -169,6 +164,7 @@ match complete with
         match ktjs with
         | None -> (
             (* process k T *)
+            let _ = debug_endline "processing k T" in
             let p = c0.g0.p_of_tm t in
             let js = p (c0.i0.str,k,c0.i0.len) in
             let s0 = { s0 with ktjs=(Map_tm.add t (Some js) s0.ktjs) } in
@@ -263,5 +259,12 @@ let fg_as_list c0 nt = (
   fg c0 nt |> fg_to_list
 )
 
-  
+let _ = str := (String.make 200 '1')  
 let _ = fg_as_list (c0 ()) e'
+let _ = print_endline "Finished"
+    
+(* Sample time for string length 200: 
+real	0m1.212s
+user	0m1.212s
+sys	0m0.001s
+*)
