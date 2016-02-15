@@ -113,6 +113,14 @@ module Sym_item_set =
   end)
 
 
+module Nt_set = 
+  Set.Make(
+  struct
+    type t = nt
+    let compare: t -> t -> int = Pervasives.compare
+  end)
+
+
 
 
 
