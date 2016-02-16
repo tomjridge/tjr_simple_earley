@@ -142,17 +142,21 @@ match complete with
     | NT y -> (
         (* have we already processed k Y? *)
         let bitms = bitms (k,y) in
-        let already_done = Nt_item_set.is_empty bitms in
+        let bitms_empty = Nt_item_set.is_empty bitms in
         (* record blocked FIXME we may already have processed k Y *)
         let s0 = add_bitm_at_k bitm y s0 in
-        match already_done with
-        | true -> s0
-        | false -> (
+        match bitms_empty with
+        | false ->
+          (* already processed k Y *)
+          s0
+        | true -> (
+            (* need to process Y *)
             (* do we have an item (k,Y,k) ? *)
             let complete = Ixk_set.mem (k,y) s0.ixk_done in
-            let s0 = (match complete with
-                | true -> (add_todo (cut bitm k) s0)
-                | false -> s0)
+            let s0 = (
+              match complete with
+              | true -> (add_todo (cut bitm k) s0)
+              | false -> s0)
             in
             (* expand y *)
             let new_itms = c0.g0.nt_items_for_nt y (c0.i0.str,k) in
@@ -161,22 +165,21 @@ match complete with
     | TM t -> (
         (* have we already processed k T ? *)
         let ktjs = find_ktjs t s0 in
-        match ktjs with
-        | None -> (
-            (* process k T *)
-            let _ = debug_endline "processing k T" in
-            let p = c0.g0.p_of_tm t in
-            let js = p (c0.i0.str,k,c0.i0.len) in
-            let s0 = { s0 with ktjs=(Map_tm.add t (Some js) s0.ktjs) } in
-            (* process blocked *)
-            let fo s1 j = add_todo (cut bitm j) s1 in
-            List.fold_left fo s0 js)
-        | Some js -> (
-            (* process blocked *)
-            let fo s1 j = add_todo (cut bitm j) s1 in
-            List.fold_left fo s0 js)
-      )            
-  )
+        let (js,s0) = (
+          match ktjs with
+          | None -> (
+              (* process k T *)
+              let _ = debug_endline "processing k T" in
+              let p = c0.g0.p_of_tm t in
+              let js = p (c0.i0.str,k,c0.i0.len) in
+              let s0 = { s0 with ktjs=(Map_tm.add t (Some js) s0.ktjs) } in
+              (js,s0))
+          | Some js -> (js,s0))
+        in
+        (* process blocked *)
+        let fo s1 j = add_todo (cut bitm j) s1 in
+        List.fold_left fo s0 js)
+  )            
 )
 
 
