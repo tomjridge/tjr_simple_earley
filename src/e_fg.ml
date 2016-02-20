@@ -32,7 +32,7 @@ type state_t = {
   ktjs: int list option Map_tm.t;  (* k T j *)
   bitms_lt_k: Nt_item_set.t Blocked_map.t;
   bitms_at_k: Nt_item_set.t Map_nt.t;  (* bitms blocked at k,X *)
-  all_done: Nt_item_set.t;
+  all_done: Nt_item_set.t list;
 }
 
 
@@ -223,7 +223,7 @@ let loop: ctxt_t -> state_t -> state_t = (
               Map_nt.fold f b2 b_init)
             in
             let bitms_at_k = Map_nt.empty in
-            let all_done = Nt_item_set.union s0.all_done s0.todo_done in
+            let all_done =  s0.todo_done::s0.all_done in
             let s1 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k;all_done}
             in
             f s1
@@ -244,24 +244,29 @@ let earley c0 nt = (
   let ktjs = Map_tm.empty in
   let bitms_lt_k = Blocked_map.empty in
   let bitms_at_k = Map_nt.empty in
-  let all_done = Nt_item_set.empty in
+  let all_done = [] in
   let s0 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k;all_done} in
   loop c0 s0
 )
 
 (* list of nt_items *)
+(*
 let earley_to_list s0 = Nt_item_set.elements s0.all_done
 
 let earley_as_list c0 nt = (
   earley c0 nt |> earley_to_list
 )
+*)
 
 let _ = str := (String.make 200 '1')  
-let _ = earley_as_list (c0 ()) e'
+let _ = earley (c0 ()) e'
 let _ = print_endline "Finished"
     
 (* Sample time for string length 200: 
-real	0m1.212s
-user	0m1.212s
-sys	0m0.001s
+Finished
+
+real	0m0.958s
+user	0m0.950s
+sys	0m0.008s
+
 *)
