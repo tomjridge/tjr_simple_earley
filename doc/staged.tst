@@ -1,72 +1,88 @@
-# Analysis of a staged version of Earley's algorithm
+(
+  (meta
+    (title Analysis of a staged version of Earley's algorithm)
+    (author Tom Ridge)
+    (date 2016-02-20))
 
-The file `e_cd.ml` contains a version of Earley's algorithm that is
-unstaged, i.e., items are considered in any order.
+  (body
+    (section (Introduction)
 
-Real Earley processes items in stages.
+      (The file `e_cd.ml` contains a version of Earley's algorithm that is unstaged, i.e., items are
+        considered in any order. Real Earley processes items in stages. Which items are present at
+        each stage? The following is an analysis corresponding to the code in `e_fg.ml`.))
 
-Which items are present at each stage?
+    (section (Analysis)
 
-Suppose we are at stage `k`. Then the following shows the progression
-of items.
+      (Suppose we are at stage `k`. Then we have an initial set of items of the form `X -> i as k
+        bs`.)
 
-~~~
+      (itm=(X -> i as k bs) (l:bc)
+        (nt items at k; i <= k)
+        (cases
+          (case bs=[]; itm=(X -> i as k); possible NEW COMPLETE item (iXk)
 
-((X -> i as k bs) (l:bc)
-  nt items at k; i <= k
-  (cases
-    (case bs=[]
-      = (X -> i as k)
-      (i X k ; possible NEW COMPLETE (i X k) (*) ; if i=k, must store in CMAP
-        (CUT WITH X' -> h as' i X bs' ; NEED BLOCKED i X  (*)
-          NEW ITEM X' -> h (as' X) k bs' ; as (l:bc))))
-    (case bs = (S bs')
-      = (X -> i as k (S bs'))
-      NEW BLOCKED (X -> i as k (S bs')) on k S  (*)
-
-      N.B. record whether k S is a new key before adding new blocked      
-      
-      (cases BLOCKED CUT/FOCUS
-        (CUT WITH COMPLETE (k S j) ; NEED COMPLETE k S  (*)
-
-          N.B. if S is a nonterminal, j must be k (if anything); thus we can record complete items k
-          Y k separately from k T j
-
-          NEW ITEM (X -> i (as S) j bs')
-          (cases
-            (case j=k, =(X -> i (as S) k bs'), as l:bc)
-            (case k<j, NEW ITEM at j>k)))
-        (FOCUS S; NEW ITEM k S
-
-          N.B. can avoid (k S) items by looking at BLOCKED at k S (moreover, we only need BLOCKED k
-          Y, since k T is handled immediately below) if non-empty, we have already processed (k S);
-          N.B. don't consider such items blocked
-          
-          (cases S=T | S=Y
-            (case S=T; = (k T)
-
-              N.B. can avoid (k T) items by looking in complete at k T; if None, expand T else we
-              have already processed k T; alternatively look at blocked; if there is an item blocked
-              on k T, we have already expanded T; in fact, since we EXPAND T as soon as we encounter
-              it, the only item that is BLOCKED k T is the one we are currently working with: (X ->
-              i as k (T bs'))
+            (N.B. if i=k, we must store (kXk) in cm
               
-              (EXPAND T ; NEW COMPLETE k T j  (*)
-
-                N.B. in the following CUT, we only have to cut with the current item (X -> ...),
-                since this is the first time we meet kT
-                
-                (CUT WITH X -> i as k (T bs') ; NEW ITEM (X -> i' (as T) j bs')
-                  (cases
-                    (k = j; NEW ITEM (X -> i (as T) k bs')  as (l bc))
-                    (k < j; NEW ITEM (X -> i (as T) j bs' at stage j>k))))))
-            (case S=Y
-              = (k Y)
-              EXPAND Y
-              (Y -> k k bs'
-                NEW ITEM as (l bc) ))))))))
+              First, we check whether we have already processed the item (iXk). If we have, we don't
+              do anything. If we haven't, we need to cut the item as follows.)  
 
 
+            (CUT with (X' -> h as' i X bs'); NEED BLOCKED i X; NEW (X' -> h (as' X) k bs') (ref:bc))) 
+
+
+          (case bs=(S bs'); itm=(X -> i as k (S bs')); NEW BLOCKED (X -> i as k (S bs'))=bitm on k S
+            
+            (cases S
+              (case Y; bitm=(X -> i as k (Y bs'))
+
+                (We may already have processed (k Y). If so, there should be items blocked on (k
+                Y). This assumes the following invariant holds:
+
+                  INVARIANT: processing an item at (k Y) results in at least 1 such item blocked on (k Y).
+
+                  So we first check whether there are any blocked items, and to ensure the invariant
+                  holds, we immediately add bitm to blocked.)
+
+                (cases bitms_empty
+                  (case true; nothing further to do)
+                  (case false; we need to process bitm
+
+                    (In order to process bitm we have to perform two steps: cut bitm against the
+                      matching citms; and expand Y using the grammar rules. Matching citms must be
+                      of the form (kYk), because:
+
+                      INVARIANT: at stage k, citms involving a nt Y must be of the form (kYk)
+
+                      We could look in `ixk_done` at this point, but observe that there are no items
+                      blocked on (k Y). In order to get an item (Y -> k as k bs) (and hence to (Y ->
+                      k cs k) and (kYk)) we need to have processed an item blocked on (k Y). This is
+                      true providing:
+
+                      INVARIANT: when processing an item (Y -> k as j bs), there is at least one
+                      item blocked on (k Y).
+
+                      This invariant obviously holds, except for the initial state. The simplest way
+                      to enforce the invariant is to construct an initial state consisting of the
+                      item (X -> X) (where X is the start nt).
+
+                      Thus, we only need to expand Y at this point))))
+
+              (case T; bitm=(X -> i as k (T bs'))
+
+                (We make have to parse (k T) to get items of the form (kTj). First we check whether
+                we have already processed such an item by looking in the `ktjs` map, for terminal
+                T. Either we have, and we take the js from there, or we haven't, in which case we
+                attempt to parse T from k, and store the results in the ktjs map. Either way, we
+                have a set of js corresponding to items (kTj), and we cut these against bitm.)))))
+
+        ) (# end of tree proof)
+
+
+
+      ) (# analysis)
+
+    (section (Datastructures)
+                  
 | BLOCKED | COMPLETE  | N.B.                                                      |
 |         | k X k     | i X k for i <= k, but don't need to record i < k          |
 |         |           | because these are processed against BLOCKED i immediately |
@@ -93,38 +109,24 @@ At stage k, we start with those items blocked at k; we get new blocked
 items; at the end of k, we take all the blocked items and update the
 global blocked map at k
 
-
-(todo management
-  (initially we start with blocked k)
-
-  N.B. todo is a list of nt_item; todo_done is a set of nt_item + i X k
-  
-  (which items do we need to check whether we have already processed? i.e. DONE, since we already
-  have TODO
-    
-    (k T - no, because we can look in COMPLETE)
-    (k Y - no, can check blocked k Y for non-emptiness)
-    (X -> i as k bs
-      
-      this may be in todo, so we don't want to add it again; could it be that this item arises, but
-      we have already processed it?
-      
-      (case bs= Y bs', item should be in blocked on k Y, or in TODO; if TODO is a list, we may want
-      such items in TODO_DONE)
-      
-      (case bs= T bs', we have to maintain a set of such DONE items X -> i as k (T bs') or even X ->
-      i as k T; if TODO is a list, place in TODO_DONE)
-
-      (case bs=[], we may already have processed iXk; we need to record this item as DONE))
-    (i X k
-      we need to record this as TODO_DONE, since we certainly want to avoid repeated processing)
-    ))
-
-    
-
-~~~
+(* state at k *)
+type state_t = {
+  k: int;
+  todo: nt_item list;
+  todo_done: Nt_item_set.t;
+  todo_gt_k: Nt_item_set.t Int_map.t;
+  ixk_done: Ixk_set.t;  (* i X k *)
+  ktjs: int list option Map_tm.t;  (* k T j *)
+  bitms_lt_k: Nt_item_set.t Blocked_map.t;
+  bitms_at_k: Nt_item_set.t Map_nt.t;  (* bitms blocked at k,X *)
+  all_done: Nt_item_set.t;
+}
 
 Is it better to maintain a single set S = S1 Un S2? or two sets S1 S2?
 Clearly two is faster, but how much? Potentially much quicker! So the
 implementation should maintain two blocked maps.
 
+      ) (# datastructures)
+
+    )
+  )

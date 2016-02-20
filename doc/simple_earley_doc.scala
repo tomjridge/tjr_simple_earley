@@ -13,7 +13,7 @@ object simple_earley_doc {
   def l(s:String) = { "(l:"+s+")" }
 
   def nitm(nt:String,i:String,as:String,k:String,bs:String) = {
-    s"""$$( $nt \\rightarrow _{$i} $as _{$k} . $bs)$$"""
+    s"""$$( $nt \\rightarrow {}_{$i} $as {}_{$k} . $bs)$$"""
   }
 
   def nitm_trad (nt:String,i:String,as:String,k:String,bs:String) = {
@@ -34,15 +34,15 @@ object simple_earley_doc {
   val tm_item = "`tm_item`"
 
   def titm(k:String,t:String,j:String) = {
-    s"""$$( _{$k} ${t}_{$j})$$"""
+    s"""$$( {}_{$k} ${t}_{$j})$$"""
   }
 
     def titm(k:String,t:String) = {
-    s"""$$( _{$k} ${t}_{?})$$"""
+    s"""$$( {}_{$k} ${t}_{?})$$"""
   }
 
   def citm(k:String,s:String,j:String) = {
-    s"""$$( _{$k} ${s}_{$j})$$"""
+    s"""$$( {}_{$k} ${s}_{$j})$$"""
   }
 
 
@@ -127,7 +127,7 @@ a complete item ${citm(k,s,j)}.
 
 The blocked map allows us to identify, from a set of nt items, those
 that are currently blocked at position $$k$$ waiting for a parse of
-symbol $$S$$ to complete. $$nitm \\in bm(k,S)$$ if $$nitm$$ is of the form ${nitm(x,i,as,k,s"(S $bs)")}.
+symbol $$S$$ to complete. $$nitm \\in bm(k,S)$$ if $$nitm$$ is of the form ${nitm(x,i,as,k,s"S $bs")}.
 
 The state of the Earley algorithm is represented as a record with the
 following fields:

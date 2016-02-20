@@ -151,13 +151,7 @@ match complete with
           s0
         | true -> (
             (* need to process Y *)
-            (* do we have an item (k,Y,k) ? *)
-            let complete = Ixk_set.mem (k,y) s0.ixk_done in
-            let s0 = (
-              match complete with
-              | true -> (add_todo (cut bitm k) s0)
-              | false -> s0)
-            in
+            (* do we have an item (k,Y,k) ? no *)
             (* expand y *)
             let new_itms = c0.g0.nt_items_for_nt y (c0.i0.str,k) in
             let fn s1 nitm = add_todo nitm s1 in
@@ -242,8 +236,8 @@ let loop: ctxt_t -> state_t -> state_t = (
 
 (* construct initial context, apply loop *)
 let earley c0 nt = (
-  let todo = (c0.g0.nt_items_for_nt nt (c0.i0.str,0)) in
-  let k = 0 in
+  let (i,k) = (0,0) in
+  let todo = [{nt;i;as_=[];k;bs=[NT nt]}] in
   let todo_done = Nt_item_set.of_list todo in
   let todo_gt_k = Int_map.empty in
   let ixk_done = Ixk_set.empty in
