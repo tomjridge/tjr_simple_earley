@@ -1,5 +1,9 @@
 (** Earley, staged. *)
 
+(* TODO:
+
+   use imperative hashmaps as set and map implementations *)
+
 open E_common
 
 
