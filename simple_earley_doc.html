@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+<h1 id="simple-implementation-of-an-earley-like-parsing-algorithm">Simple implementation of an Earley-like parsing algorithm</h1>
+<h2 id="meta">Meta</h2>
+<p>This document explains the OCaml code in <code>simple_earley.ml</code>. An html version of the code is in <code>simple_earley.ml.html</code> or possibly <a href="simple_earley.ml.html">here</a>.</p>
+<p>The code is a minimal implementation of an Earley-like parsing algorithm.</p>
+<p>The source for this file is <code>simple_earley.md</code>. This markdown file can be processed with pandoc. An html version of this doc is in <code>simple_earley.html</code>.</p>
+<p>References to the code are of the form (l:bc) corresponding to a code comment <code>(* l:bc *)</code> (i.e. a label <code>bc</code>).</p>
+<p>We assume familiarity with Earley's algorithm.</p>
+<h2 id="an-earley-like-algorithm">An Earley-like algorithm</h2>
+<p>Earley's algorithm works with items of the form <span class="math">(<em>X</em> → <em>α</em>.<em>β</em>, <em>i</em>, <em>k</em></span>) where:</p>
+<ul>
+<li><span class="math"><em>X</em></span> is a nonterminal (nt)</li>
+<li><span class="math"><em>α</em></span> and <span class="math"><em>β</em></span> are sequences of symbols</li>
+<li><span class="math"><em>i</em></span> and <span class="math"><em>k</em></span> are indexes into the input; <span class="math"><em>i</em> ≤ <em>k</em></span></li>
+</ul>
+<p>Notation: <span class="math"><em>i</em>, <em>j</em>, <em>k</em></span> are typically integer indexes where <span class="math"><em>i</em> ≤ <em>k</em> ≤ <em>j</em></span>; <span class="math"><em>α</em></span> and <span class="math"><em>β</em></span> are typically sequences of symbols; <span class="math"><em>X</em>, <em>Y</em>, <em>Z</em>, <em>n</em><em>t</em></span> are nonterminals; <span class="math"><em>S</em>, <em>s</em><em>y</em><em>m</em></span> are symbols, <span class="math"><em>T</em>, <em>t</em><em>m</em></span> are terminals. <span class="math">(<em>X</em> → <sub><em>i</em></sub><em>α</em><sub><em>k</em></sub>.<em>β</em>)</span> is an alternative notation to the usual <span class="math">(<em>X</em> → <em>α</em>.<em>β</em>, <em>i</em>, <em>k</em></span>). Sometimes we use spaces instead of commas in items. Sometimes we typeset using verbatim rather than latex math.</p>
+<p>At (l:bc) the type of <code>nt_item</code> (nonterminal item) is given, which is as expected. N.B. the <span class="math"><em>α</em></span> are stored in &quot;reverse&quot; order, that is, an item <span class="math">(<em>X</em> → <sub><em>i</em></sub><em>A</em><em>B</em><em>C</em><sub><em>k</em></sub>.<em>U</em><em>V</em><em>W</em>)</span> is stored as <code>(X,[C,B,A],[U,V,W],i,k)</code>. At (l:ba) the type of <code>tm_item</code> is given. This is not standard. A terminal item is of the form <span class="math">(<sub><em>k</em></sub><em>T</em><sub>?</sub>)</span> and corresponds to an attempt to start parsing the terminal <span class="math"><em>T</em></span> from index <span class="math"><em>k</em></span> (the second subscript is &quot;to be found&quot;). In traditional Earley, the input is a sequence of characters, and each terminal corresponds to a character. Here, we wish to generalize this; a terminal may correspond to a range of the input. This enables us to use existing parsers as terminal parsers, which is essential for composing parsers.</p>
+<p>At (l:cd) we introduce the notion of a complete item of the form <span class="math">(<sub><em>k</em></sub><em>S</em><sub><em>j</em></sub>)</span>. These items arise from items of the form <span class="math">(<em>X</em> → <sub><em>k</em></sub><em>α</em><sub><em>j</em></sub>.)</span> which gives a complete item <span class="math">(<sub><em>k</em></sub><em>X</em><sub><em>j</em></sub>)</span>, and parsed terminal items of the form <span class="math">(<sub><em>k</em></sub><em>T</em><sub><em>j</em></sub>)</span>.</p>
+<p>Notation: <code>k S j</code> is <span class="math">(<sub><em>k</em></sub><em>S</em><sub><em>j</em></sub>)</span>.</p>
+<p>At (l:de) we make the string type abstract. A substring is of the form <span class="math">(<em>s</em>, <em>i</em>, <em>j</em>)</span> representing the part of the string <span class="math"><em>s</em></span> between <span class="math"><em>i</em></span> and <span class="math"><em>j</em></span> where <span class="math"><em>i</em> ≤ <em>j</em></span>.</p>
+<p>At (l:ef) we encode a grammar as two functions. The first provides the nt items for a given nt, with input string and index into the string. The second encodes terminal parsers: given a tm, and a substring <span class="math">(<em>s</em>, <em>i</em>, <em>j</em>)</span>, return the indexes <span class="math"><em>k</em></span> such that <span class="math">(<em>s</em>, <em>i</em>, <em>k</em>)</span> could be parsed as tm.</p>
+<p>At (l:fg) we define key types for the blocked and complete maps (more later). Both consist of an index and a symbol.</p>
+<p>At (l:gh) we define the map types that we need. From a set of complete items, we need to identify those for a given start index and symbol. This is the role of the complete map type <code>cm_t</code>. The codomain of the map is a set of integers <span class="math"><em>j</em></span>. If <span class="math"><em>j</em> ∈ <em>c</em><em>m</em>(<em>k</em>, <em>S</em>)</span> then there is a complete item <span class="math">(<sub><em>k</em></sub><em>S</em><sub><em>j</em></sub>)</span>.</p>
+<p>The blocked map allows us to identify, from a set of nt items, those that are currently blocked at position <span class="math"><em>k</em></span> waiting for a parse of symbol <span class="math"><em>S</em></span> to complete. <span class="math"><em>n</em><em>i</em><em>t</em><em>m</em> ∈ <em>b</em><em>m</em>(<em>k</em>, <em>S</em>)</span> if <span class="math"><em>n</em><em>i</em><em>t</em><em>m</em></span> is of the form <span class="math">(<em>X</em> → <sub><em>i</em></sub><em>α</em><sub><em>k</em></sub>.<em>S</em><em>β</em>)</span>.</p>
+<p>The state of the Earley algorithm is represented as a record with the following fields:</p>
+<ul>
+<li><code>todo_done</code> is the set of all items that are pending, or have already been processed</li>
+<li><code>todo</code> is the list of all items that are pending</li>
+<li><code>blocked</code> is the blocked map</li>
+<li><code>complete</code> is the complete map</li>
+</ul>
+<p>At (l:hi) we add an item to the state by adding it to <code>todo</code> and <code>todo_done</code>. If the item is already in <code>todo_done</code> we leave the state unchanged.</p>
+<p>At (l:ij) we implement the core Earley step. This takes a blocked item <span class="math">(<em>X</em> → <sub><em>i</em></sub><em>α</em><sub><em>k</em></sub>.<em>S</em><em>β</em>)</span> and a complete item <span class="math">(<sub><em>k</em></sub><em>S</em><sub><em>j</em></sub>)</span> and forms a new item of the form <span class="math">(<em>X</em> → <sub><em>i</em></sub><em>α</em><em>S</em><sub><em>j</em></sub>.<em>β</em>)</span>. Note that the <span class="math"><em>α</em></span> field is stored in &quot;reverse&quot; order (to make this operation more efficient).</p>
+<p>Notation: <span class="math"><em>S</em><em>β</em></span> is the list <span class="math"><em>β</em></span> with <span class="math"><em>S</em></span> cons'ed on. <span class="math"><em>α</em><em>S</em></span> is the list <span class="math"><em>α</em></span> with <span class="math"><em>S</em></span> joined on the end.</p>
+<pre><code>X -&gt; i,as,k,(S bs)   k S j
+------------------------- cut
+X -&gt; i,(as S),j,bs</code></pre>
+<p>We then give definitions for adding a complete item to the complete map, and a blocked item to the blocked map.</p>
+<p>At (l:ja) we pull out some common code to process a list of complete items, all of which have a given key. Processing involves adding each <code>citm</code> to the complete map, and cutting each item against the relevant blocked items.</p>
+<p>At (l:jk) we reach the core <code>step</code> part of Earley's algorithm. The full algorithm repeatedly applies <code>step</code> to an initial state until there are no further <code>todo</code> items.</p>
+<p>At (l:jp) we at processing an nt item. This item may be complete. If so, via <code>process_citms</code> we record it in the complete map, and process it against any blocked items with the same key.</p>
+<p>At (l:kl) the nt item is not complete. So we record it in the blocked map. We then try to progress the item by cutting it with all the current complete items with the same key. It may be that we have yet to process all or any of the relevant complete items. So we also have to look at the symbol the nt item is blocked on, and manufacture more items. This is (l:lm).</p>
+<p>At (l:mn) we are processing a terminal item. We use <code>p_of_tm</code> to determine which substrings of the input can be parsed as the terminal <span class="math"><em>T</em></span>. This gives us complete items of the form <span class="math">(<sub><em>k</em></sub><em>T</em><sub><em>j</em></sub>)</span>. For each <code>citm</code> we then update the complete map and process against blocked items, using <code>process_citms</code></p>
+<p>That concludes the explanation of the core of the algorithm.</p>
+<p>At (l:no) we repeatedly apply the step function in a loop until there are no more items to do.</p>
+<p>At (l:op) we apply the loop function to an initial state.</p>
+<p>At (l:pq) we give an example for the grammar <span class="math"><em>E</em> → <em>E</em><em>E</em><em>E</em>|′1′|<em>ϵ</em></span>.</p>
+<h2 id="complexity">Complexity</h2>
+<p>We assume that there is a constant <span class="math"><em>c</em></span> such that each invocation of <code>p_of_tm</code> produces at most <span class="math"><em>c</em> * <em>n</em></span> results.</p>
+<p>As implemented, the algorithm is <span class="math"><em>O</em>(<em>n</em><sup>3</sup> <em>l</em><em>o</em><em>g</em> <em>n</em>)</span> because the sets and maps use OCaml's default sets and maps, which are implemented as binary trees. However, clearly given an input and a grammar, there are only a finite number of items that can be in any of the sets or maps. Thus, we can enumerate these items, and use the enumeration to implement e.g. a set as an array. This would give the <span class="math"><em>O</em>(<em>n</em><sup>3</sup>)</span> desired complexity.</p>
+</body>
+</html>

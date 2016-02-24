@@ -79,6 +79,7 @@ let b_add: bitm_t -> bm_t -> bm_t = (
 )
 
 (* l:ja *)
+(* process citms; update complete map; cut against blocked items *)
 let process_citms key citms s0 = (
   let f5 s1 citm = 
     { s1 with complete=(c_add citm s1.complete) } in
