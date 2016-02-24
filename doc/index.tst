@@ -9,6 +9,10 @@
 
     an abstract model, with all types of items; refines e_bc; single set of items; no staging;
     O(2^n); useful because it makes the full set of items explicit
+
+    (e_cn: a copy of ../simple_earley.ml, but will be changed to avoid tmitem, and integrated with
+      e_common.ml)
+
     
     (e_de??  X
       

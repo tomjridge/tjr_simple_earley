@@ -3,6 +3,7 @@
 (** Specification of Earley's algorithm *)
 
 open E_common
+open E_common.Unstaged
 
 type spec_item_t = nt_item
 

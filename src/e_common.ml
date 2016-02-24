@@ -1,5 +1,8 @@
-(** Common type definitions *)
+let dest_Some = function Some x -> x | _ -> (failwith "dest_Some")
 
+let find_with_default d f k m = try (f k m) with Not_found -> d
+
+(** Common type definitions *)
 
 type k_t = int
 type i_t = int
@@ -25,12 +28,13 @@ type nt_item = {
   bs: sym list
 }
 
-type bitm_t = nt_item  (* bs <> [] *)
 
-type b_key_t = (k_t * sym)
+(* l:bh *)
+type tm_item = {
+  k: k_t;
+  tm: tm
+}
 
-let bitm_to_key: bitm_t -> b_key_t = (
-  fun bitm -> (bitm.k,List.hd bitm.bs))
 
 (* l:bm *)
 type sym_item = {
@@ -46,10 +50,7 @@ type citm_t = {
   j: j_t 
 }
 
-type c_key_t = (k_t * sym)
 
-let citm_to_key: citm_t -> c_key_t = (
-  fun citm -> (citm.k,citm.sym))
 
 
 (* l:de *)
@@ -85,6 +86,25 @@ let cut: nt_item -> j_t -> nt_item = (
       nitm
     )
 )
+
+
+
+module Unstaged = struct
+
+  type bitm_t = nt_item  (* bs <> [] *)
+
+  type b_key_t = (k_t * sym)
+
+  let bitm_to_key: bitm_t -> b_key_t = (
+    fun bitm -> (bitm.k,List.hd bitm.bs))
+
+  type c_key_t = (k_t * sym)
+                 
+  let citm_to_key: citm_t -> c_key_t = (
+    fun citm -> (citm.k,citm.sym))
+
+end
+
 
 
 

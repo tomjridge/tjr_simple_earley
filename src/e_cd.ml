@@ -1,6 +1,7 @@
 (** Refine Earley by adding more items. *)
 
 open E_common
+open E_common.Unstaged
 
 type spec_item_t = NTITM of nt_item | CITM of citm_t | SITM of sym_item
 
