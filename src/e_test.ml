@@ -43,7 +43,6 @@ let _ = (
     E_EEE.(test (c0 str) e');
     Aho_s.(test (c0 str) s');
     Aho_sml.(test (c0 str) s');
-    S_xsx.(test (c0 str) s');
     S_xsx.(test (c0 str) s'))
   in
   [0;1;9;10;11;20]
