@@ -1,14 +1,17 @@
 SHELL:=bash
 
-all:
-	ocamlopt simple_earley.ml #spec.ml
-	pandoc -s simple_earley.md > simple_earley.html
-	cd src && ocamlc e_common.ml e_bc.ml e_cd.ml e_cn.ml && ocamlopt -o e_fg e_common.ml e_fg.ml && ocamlopt -o e_cn e_common.ml e_cn.ml
+OB:=ocamlbuild -I src
 
+all:
+	$(OB) simple_earley.native 
+	$(OB) e_cn.cmo e_fg.cmo
+	$(OB) e_cn_main.native e_fg_main.native
+
+# pandoc -s simple_earley.md > simple_earley.html
 # simple_earley.ml.html: # use htmlfontify-buffer from emacs
 
-CLEAN:=rm -f a.out *.cmi *.cmo *.cmx *.o *~
+CLEAN:=rm -rf a.out *.cmi *.cmo *.cmx *.o *~ _build 
 
 clean:
-	-$(CLEAN)
-	-cd src && $(CLEAN)
+	-$(CLEAN) && rm -f *.native
+	-cd src && $(CLEAN) && rm -f *.html

@@ -159,15 +159,3 @@ let earley c0 nt = (
   let s0 = {todo; todo_done; blocked; complete} in
   earley' c0 s0
 )
-
-
-(* l:pq *)
-
-let _ = str := (String.make 200 '1')  
-let _ = earley (c0 ()) e'
-let _ = print_endline "Finished"
-
-
-(* sample timings: 2.436s for a string of length 200 *)
-
-
