@@ -44,7 +44,11 @@
                   holds, we immediately add bitm to blocked.)
 
                 (cases bitms_empty
-                  (case true; nothing further to do)
+                  (case true, we may need to cut with kYk
+
+                    It is possible that there is a complete item kYk. So we should cut bitm with
+                    this if it exists. Otherwise, nothing further to do.)
+
                   (case false; we need to process bitm
 
                     (In order to process bitm we have to perform two steps: cut bitm against the

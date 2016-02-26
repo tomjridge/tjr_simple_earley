@@ -4,8 +4,8 @@ OB:=ocamlbuild -I src
 
 all:
 	$(OB) simple_earley.native 
-	$(OB) e_cn.cmo e_fg.cmo
-	$(OB) e_cn_main.native e_fg_main.native
+	$(OB) e_bc.cmo e_cd.cmo e_cn.cmo e_fg.cmo
+	$(OB) e_cn_main.native e_fg_main.native e_test.native
 
 # pandoc -s simple_earley.md > simple_earley.html
 # simple_earley.ml.html: # use htmlfontify-buffer from emacs

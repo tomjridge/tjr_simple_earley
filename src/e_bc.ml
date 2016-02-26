@@ -63,12 +63,11 @@ let rec spec' c0 s0 = (
   let s1 = Spec_t.union s0 new_itms in
   if Spec_t.equal s1 s0 then s0 else spec' c0 s1)
 
+
 (* construct initial context, apply spec' *)
-let spec c0 nt = (
-  let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,0) in
-  let s0 = Spec_t.of_list nitms in
-  spec' c0 s0
-)
-
-let bc_rs = (spec (c0 ()) e') |> Spec_t.elements
-
+let spec : ctxt_t -> nt -> Nt_item_set.t = (
+  fun c0 nt ->
+    let init = {nt;i=0;as_=[];k=0;bs=[NT nt]} in
+    let s0 = Spec_t.of_list [init] in
+    let s1 = spec' c0 s0 in
+    Spec_t.remove init s1)  (* remove the dummy item *)

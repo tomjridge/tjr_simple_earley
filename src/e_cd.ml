@@ -69,19 +69,11 @@ let rec spec' c0 s0 = (
   if Spec_t.equal s1 s0 then s0 else spec' c0 s1)
 
 (* construct initial context, apply spec' *)
-let spec c0 nt = (
-  let nitms = (
-    c0.g0.nt_items_for_nt nt (c0.i0.str,0)
-    |> List.map (fun x -> NTITM x))
-  in
+let cd_earley c0 nt = (
+  let (i,k) = (0,0) in
+  let init = {nt;i;as_=[];k;bs=[NT nt]} in
+  let nitms = [NTITM init] in
   let s0 = Spec_t.of_list nitms in
-  spec' c0 s0
-)
-
-let cd_rs =
-  (spec (c0 ()) e')
-  |> Spec_t.elements
-  |> List.map (function | NTITM nitm -> [nitm] | _ -> [])
-  |> List.concat
-                                   
+  let s1 = spec' c0 s0 in
+  Spec_t.remove (NTITM init) s1)
 

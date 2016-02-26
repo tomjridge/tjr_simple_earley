@@ -1,3 +1,11 @@
+let debug = ref false
+
+let debug_endline = (
+  fun x -> 
+    if !debug then print_endline x else ())
+
+
+
 let dest_Some = function Some x -> x | _ -> (failwith "dest_Some")
 
 let find_with_default d f k m = try (f k m) with Not_found -> d
@@ -27,6 +35,17 @@ type nt_item = {
   k: k_t;
   bs: sym list
 }
+
+let sym_to_string s = (match s with | NT nt -> Printf.sprintf "NT %d" nt | TM tm -> Printf.sprintf "TM %d" tm)
+
+let sym_list_to_string ss = (ss |> List.map sym_to_string |> String.concat "," |> fun x -> "["^x^"]")
+
+let nitm_to_string nitm = (
+  Printf.sprintf "(%d %d %s %d %s)" 
+    nitm.nt nitm.i 
+    (sym_list_to_string nitm.as_) 
+    nitm.k 
+    (sym_list_to_string nitm.bs))
 
 
 (* l:bh *)

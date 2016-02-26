@@ -150,12 +150,13 @@ let rec earley' ctxt s0 = (
   if s0.todo = [] then s0 else earley' ctxt (step ctxt s0))
 
 (* l:op *)
-let earley c0 nt = (
+let cn_earley c0 nt = (
   let (i,k) = (0,0) in
-  let todo = [{nt;i;as_=[];k;bs=[NT nt]}] in
-  let todo_done = Nt_item_set.of_list todo in
+  let init = {nt;i;as_=[];k;bs=[NT nt]} in
+  let todo = [init] in
+  let todo_done = Nt_item_set.empty in
   let blocked = Blocked_map.empty in
   let complete = Complete_map.empty in
   let s0 = {todo; todo_done; blocked; complete} in
-  earley' c0 s0
-)
+  let s1 = earley' c0 s0 in
+  s1)

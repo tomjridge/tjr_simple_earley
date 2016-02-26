@@ -3,7 +3,7 @@ open E_fg
 
 open E_examples.E_EEE
 
-let _ = earley (c0 (String.make 200 'x')) e'
+let _ = fg_earley (c0 (String.make 200 'x')) e'
 let _ = print_endline "Finished"
     
 (* 

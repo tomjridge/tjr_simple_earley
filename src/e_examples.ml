@@ -98,8 +98,8 @@ module S_xsx = struct
       let _ = assert(nt=s') in
       let as_ = [] in
       let k = i in
-      [{nt;i;as_;k;bs=[s;s;x]};
-       {nt;i;as_;k;bs=[eps]}])
+      [{nt;i;as_;k;bs=[x;s;x]};
+       {nt;i;as_;k;bs=[x]}])
 
   let g0 = {nt_items_for_nt; p_of_tm}
 
