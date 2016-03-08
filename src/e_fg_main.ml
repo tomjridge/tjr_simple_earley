@@ -5,9 +5,20 @@ open E_examples.E_EEE
 
 let _ = fg_earley (c0 (String.make 200 'x')) e'
 let _ = print_endline "Finished"
+
+let _ = assert(print_logs())
     
 (* 
-Sample time for string length 200: 
+Sample time 
+
+For length 100
+Finished
+
+real	0m0.124s
+user	0m0.120s
+sys	0m0.004s
+
+For length 200: 
 Finished
 
 real	0m0.958s

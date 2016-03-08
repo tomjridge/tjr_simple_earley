@@ -1,6 +1,9 @@
 SHELL:=bash
 
-OB:=ocamlbuild -I src
+# use make .... ASSERT='' to enable assertions
+ASSERT:=-cflag -noassert
+
+OB:=ocamlbuild -use-ocamlfind -tag thread -I src -pkg core $(ASSERT)
 
 all:
 	$(OB) simple_earley.native 
@@ -13,5 +16,5 @@ all:
 CLEAN:=rm -rf a.out *.cmi *.cmo *.cmx *.o *~ _build 
 
 clean:
-	-$(CLEAN) && rm -f *.native
+	-$(CLEAN) && rm -f *.native *.jo *.cmj
 	-cd src && $(CLEAN) && rm -f *.html

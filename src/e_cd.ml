@@ -5,12 +5,22 @@ open E_common.Unstaged
 
 type spec_item_t = NTITM of nt_item | CITM of citm_t | SITM of sym_item
 
-module Spec_t =
+module Spec_t = struct
+  include 
   Set.Make(
   struct
     type t = spec_item_t
     let compare: t -> t -> int = Pervasives.compare
   end)
+
+  (* for < 4.02.0 *)
+  let of_list: elt list -> t = (
+    fun xs -> 
+      List.fold_left (fun a b -> add b a) empty xs
+  )  
+
+end
+
     
 type spec_t = Spec_t.t
 

@@ -1,10 +1,10 @@
 open E_common
 
-let eps = TM 0
+let eps = TM 1
 
 let parse_eps = (fun (s,i,j) -> if i<=j then [i] else [])
 
-let x = TM 1
+let x = TM 3
 
 let parse_x = (fun (s,i,j) ->
     (* this terminal parser requires to know string_t *)
@@ -30,7 +30,7 @@ let i0 str = (
 (* E -> E E E | "x" | eps *)
 module E_EEE = struct
 
-  let e' = 1
+  let e' = 2
   let e = NT e'
 
   let nt_items_for_nt=(fun nt (s,i) ->
@@ -51,7 +51,7 @@ end
 (* S -> "x" S S | eps *)
 module Aho_s = struct
 
-  let s' = 1
+  let s' = 2
   let s = NT s'
 
   let nt_items_for_nt=(fun nt (str,i) ->
@@ -71,7 +71,7 @@ end
 (* S -> S S "x" | eps *)
 module Aho_sml = struct
 
-  let s' = 1
+  let s' = 2
   let s = NT s'
       
   let nt_items_for_nt=(fun nt (str,i) ->
@@ -91,7 +91,7 @@ end
 (* S -> "x" S "x" | "x" *)
 module S_xsx = struct
 
-  let s' = 1
+  let s' = 2
   let s = NT s'
 
   let nt_items_for_nt=(fun nt (str,i) ->

@@ -88,12 +88,20 @@ module Nt_item_set =
     let compare: t -> t -> int = Pervasives.compare
   end)
 
-module Item_set =
+module Item_set = struct
+  include
   Set.Make(
   struct
     type t = item
     let compare: t -> t -> int = Pervasives.compare
   end)
+    
+  (* for < 4.02.0 *)
+  let of_list: elt list -> t = (
+    fun xs -> 
+      List.fold_left (fun a b -> add b a) empty xs
+  )
+end
 
 module Blocked_map =
     Map.Make(
@@ -306,6 +314,8 @@ let earley_as_list c0 e' = (
                           |> List.filter is_NTITM |> List.map dest_NTITM))
 
 let earley_rs: nt_item list = earley_as_list c0 e'
+
+let _ = print_endline "Finished"
 
 (* let earley_rs = List.filter (fun (x:nt_item) -> x.k=100) rs *)
 

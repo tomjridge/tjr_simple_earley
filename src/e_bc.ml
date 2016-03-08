@@ -7,7 +7,16 @@ open E_common.Unstaged
 
 type spec_item_t = nt_item
 
-module Spec_t = Nt_item_set
+module Spec_t = struct 
+  include Nt_item_set
+      
+  (* for < 4.02.0 *)
+  let of_list: elt list -> t = (
+    fun xs -> 
+      List.fold_left (fun a b -> add b a) empty xs
+  )
+
+end
 
 type spec_t = Spec_t.t
 
