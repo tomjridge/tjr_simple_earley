@@ -5,8 +5,8 @@ ASSERT:=-cflag -noassert
 
 OB:=ocamlbuild -use-ocamlfind -tag thread -I src -pkg core $(ASSERT)
 
-all: doc
-	$(OB) simple_earley.native 
+all: 
+#	$(OB) simple_earley.native 
 	$(OB) e_bc.cmo e_cd.cmo e_cn.cmo e_fg.cmo
 	$(OB) e_cn_main.native e_fg_main.native e_test.native
 
