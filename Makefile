@@ -11,15 +11,13 @@ all:
 	$(OB) e_cn_main.native e_fg_main.native e_test.native
 
 doc: FORCE
+	scala README.pre.scala
 	asciidoctor README.adoc
 
 FORCE:
 
-# pandoc -s simple_earley.md > simple_earley.html
-# simple_earley.ml.html: # use htmlfontify-buffer from emacs
-
 CLEAN:=rm -rf a.out *.cmi *.cmo *.cmx *.o *~ _build 
 
 clean:
-	-$(CLEAN) && rm -f *.native *.jo *.cmj README.html
+	-$(CLEAN) && rm -f *.native *.jo *.cmj README.html 
 	-cd src && $(CLEAN) && rm -f *.html
