@@ -9,6 +9,8 @@ simplicity.
 
 == Meta FIXME
 
+On github, to preview the README.html file, try https://htmlpreview.github.io/?https://raw.githubusercontent.com/tomjridge/simple_earley/master/README.html
+
 This document explains the OCaml code in `simple_earley.ml`. An html
 version of the code is in `simple_earley.ml.html` or possibly
 [here](simple_earley.ml.html).
