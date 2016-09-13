@@ -6,7 +6,7 @@
 
 open E_common
 open E_common.Unstaged
-
+open E_profile
 
 type ixk_t = (i_t * nt)  (* i X k *)
 

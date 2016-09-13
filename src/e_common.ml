@@ -1,126 +1,60 @@
+(* ---------------------------------------- *)
+(*adoc == Util *)
+
 let dest_Some = function Some x -> x | _ -> (failwith "dest_Some")
-
-let now () = Core.Time_stamp_counter.(now () |> to_int63 |> Core.Std.Int63.to_int |> dest_Some)
-
-module P = struct  (* timing points *)
-
-  let ab = 1
-  let ac = 13
-  let bc = 2
-  let cd = 3
-  let de = 4
-  let ef = 5
-  let fg = 6
-  let gh = 7
-  let hi = 8
-  let ij = 9
-  let jk = 10
-
-  let p_to_string i = (
-    match i with
-    | _ when i = ab -> "ab"
-    | _ when i = ac -> "ac"
-    | _ when i = bc -> "bc"
-    | _ when i = cd -> "cd"
-    | _ when i = de -> "de"
-    | _ when i = ef -> "ef"
-    | _ when i = fg -> "fg"
-    | _ when i = gh -> "gh"
-    | _ when i = hi -> "hi"
-    | _ when i = ij -> "ij"
-    | _ when i = jk -> "jk"
-    | _ -> "FIXME"
-  )              
-                 
-end
-
-let ts = ref []
-
-let log p = (ts := (p,now())::!ts; true)
-
-let print_logs () = P.(
-  let f last prev = (
-    let (p2,t2) = last in
-    let (p1,t1) = prev in
-    let d = t2 - t1 in
-    let s = Printf.sprintf "(%s,%s) %d" (p1|>p_to_string) (p2|>p_to_string) d in
-    let _ = print_endline s in
-    prev)
-  in
-  let _ = List.fold_left f (List.hd !ts) !ts in
-  true)
-
-
-let debug = ref false
-
-let debug_endline = (
-  fun x -> 
-    if !debug then print_endline x else ())
-
-
 
 let find_with_default d f k m = try (f k m) with Not_found -> d
 
-(** Common type definitions *)
+
+(* ---------------------------------------- *)
+(*adoc == Common type definitions, all versions *)
 
 type k_t = int
 type i_t = int
 type j_t = int
 
 
-(** Symbols *)
+(*adoc Symbols *)
 
 type nt = int
 type tm = int
 type sym = NT of nt | TM of tm
 
 
-(** Items *)
+(*adoc Items *)
 
 
 (* l:bc *)
 type nt_item = {
-  nt: nt;
-  i: i_t;
-  as_: sym list;
-  k: k_t;
-  bs: sym list
-}
+    nt: nt;
+    i: i_t;
+    as_: sym list;
+    k: k_t;
+    bs: sym list
+  }
 
-let sym_to_string s = (match s with | NT nt -> Printf.sprintf "NT %d" nt | TM tm -> Printf.sprintf "TM %d" tm)
-
-let sym_list_to_string ss = (ss |> List.map sym_to_string |> String.concat "," |> fun x -> "["^x^"]")
-
-let nitm_to_string nitm = (
-  Printf.sprintf "(%d %d %s %d %s)" 
-    nitm.nt nitm.i 
-    (sym_list_to_string nitm.as_) 
-    nitm.k 
-    (sym_list_to_string nitm.bs))
 
 
 (* l:bh *)
 type tm_item = {
-  k: k_t;
-  tm: tm
-}
+    k: k_t;
+    tm: tm
+  }
 
 
 (* l:bm *)
 type sym_item = {
-  k: k_t;
-  sym: sym
-}
+    k: k_t;
+    sym: sym
+  }
 
 (* l:cd *)
-(* complete item *)
+(*adoc Complete item *)
 type citm_t = {
-  k: k_t;
-  sym: sym;
-  j: j_t 
-}
-
-
+    k: k_t;
+    sym: sym;
+    j: j_t 
+  }
 
 
 (* l:de *)
@@ -132,32 +66,33 @@ let string_t_to_string: string_t -> string = (fun s -> Obj.magic s)
 
 (* l:ef *)
 type grammar_t = {
-  nt_items_for_nt: nt -> (string_t * int) -> nt_item list;
-  p_of_tm: tm -> substring_t -> k_t list
-}
+    nt_items_for_nt: nt -> (string_t * int) -> nt_item list;
+    p_of_tm: tm -> substring_t -> k_t list
+  }
 
 type input_t = {
-  str: string_t;
-  len: int;
-}
+    str: string_t;
+    len: int;
+  }
 
 type ctxt_t = {
-  g0: grammar_t;
-  i0: input_t
-}
+    g0: grammar_t;
+    i0: input_t
+  }
 
 
 let cut: nt_item -> j_t -> nt_item = (
-  fun bitm j0 -> (
+    fun bitm j0 -> (
       let as_ = (List.hd bitm.bs)::bitm.as_ in
       let bs = List.tl bitm.bs in
       let k = j0 in
       let nitm ={bitm with k;as_;bs} in
-      nitm
-    )
-)
+      nitm ))
 
 
+
+(* ---------------------------------------- *)
+(*adoc Blocked and complete maps? FIXME *)
 
 module Unstaged = struct
 
@@ -166,76 +101,61 @@ module Unstaged = struct
   type b_key_t = (k_t * sym)
 
   let bitm_to_key: bitm_t -> b_key_t = (
-    fun bitm -> (bitm.k,List.hd bitm.bs))
+      fun bitm -> (bitm.k,List.hd bitm.bs))
 
   type c_key_t = (k_t * sym)
-                 
+               
   let citm_to_key: citm_t -> c_key_t = (
-    fun citm -> (citm.k,citm.sym))
+      fun citm -> (citm.k,citm.sym))
 
 end
 
 
+(* ---------------------------------------- *)
+(*adoc == Various sets and maps *)
 
-
+let comp = Pervasives.compare
 
 module Int_set = 
-  Set.Make(
-  struct
-    type t = int
-    let compare: t -> t -> int = Pervasives.compare
-  end)
-
+  Set.Make(struct type t = int;; let compare: t -> t -> int = comp end)
 
 module Nt_item_set = 
-  Set.Make(
-  struct
-    type t = nt_item
-    let compare: t -> t -> int = Pervasives.compare
-  end)
-
+  Set.Make(struct type t = nt_item;; let compare: t -> t -> int = comp end)
 
 module Sym_item_set = 
-  Set.Make(
-  struct
-    type t = sym_item
-    let compare: t -> t -> int = Pervasives.compare
-  end)
-
+  Set.Make(struct type t = sym_item;; let compare: t -> t -> int = comp end)
 
 module Nt_set = 
-  Set.Make(
-  struct
-    type t = nt
-    let compare: t -> t -> int = Pervasives.compare
-  end)
-
-
+  Set.Make(struct type t = nt;; let compare: t -> t -> int = comp end)
 
 module Map_tm =
-  Map.Make(
-  struct
-    type t = tm
-    let compare: t -> t -> int = Pervasives.compare
-  end)
-
+  Map.Make(struct type t = tm;; let compare: t -> t -> int = comp end)
 
 module Map_nt =
-  Map.Make(
-  struct
-    type t = nt
-    let compare: t -> t -> int = Pervasives.compare
-  end)
-
-
+  Map.Make(struct type t = nt;; let compare: t -> t -> int = comp end)
 
 module Map_int = 
-  Map.Make(
-  struct
-    type t = int
-    let compare: t -> t -> int = Pervasives.compare
-  end)
+  Map.Make(struct type t = int;; let compare: t -> t -> int = comp end)
 
 
 
+(* ---------------------------------------- *)
+(*adoc == Debug support *)
+
+let debug = ref false
+
+let debug_endline = (
+    fun x -> 
+    if !debug then print_endline x else ())
+
+let sym_to_string s = (match s with | NT nt -> Printf.sprintf "NT %d" nt | TM tm -> Printf.sprintf "TM %d" tm)
+
+let sym_list_to_string ss = (ss |> List.map sym_to_string |> String.concat "," |> fun x -> "["^x^"]")
+
+let nitm_to_string nitm = (
+    Printf.sprintf "(%d %d %s %d %s)" 
+                   nitm.nt nitm.i 
+                   (sym_list_to_string nitm.as_) 
+                   nitm.k 
+                   (sym_list_to_string nitm.bs))
 
