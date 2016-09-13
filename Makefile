@@ -11,6 +11,7 @@ all:
 	$(OB) e_cn_main.native e_fg_main.native e_test.native
 
 doc: FORCE
+	asciidoctor src/e_cn_inline_comments.adoc
 	scala README.pre.scala
 	asciidoctor README.adoc
 
