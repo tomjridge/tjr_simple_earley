@@ -44,7 +44,7 @@
 (*adoc *)
 (*adoc == Meta*)
 (*adoc *)
-(*adoc HTML preview: https://rawgit.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.pp.html*)
+(*adoc HTML preview: http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.pp.html*)
 (*adoc *)
 (*adoc We work with `nt_items` only (terminal parses are not cached). No*)
 (*adoc staging. latexmath:[O(n^3)].*)

@@ -44,7 +44,7 @@ File: e_cn_inline_comments.ml
 
 == Meta
 
-HTML preview: https://rawgit.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.pp.html
+HTML preview: http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.pp.html
 
 We work with `nt_items` only (terminal parses are not cached). No
 staging. latexmath:[O(n^3)].
