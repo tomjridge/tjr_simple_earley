@@ -5,6 +5,9 @@ let dest_Some = function Some x -> x | _ -> (failwith "dest_Some")
 
 let find_with_default d f k m = try (f k m) with Not_found -> d
 
+let rec while_not_nil: 'a list -> 's -> ('s -> 'a -> 's) -> 's = (
+    fun xs s0 f -> List.fold_left f s0 xs)
+
 
 (* ---------------------------------------- *)
 (*adoc == Common type definitions, all versions *)

@@ -1,14 +1,65 @@
+(*scala def l(s:String) = { "(l:"+s+")" }*)
+(*scala *)
+(*scala def nitm(nt:String,i:String,as:String,k:String,bs:String) = {*)
+(*scala   s"""latexmath:[( $nt \\rightarrow {}_{$i} $as {}_{$k} . $bs)]"""*)
+(*scala }*)
+(*scala *)
+(*scala def nitm_trad (nt:String,i:String,as:String,k:String,bs:String) = {*)
+(*scala   s"""latexmath:[( $nt \\rightarrow $as . $bs, $i, $k)]"""*)
+(*scala }*)
+(*scala *)
+(*scala val x = "X"*)
+(*scala val as = "\\alpha"*)
+(*scala val bs = "\\beta"*)
+(*scala *)
+(*scala val i = "i"*)
+(*scala val k = "k"*)
+(*scala val j = "j"*)
+(*scala val s = "S"*)
+(*scala val t = "T"*)
+(*scala *)
+(*scala val nt_item = "`nt_item`"*)
+(*scala val tm_item = "`tm_item`"*)
+(*scala *)
+(*scala def titm(k:String,t:String,j:String) = {*)
+(*scala   s"""latexmath:[( {}_{$k} ${t}_{$j})]"""*)
+(*scala }*)
+(*scala *)
+(*scala def titm(k:String,t:String) = {*)
+(*scala   s"""latexmath:[( {}_{$k} ${t}_{?})]"""*)
+(*scala }*)
+(*scala *)
+(*scala def citm(k:String,s:String,j:String) = {*)
+(*scala   s"""latexmath:[( {}_{$k} ${s}_{$j})]"""*)
+(*scala }*)
+(*scala *)
+(*scala *)
+(*scala val adoc = s"""*)
 (*adoc = Simple Earley Parsing: unstaged, terminals uncached*)
 (*adoc Author: Tom Ridge*)
-(*adoc File: e_cn_inline_comments.ml*)
 (*adoc :stem: latexmath*)
+(*adoc :source-highlighter: pygments*)
 (*adoc *)
+(*adoc File: e_cn_inline_comments.ml*)
 (*adoc *)
 (*adoc == Meta*)
 (*adoc *)
-(*adoc We work with `nt_items` only (terminal parses are not cached). No*)
-(*adoc staging. O(n^3).*)
+(*adoc HTML preview: https://rawgit.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.pp.html*)
 (*adoc *)
+(*adoc We work with `nt_items` only (terminal parses are not cached). No*)
+(*adoc staging. latexmath:[O(n^3)].*)
+(*adoc *)
+(*adoc We define the map types that we need. From a set of*)
+(*adoc complete items, we need to identify those for a given start index and*)
+(*adoc symbol. This is the role of the complete map type `cm_t`. The codomain*)
+(*adoc of the map is a set of integers latexmath:[j]. If latexmath:[j \\in*)
+(*adoc cm(k,S)] then there is a complete item ${citm(k,s,j)}.*)
+(*adoc *)
+(*adoc The blocked map allows us to identify, from a set of nt items, those*)
+(*adoc that are currently blocked at position latexmath:[k] waiting for a parse of*)
+(*adoc symbol latexmath:[S] to complete. latexmath:[nitm \\in bm(k,S)] if latexmath:[nitm] is of the form ${nitm(x,i,as,k,s"S $bs")}.*)
+(*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 (* Earley, nt_items only, unstaged, O(n^3) *)
 
@@ -23,22 +74,14 @@ module Blocked_map =
 module Complete_map =
   Map.Make(struct type t = c_key_t;; let compare: t -> t -> int = comp end)
 
-(*adoc ----*)
-(*adoc *)
-(*adoc At ${l("gh")} we define the map types that we need. From a set of*)
-(*adoc complete items, we need to identify those for a given start index and*)
-(*adoc symbol. This is the role of the complete map type `cm_t`. The codomain*)
-(*adoc of the map is a set of integers latexmath:[j]. If latexmath:[j \\in*)
-(*adoc cm(k,S)] then there is a complete item ${citm(k,s,j)}.*)
-(*adoc *)
-(*adoc The blocked map allows us to identify, from a set of nt items, those*)
-(*adoc that are currently blocked at position latexmath:[k] waiting for a parse of*)
-(*adoc symbol latexmath:[S] to complete. latexmath:[nitm \\in bm(k,S)] if latexmath:[nitm] is of the form ${nitm(x,i,as,k,s"S $bs")}.*)
-(*adoc *)
-(*adoc ----*)
 
 type cm_t = Int_set.t option Complete_map.t
 type bm_t = Nt_item_set.t Blocked_map.t
+
+(* add some defaults *)
+
+let cm_find k m = try Complete_map.find k m with Not_found -> Some(Int_set.empty) (* FIXME add note about option *)
+let bm_find k m = try Blocked_map.find k m with Not_found -> Nt_item_set.empty
 
 (*adoc ----*)
 (*adoc *)
@@ -52,6 +95,7 @@ type bm_t = Nt_item_set.t Blocked_map.t
 (*adoc * `blocked` is the blocked map*)
 (*adoc * `complete` is the complete map*)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
 type state_t = {
@@ -63,10 +107,11 @@ type state_t = {
 
 (*adoc ----*)
 (*adoc *)
-(*adoc At ${l("hi")} we add an item to the state by adding it to `todo` and*)
+(*adoc We add an item to the state by adding it to `todo` and*)
 (*adoc `todo_done`. If the item is already in `todo_done` we leave the state*)
 (*adoc unchanged.*)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
 let add_todo: nt_item -> state_t -> state_t = (
@@ -79,7 +124,7 @@ let add_todo: nt_item -> state_t -> state_t = (
 
 (*adoc ----*)
 (*adoc *)
-(*adoc At ${l("ij")} we implement the core Earley step. This takes a blocked*)
+(*adoc Now we implement the core Earley step. This takes a blocked*)
 (*adoc item ${nitm(x,i,as,k,s"S $bs")} and a complete item ${citm(k,s,j)} and*)
 (*adoc forms a new item of the form ${nitm(x,i,s"$as S",j,bs)}. Note that the*)
 (*adoc latexmath:[$as] field is stored in "reverse" order (to make this*)
@@ -95,6 +140,7 @@ let add_todo: nt_item -> state_t -> state_t = (
 (*adoc ----*)
 (*adoc *)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
 let cut: nt_item -> j_t -> nt_item = (
@@ -103,13 +149,14 @@ let cut: nt_item -> j_t -> nt_item = (
       let bs = List.tl bitm.bs in
       let k = j0 in
       let nitm ={bitm with k;as_;bs} in
-      nitm    )  )
+      nitm ))
 
 (*adoc ----*)
 (*adoc *)
 (*adoc We then give definitions for adding a complete item to the complete*)
 (*adoc map, and a blocked item to the blocked map.*)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
 let citm_to_key = (fun citm -> (citm.k,citm.sym))
@@ -117,30 +164,31 @@ let citm_to_key = (fun citm -> (citm.k,citm.sym))
 let c_add: citm_t -> cm_t -> cm_t = (
     fun citm cm -> (
       let key = citm_to_key citm in
-      (*  invariant: anything in the map is Some(...) *)
-      let s = (find_with_default (Some Int_set.empty) Complete_map.find key cm) |> dest_Some in
+      (*  invariant: anything in the map is Some(...); FIXME so why have option type? *)
+      let s = (cm_find key cm) |> dest_Some in
       let s' = Int_set.add citm.j s in
       let cm' = Complete_map.add key (Some s') cm in
-      cm'    )  )
+      cm' ))
 
 let bitm_to_key = (fun (bitm:bitm_t) -> (bitm.k,List.hd bitm.bs))
 
 let b_add: bitm_t -> bm_t -> bm_t = (
     fun bitm bm -> (
       let key = bitm_to_key bitm in
-      let s = find_with_default Nt_item_set.empty Blocked_map.find key bm in
+      let s = bm_find key bm in
       let s' = Nt_item_set.add bitm s in
       let bm' = Blocked_map.add key s' bm in
-      bm'    )          )
+      bm' ))
 
 (*adoc ----*)
 (*adoc *)
-(*adoc At ${l("ja")} we pull out some common code to process a list of complete*)
+(*adoc We pull out some common code `process_citms` to process a list of complete*)
 (*adoc items, all of which have a given key. Processing involves adding each*)
 (*adoc `citm` to the complete map, and cutting each item against the relevant*)
 (*adoc blocked items.*)
 (*adoc *)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
 (* process citms; update complete map; cut against blocked items *)
@@ -148,23 +196,24 @@ let b_add: bitm_t -> bm_t -> bm_t = (
 let process_citms key citms s0 = (
     let f5 s1 citm = 
       { s1 with complete=(c_add citm s1.complete) } in
-    let s0 = List.fold_left f5 s0 citms in
+    let s0 = while_not_nil citms s0 f5 in
     (* cut citm against blocked *)
-    let bitms = find_with_default Nt_item_set.empty Blocked_map.find key s0.blocked in
+    let bitms = bm_find key s0.blocked in
     let f8 s1 citm = (
         let f6 bitm s1 = (let nitm = cut bitm citm.j in add_todo nitm s1) in
         let s1 = Nt_item_set.fold f6 bitms s1 in
         s1)
     in
-    let s0 = List.fold_left f8 s0 citms in
+    let s0 = while_not_nil citms s0 f8 s0 citms in
     s0 )
 
 (*adoc ----*)
 (*adoc *)
-(*adoc At ${l("jk")} we reach the core `step` part of Earley's algorithm. The*)
+(*adoc Now we reach the core `step` part of Earley's algorithm. The*)
 (*adoc full algorithm repeatedly applies `step` to an initial state until*)
 (*adoc there are no further `todo` items.*)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
 let step: ctxt_t -> state_t -> state_t = (
@@ -174,16 +223,18 @@ let step: ctxt_t -> state_t -> state_t = (
       | nitm::rest -> (
         (* process itm *)
         let s0 = { s0 with todo=rest } in
-
+        let complete = (nitm.bs = []) in
+(*adoc *)
 (*adoc ----*)
 (*adoc *)
-(*adoc At ${l("jp")} we at processing an nt item. This item may be complete. If*)
+(*adoc We are processing an nt item. This item may be complete. If*)
 (*adoc so, via `process_citms` we record it in the complete map, and process*)
 (*adoc it against any blocked items with the same key.*)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
-
-        let complete = (nitm.bs = []) in
+(*adoc *)
+(*adoc *)
         match complete with
         | true -> (
           let (k,sym,j) = (nitm.i,NT(nitm.nt),nitm.k) in
@@ -195,13 +246,10 @@ let step: ctxt_t -> state_t -> state_t = (
 
 (*adoc ----*)
 (*adoc *)
-(*adoc At ${l("kl")} the nt item is not complete. So we record it in the blocked*)
-(*adoc map. We then try to progress the item by cutting it with all the*)
-(*adoc current complete items with the same key. It may be that we have yet*)
-(*adoc to process all or any of the relevant complete items. So we also have*)
-(*adoc to look at the symbol the nt item is blocked on, and manufacture more*)
-(*adoc items. This is ${l("lm")}.*)
+(*adoc The nt item is not complete. So we record it in the blocked*)
+(*adoc map. *)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
           (* blocked, so process next sym *)
@@ -210,32 +258,51 @@ let step: ctxt_t -> state_t -> state_t = (
           let key = (k,sym) in
           (* record bitm *)
           let s0 = { s0 with blocked=(b_add bitm s0.blocked) } in
+(*adoc ----*)
+(*adoc *)
+(*adoc We then try to progress the item by cutting it with all the*)
+(*adoc current complete items with the same key. *)
+(*adoc *)
+(*adoc [source,ocaml]*)
+(*adoc ----*)
           (* process blocked against complete items *)
           let f2 j s1 = (let nitm = cut bitm j in add_todo nitm s1) in
-          let js = (find_with_default (Some Int_set.empty) Complete_map.find key s0.complete) |> dest_Some in
+          let js = (cm_find key s0.complete) |> dest_Some in
           let s0 = Int_set.fold f2 js s0 in
           (* now look at symbol we are blocked on *)  (* l:lm *)
 
 (*adoc ----*)
 (*adoc *)
-(*adoc At ${l("mn")} we are processing a terminal item. We use `p_of_tm` to*)
-(*adoc determine which substrings of the input can be parsed as the terminal*)
-(*adoc latexmath:[T]. This gives us complete items of the form ${citm(k,t,j)}. For each*)
-(*adoc `citm` we then update the complete map and process against blocked*)
-(*adoc items, using `process_citms`*)
+(*adoc It may be that we have yet*)
+(*adoc to process all or any of the relevant complete items. So we also have*)
+(*adoc to look at the symbol the nt item is blocked on, and manufacture more*)
+(*adoc items. *)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
           match sym with
           | NT nt -> (
             let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,k) in
             let f3 s1 nitm = (add_todo nitm s1) in
-            let s0 = List.fold_left f3 s0 nitms in
+            let s0 = while_not_nil nitms s0 f3 in
             s0
           )
           | TM tm -> (
-            (* l:mn *)
-            (* FIXME optimization: if key already in complete map, don't process again *)
+(*adoc ----*)
+(*adoc *)
+(*adoc The nt item was blocked on a terminal `tm` (or latexmath:[T]). We use `p_of_tm` to*)
+(*adoc determine which substrings of the input can be parsed as the terminal*)
+(*adoc latexmath:[T]. This gives us complete items of the form ${citm(k,t,j)}. For each*)
+(*adoc `citm` we then update the complete map and process against blocked*)
+(*adoc items, using `process_citms`.*)
+(*adoc *)
+(*adoc There is a possible optimization here: if the key is already in the*)
+(*adoc complete map, we don't need to process it again. For simplicity we*)
+(*adoc don't incorporate this optimization.*)
+(*adoc *)
+(*adoc [source,ocaml]*)
+(*adoc ----*)
             let k = nitm.k in
             let p = c0.g0.p_of_tm tm in
             let js = p (c0.i0.str,k,c0.i0.len) in
@@ -247,17 +314,15 @@ let step: ctxt_t -> state_t -> state_t = (
 (*adoc *)
 (*adoc That concludes the explanation of the core of the algorithm.*)
 (*adoc *)
-(*adoc *)
-(*adoc At ${l("no")} we repeatedly apply the step function in a loop until there*)
+(*adoc Next we repeatedly apply the step function in a loop until there*)
 (*adoc are no more items to do.*)
 (*adoc *)
+(*adoc [source,ocaml]*)
 (*adoc ----*)
 
 let rec earley' ctxt s0 = (
     if s0.todo = [] then s0 else earley' ctxt (step ctxt s0))
 
-
-(* l:op *)
 let cn_earley c0 nt = (
     let (i,k) = (0,0) in
     let init = {nt;i;as_=[];k;bs=[NT nt]} in
@@ -285,3 +350,15 @@ let cn_earley c0 nt = (
 (*adoc implement e.g. a set as an array. This would give the latexmath:[O(n^3)] desired*)
 (*adoc complexity.*)
 (*adoc *)
+(*scala """*)
+(*scala *)
+(*scala val adoc2 = adoc.lines.map(s => *)
+(*scala   if (s.startsWith("//adoc ")) s.substring(7) *)
+(*scala   else if (s.startsWith("//ml ")) s.substring(5)*)
+(*scala   else s).mkString("\n")*)
+(*scala *)
+(*scala // write doc to README.scala.adoc*)
+(*scala *)
+(*scala import java.io._*)
+(*scala *)
+(*scala new PrintWriter("e_cn_inline_comments.pp.adoc") { write(adoc2); close }*)
