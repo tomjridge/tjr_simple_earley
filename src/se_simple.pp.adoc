@@ -1,5 +1,5 @@
 
-== Simple Earley parsing (file: se_simple)
+== Simple Earley parsing (file: se_simple.ml)
 
 [source,ocaml]
 ----
@@ -281,7 +281,7 @@ let se_simple c0 nt = (
 ----
 
 
-== Complexity
+=== Complexity
 
 We assume that there is a constant latexmath:[c] such that each invocation of
 `p_of_tm` produces at most latexmath:[c * n] results.

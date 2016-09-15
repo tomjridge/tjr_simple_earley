@@ -509,8 +509,12 @@ MathJax.Hub.Config({
 <li><a href="#_debug_support">2.5. Debug support</a></li>
 </ul>
 </li>
-<li><a href="#_simple_earley_parsing_file_se_simple">3. Simple Earley parsing (file: se_simple)</a></li>
-<li><a href="#_complexity">4. Complexity</a></li>
+<li><a href="#_earley_specification_file_se_spec_ml">3. Earley specification (file: se_spec.ml)</a></li>
+<li><a href="#_simple_earley_parsing_file_se_simple_ml">4. Simple Earley parsing (file: se_simple.ml)</a>
+<ul class="sectlevel2">
+<li><a href="#_complexity">4.1. Complexity</a></li>
+</ul>
+</li>
 <li><a href="#_staged_version_of_earley_file_se_staged_ml">5. Staged version of Earley (file: se_staged.ml)</a>
 <ul class="sectlevel2">
 <li><a href="#_loop_at_k">5.1. Loop at k</a></li>
@@ -760,99 +764,119 @@ interaction with terminal parsers).</p>
 <div class="paragraph">
 <p>(* specification of Earley&#8217;s algorithm *)</p>
 </div>
-<div class="paragraph">
-<p>open Se_common
-open Se_common.Unstaged</p>
 </div>
-<div class="paragraph">
-<p>type spec_item_t = nt_item</p>
 </div>
-<div class="paragraph">
-<p>module Spec_t = struct
-  include Nt_item_set</p>
 </div>
-<div class="literalblock">
+<div class="sect1">
+<h2 id="_earley_specification_file_se_spec_ml">3. Earley specification (file: se_spec.ml)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The spec state is just a set of nt items.</p>
+</div>
+<div class="listingblock">
 <div class="content">
-<pre>(* for &lt; 4.02.0 *)
-let of_list: elt list -&gt; t = (
-  fun xs -&gt;
-    List.fold_left (fun a b -&gt; add b a) empty xs
-)</pre>
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">open</span> <span class="tok-nc">Se_common</span>
+<span class="tok-k">open</span> <span class="tok-nn">Se_common</span><span class="tok-p">.</span><span class="tok-nc">Unstaged</span>
+
+<span class="tok-k">type</span> <span class="tok-n">spec_item_t</span> <span class="tok-o">=</span> <span class="tok-n">nt_item</span>
+
+<span class="tok-k">module</span> <span class="tok-nc">Spec_t</span> <span class="tok-o">=</span> <span class="tok-k">struct</span>
+  <span class="tok-k">include</span> <span class="tok-nc">Nt_item_set</span>
+
+  <span class="tok-c">(* for &lt; 4.02.0 *)</span>
+  <span class="tok-k">let</span> <span class="tok-n">of_list</span><span class="tok-o">:</span> <span class="tok-n">elt</span> <span class="tok-kt">list</span> <span class="tok-o">-&gt;</span> <span class="tok-n">t</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+    <span class="tok-k">fun</span> <span class="tok-n">xs</span> <span class="tok-o">-&gt;</span>
+      <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">fold_left</span> <span class="tok-o">(</span><span class="tok-k">fun</span> <span class="tok-n">a</span> <span class="tok-n">b</span> <span class="tok-o">-&gt;</span> <span class="tok-n">add</span> <span class="tok-n">b</span> <span class="tok-n">a</span><span class="tok-o">)</span> <span class="tok-n">empty</span> <span class="tok-n">xs</span>
+  <span class="tok-o">)</span>
+
+<span class="tok-k">end</span>
+
+<span class="tok-k">type</span> <span class="tok-n">spec_t</span> <span class="tok-o">=</span> <span class="tok-nn">Spec_t</span><span class="tok-p">.</span><span class="tok-n">t</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
-<p>end</p>
+<p>Given a blocked key (index,symbol) we can get a set of blocked items.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">let</span> <span class="tok-n">spec_to_bitms</span><span class="tok-o">:</span> <span class="tok-n">spec_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">b_key_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">bitm_t</span> <span class="tok-kt">list</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+  <span class="tok-k">fun</span> <span class="tok-n">s0</span> <span class="tok-n">key</span> <span class="tok-o">-&gt;</span>
+    <span class="tok-o">(</span><span class="tok-nn">Spec_t</span><span class="tok-p">.</span><span class="tok-n">elements</span> <span class="tok-n">s0</span><span class="tok-o">)</span>
+    <span class="tok-o">|&gt;</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">map</span> <span class="tok-o">(</span><span class="tok-k">function</span>
+        <span class="tok-o">|</span> <span class="tok-n">nitm</span> <span class="tok-k">when</span> <span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">bs</span> <span class="tok-o">&lt;&gt;</span> <span class="tok-bp">[]</span> <span class="tok-o">&amp;&amp;</span> <span class="tok-n">bitm_to_key</span> <span class="tok-n">nitm</span> <span class="tok-o">=</span> <span class="tok-n">key</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span> <span class="tok-o">[</span><span class="tok-n">nitm</span><span class="tok-o">]</span>
+        <span class="tok-o">|</span> <span class="tok-o">_</span> <span class="tok-o">-&gt;</span> <span class="tok-bp">[]</span><span class="tok-o">)</span>
+    <span class="tok-o">|&gt;</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">concat</span><span class="tok-o">)</span></code></pre>
+</div>
 </div>
 <div class="paragraph">
-<p>type spec_t = Spec_t.t</p>
+<p>At each stage, for each item, we generate (possibly-) new items.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">let</span> <span class="tok-n">new_items</span> <span class="tok-o">:</span> <span class="tok-n">ctxt_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">spec_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">spec_item_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">spec_item_t</span> <span class="tok-kt">list</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+  <span class="tok-k">fun</span> <span class="tok-n">c0</span> <span class="tok-n">s0</span> <span class="tok-n">nitm</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+      <span class="tok-k">let</span> <span class="tok-n">complete</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">bs</span> <span class="tok-o">=</span> <span class="tok-bp">[]</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+      <span class="tok-k">match</span> <span class="tok-n">complete</span> <span class="tok-k">with</span>
+      <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+          <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">sym</span><span class="tok-o">,</span><span class="tok-n">j</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-nc">NT</span><span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">nt</span><span class="tok-o">),</span><span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+          <span class="tok-c">(* let citm : citm_t = {k;sym;j} in *)</span>
+          <span class="tok-k">let</span> <span class="tok-n">key</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">sym</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+          <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">spec_to_bitms</span> <span class="tok-n">s0</span> <span class="tok-n">key</span> <span class="tok-k">in</span>
+          <span class="tok-k">let</span> <span class="tok-n">f</span> <span class="tok-n">bitm</span> <span class="tok-o">=</span> <span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">j</span> <span class="tok-k">in</span>
+          <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">map</span> <span class="tok-n">f</span> <span class="tok-n">bitms</span><span class="tok-o">)</span>
+      <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+          <span class="tok-c">(* blocked, so process next sym *)</span>
+          <span class="tok-k">let</span> <span class="tok-n">bitm</span> <span class="tok-o">=</span> <span class="tok-n">nitm</span> <span class="tok-k">in</span>
+          <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">sym</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">bitm</span><span class="tok-o">.</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">hd</span> <span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">bs</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+          <span class="tok-c">(* now look at symbol we are blocked on *)</span>
+          <span class="tok-k">match</span> <span class="tok-n">sym</span> <span class="tok-k">with</span>
+          <span class="tok-o">|</span> <span class="tok-nc">NT</span> <span class="tok-n">nt</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+              <span class="tok-k">let</span> <span class="tok-n">nitms</span> <span class="tok-o">=</span> <span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">g0</span><span class="tok-o">.</span><span class="tok-n">nt_items_for_nt</span> <span class="tok-n">nt</span> <span class="tok-o">(</span><span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">str</span><span class="tok-o">,</span><span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+              <span class="tok-n">nitms</span><span class="tok-o">)</span>
+          <span class="tok-o">|</span> <span class="tok-nc">TM</span> <span class="tok-n">tm</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+              <span class="tok-c">(* parse tm and complete with item *)</span>
+              <span class="tok-k">let</span> <span class="tok-n">k</span> <span class="tok-o">=</span> <span class="tok-n">bitm</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-k">in</span>
+              <span class="tok-k">let</span> <span class="tok-n">p</span> <span class="tok-o">=</span> <span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">g0</span><span class="tok-o">.</span><span class="tok-n">p_of_tm</span> <span class="tok-n">tm</span> <span class="tok-k">in</span>
+              <span class="tok-k">let</span> <span class="tok-n">js</span> <span class="tok-o">=</span> <span class="tok-n">p</span> <span class="tok-o">(</span><span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">str</span><span class="tok-o">,</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">len</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+              <span class="tok-k">let</span> <span class="tok-n">f</span> <span class="tok-n">j</span> <span class="tok-o">=</span> <span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">j</span> <span class="tok-k">in</span>
+              <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">map</span> <span class="tok-n">f</span> <span class="tok-n">js</span><span class="tok-o">)</span>
+        <span class="tok-o">)</span>
+    <span class="tok-o">)</span>
+<span class="tok-o">)</span></code></pre>
+</div>
 </div>
 <div class="paragraph">
-<p>let spec_to_bitms: spec_t &#8594; b_key_t &#8594; bitm_t list = (
-  fun s0 key &#8594;
-    (Spec_t.elements s0)
-    |&gt; List.map (function
-        | nitm when (nitm.bs &lt;&gt; [] &amp;&amp; bitm_to_key nitm = key) &#8594; [nitm]
-        | _ &#8594; [])
-    |&gt; List.concat)</p>
+<p>The loop takes the existing elements, generates new items, and unions
+them back into the state. The loop stops when the set of items no
+longer changes.</p>
 </div>
-<div class="paragraph">
-<p>let new_items : ctxt_t &#8594; spec_t &#8594; spec_item_t &#8594; spec_item_t list = (
-  fun c0 s0 nitm &#8594; (
-      let complete = (nitm.bs = []) in
-      match complete with
-      | true &#8594; (
-          let (k,sym,j) = (nitm.i,NT(nitm.nt),nitm.k) in
-          (* let citm : citm_t = {k;sym;j} in <strong>)
-          let key = (k,sym) in
-          let bitms = spec_to_bitms s0 key in
-          let f bitm = cut bitm j in
-          List.map f bitms)
-      | false &#8594; (
-          (</strong> blocked, so process next sym <strong>)
-          let bitm = nitm in
-          let (k,sym) = (bitm.k,List.hd nitm.bs) in
-          (</strong> now look at symbol we are blocked on <strong>)
-          match sym with
-          | NT nt &#8594; (
-              let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,k) in
-              nitms)
-          | TM tm &#8594; (
-              (</strong> parse tm and complete with item *)
-              let k = bitm.k in
-              let p = c0.g0.p_of_tm tm in
-              let js = p (c0.i0.str,k,c0.i0.len) in
-              let f j = cut bitm j in
-              List.map f js)
-        )
-    )
-)</p>
-</div>
-<div class="paragraph">
-<p>(* repeatedly apply step till no change *)
-let rec spec' c0 s0 = (
-  let new_itms = (
-    (Spec_t.elements s0)
-    |&gt; List.map (new_items c0 s0)
-    |&gt; List.concat
-    |&gt; Spec_t.of_list)
-  in
-  let s1 = Spec_t.union s0 new_itms in
-  if Spec_t.equal s1 s0 then s0 else spec' c0 s1)</p>
-</div>
-<div class="paragraph">
-<p>(* construct initial context, apply spec' <strong>)
-let se_spec : ctxt_t &#8594; nt &#8594; Nt_item_set.t = (
-  fun c0 nt &#8594;
-    let init = {nt;i=0;as_=[];k=0;bs=[NT nt]} in
-    let s0 = Spec_t.of_list [init] in
-    let s1 = spec' c0 s0 in
-    Spec_t.remove init s1)  (</strong> remove the dummy item *)</p>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-c">(* repeatedly apply step till no change *)</span>
+<span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">spec&#39;</span> <span class="tok-n">c0</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+  <span class="tok-k">let</span> <span class="tok-n">new_itms</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+    <span class="tok-o">(</span><span class="tok-nn">Spec_t</span><span class="tok-p">.</span><span class="tok-n">elements</span> <span class="tok-n">s0</span><span class="tok-o">)</span>
+    <span class="tok-o">|&gt;</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">map</span> <span class="tok-o">(</span><span class="tok-n">new_items</span> <span class="tok-n">c0</span> <span class="tok-n">s0</span><span class="tok-o">)</span>
+    <span class="tok-o">|&gt;</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">concat</span>
+    <span class="tok-o">|&gt;</span> <span class="tok-nn">Spec_t</span><span class="tok-p">.</span><span class="tok-n">of_list</span><span class="tok-o">)</span>
+  <span class="tok-k">in</span>
+  <span class="tok-k">let</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-nn">Spec_t</span><span class="tok-p">.</span><span class="tok-n">union</span> <span class="tok-n">s0</span> <span class="tok-n">new_itms</span> <span class="tok-k">in</span>
+  <span class="tok-k">if</span> <span class="tok-nn">Spec_t</span><span class="tok-p">.</span><span class="tok-n">equal</span> <span class="tok-n">s1</span> <span class="tok-n">s0</span> <span class="tok-k">then</span> <span class="tok-n">s0</span> <span class="tok-k">else</span> <span class="tok-n">spec&#39;</span> <span class="tok-n">c0</span> <span class="tok-n">s1</span><span class="tok-o">)</span>
+
+
+<span class="tok-c">(* construct initial context, apply spec&#39; *)</span>
+<span class="tok-k">let</span> <span class="tok-n">se_spec</span> <span class="tok-o">:</span> <span class="tok-n">ctxt_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">nt</span> <span class="tok-o">-&gt;</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">t</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+  <span class="tok-k">fun</span> <span class="tok-n">c0</span> <span class="tok-n">nt</span> <span class="tok-o">-&gt;</span>
+    <span class="tok-k">let</span> <span class="tok-n">init</span> <span class="tok-o">=</span> <span class="tok-o">{</span><span class="tok-n">nt</span><span class="tok-o">;</span><span class="tok-n">i</span><span class="tok-o">=</span><span class="tok-mi">0</span><span class="tok-o">;</span><span class="tok-n">as_</span><span class="tok-o">=</span><span class="tok-bp">[]</span><span class="tok-o">;</span><span class="tok-n">k</span><span class="tok-o">=</span><span class="tok-mi">0</span><span class="tok-o">;</span><span class="tok-n">bs</span><span class="tok-o">=[</span><span class="tok-nc">NT</span> <span class="tok-n">nt</span><span class="tok-o">]}</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-nn">Spec_t</span><span class="tok-p">.</span><span class="tok-n">of_list</span> <span class="tok-o">[</span><span class="tok-n">init</span><span class="tok-o">]</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-n">spec&#39;</span> <span class="tok-n">c0</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+    <span class="tok-nn">Spec_t</span><span class="tok-p">.</span><span class="tok-n">remove</span> <span class="tok-n">init</span> <span class="tok-n">s1</span><span class="tok-o">)</span>  <span class="tok-c">(* remove the dummy item *)</span></code></pre>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_simple_earley_parsing_file_se_simple">3. Simple Earley parsing (file: se_simple)</h2>
+<h2 id="_simple_earley_parsing_file_se_simple_ml">4. Simple Earley parsing (file: se_simple.ml)</h2>
 <div class="sectionbody">
 <div class="listingblock">
 <div class="content">
@@ -1135,11 +1159,8 @@ are no more items to do.</p>
     <span class="tok-n">s1</span><span class="tok-o">)</span></code></pre>
 </div>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_complexity">4. Complexity</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_complexity">4.1. Complexity</h3>
 <div class="paragraph">
 <p>We assume that there is a constant \(c\) such that each invocation of
 <code>p_of_tm</code> produces at most \(c * n\) results.</p>
@@ -1155,6 +1176,7 @@ complexity.</p>
 </div>
 <div class="paragraph">
 <p>(* staged version of Earley ---------------------------------------- *)</p>
+</div>
 </div>
 </div>
 </div>
@@ -1239,7 +1261,7 @@ Otherwise, add to <code>ixk</code> map.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>Otherwise, we have an item <code>(X &#8594; i as k (S bs')</code> blocked on <code>k,S</code>.</p>
+<p>Otherwise, we have an item <code>(X &#8594; i as k (S bs'))</code> blocked on <code>k,S</code>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1309,7 +1331,9 @@ item.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>expand <code>Y</code>, and add new items.</p>
+<p>expand <code>Y</code>, and add new items. Note that there cannot be any complete
+items <code>(k,Y,k)</code> because this is the first time we are processing <code>Y</code>
+at this stage.</p>
 </div>
 <div class="listingblock">
 <div class="content">
