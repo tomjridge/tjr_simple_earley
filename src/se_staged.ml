@@ -1,12 +1,12 @@
-(** e_fg: Earley, staged. *)
+(* staged version of Earley ---------------------------------------- *)
 
 (* TODO:
 
    use imperative hashmaps as set and map implementations *)
 
-open E_common
-open E_common.Unstaged
-open E_profile
+open Se_common
+open Se_common.Unstaged
+open Se_profile
 
 type ixk_t = (i_t * nt)  (* i X k *)
 
@@ -294,7 +294,7 @@ let loop: ctxt_t -> state_t -> state_t = (
 )
 
 (* construct initial context, apply loop *)
-let fg_earley: ctxt_t -> nt -> state_t = (
+let se_staged: ctxt_t -> nt -> state_t = (
   fun c0 nt ->
     let (i,k) = (0,0) in
     let init = {nt;i;as_=[];k;bs=[NT nt]} in (* this is a dummy item to get things going *)

@@ -8,7 +8,7 @@ File: e_cn_inline_comments.ml
 
 == Meta
 
-HTML preview: https://rawgit.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.html
+HTML preview: http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.pp.html
 
 We work with `nt_items` only (terminal parses are not cached). No
 staging. latexmath:[O(n^3)].
@@ -27,8 +27,8 @@ symbol latexmath:[S] to complete. latexmath:[nitm \in bm(k,S)] if latexmath:[nit
 ----
 (* Earley, nt_items only, unstaged, O(n^3) *)
 
-open E_common
-open E_common.Unstaged
+open Se_common
+open Se_common.Unstaged
 
 let comp = Pervasives.compare
 
@@ -168,7 +168,7 @@ let process_citms key citms s0 = (
         let s1 = Nt_item_set.fold f6 bitms s1 in
         s1)
     in
-    let s0 = while_not_nil citms s0 f8 s0 citms in
+    let s0 = while_not_nil citms s0 f8 in
     s0 )
 
 ----
@@ -206,7 +206,7 @@ it against any blocked items with the same key.
           let key = citm_to_key citm in
           process_citms key [citm] s0
         )
-        | false -> (  (* l:kl *)
+        | false -> (
 
 ----
 
@@ -233,7 +233,7 @@ current complete items with the same key.
           let f2 j s1 = (let nitm = cut bitm j in add_todo nitm s1) in
           let js = (cm_find key s0.complete) |> dest_Some in
           let s0 = Int_set.fold f2 js s0 in
-          (* now look at symbol we are blocked on *)  (* l:lm *)
+          (* now look at symbol we are blocked on *)
 
 ----
 
@@ -287,7 +287,7 @@ are no more items to do.
 let rec earley' ctxt s0 = (
     if s0.todo = [] then s0 else earley' ctxt (step ctxt s0))
 
-let cn_earley c0 nt = (
+let se_simple c0 nt = (
     let (i,k) = (0,0) in
     let init = {nt;i;as_=[];k;bs=[NT nt]} in
     let todo = [init] in

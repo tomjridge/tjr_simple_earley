@@ -1,16 +1,16 @@
 # Graph of refinement dependencies
 
 
-(e_bc: spec; nt_items only; single set of items
+(e_bc e_spec: spec; nt_items only; single set of items
   
-  (e_cd: single set, NITM CITM SITM
+  (e_cd e_spec_all_items: single set, NITM CITM SITM
     
     spec_item_t = NTITM of nt_item | CITM of citm_t | SITM of sym_item
 
     an abstract model, with all types of items; refines e_bc; single set of items; no staging;
     O(2^n); useful because it makes the full set of items explicit
 
-    (e_cn: a copy of ../simple_earley.ml, but will be changed to avoid tmitem, and integrated with
+    (e_cn e_simple: a copy of ../simple_earley.ml, but will be changed to avoid tmitem, and integrated with
       e_common.ml)
 
     
@@ -26,7 +26,7 @@
       refinement of e_cd, with maps and staging; don't bother - use staged with nt_item only))
   
   
-  (e_fg: staged; blocked, complete; most efficient?)
+  (e_fg e_staged: staged; blocked, complete; most efficient?)
   (spec.ml: ignore; use e_cd
     
     spec_item_t = CITM of citm_t | PITM of (nt_item|tm_item)

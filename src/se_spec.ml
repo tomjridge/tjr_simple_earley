@@ -1,9 +1,7 @@
-(** An abstract model of Earley parsing. *)
+(* specification of Earley's algorithm *)
 
-(** Specification of Earley's algorithm *)
-
-open E_common
-open E_common.Unstaged
+open Se_common
+open Se_common.Unstaged
 
 type spec_item_t = nt_item
 
@@ -74,7 +72,7 @@ let rec spec' c0 s0 = (
 
 
 (* construct initial context, apply spec' *)
-let spec : ctxt_t -> nt -> Nt_item_set.t = (
+let se_spec : ctxt_t -> nt -> Nt_item_set.t = (
   fun c0 nt ->
     let init = {nt;i=0;as_=[];k=0;bs=[NT nt]} in
     let s0 = Spec_t.of_list [init] in

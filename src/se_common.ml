@@ -1,3 +1,6 @@
+(* common definitions, all versions *)
+
+
 (* ---------------------------------------- *)
 (*adoc == Util *)
 

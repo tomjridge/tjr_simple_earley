@@ -1,12 +1,14 @@
-open E_common
-open E_cn
+(* main routine for se_simple *)
 
-open E_examples.E_EEE
+open Se_common
+open Se_simple
+
+open Se_examples.E_EEE
 
 
 (* l:pq *)
 
-let _ = cn_earley (c0 (String.make 200 'x')) e'
+let _ = se_simple (c0 (String.make 200 'x')) e'
 let _ = print_endline "Finished"
 
 

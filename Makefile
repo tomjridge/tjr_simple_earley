@@ -7,11 +7,11 @@ OB:=ocamlbuild -use-ocamlfind -tag thread -I src -pkg core $(ASSERT)
 
 all: 
 #	$(OB) simple_earley.native 
-	$(OB) e_bc.cmo e_cd.cmo e_cn.cmo e_fg.cmo
-	$(OB) e_cn_main.native e_fg_main.native e_test.native
+	$(OB) se_spec.cmo se_spec_all_items.cmo se_simple.cmo se_staged.cmo
+	$(OB) se_simple_main.native se_staged_main.native se_test.native
 
 doc: FORCE
-	asciidoctor src/e_cn_inline_comments.adoc
+	asciidoctor src/e_cn.adoc
 	scala README.pre.scala
 	asciidoctor README.adoc
 
@@ -22,3 +22,4 @@ CLEAN:=rm -rf a.out *.cmi *.cmo *.cmx *.o *~ _build
 clean:
 	-$(CLEAN) && rm -f *.native *.jo *.cmj README.html 
 	-cd src && $(CLEAN) && rm -f *.html
+	$(OB) -clean

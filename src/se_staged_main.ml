@@ -1,10 +1,10 @@
-open E_common
-open E_profile
-open E_fg
+open Se_common
+open Se_profile
+open Se_staged
 
-open E_examples.E_EEE
+open Se_examples.E_EEE
 
-let _ = fg_earley (c0 (String.make 200 'x')) e'
+let _ = se_staged (c0 (String.make 200 'x')) e'
 let _ = print_endline "Finished"
 
 let _ = assert(print_logs())

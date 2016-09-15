@@ -1,7 +1,7 @@
-(** Refine Earley by adding more items. *)
+(* refine spec by adding more items. *)
 
-open E_common
-open E_common.Unstaged
+open Se_common
+open Se_common.Unstaged
 
 type spec_item_t = NTITM of nt_item | CITM of citm_t | SITM of sym_item
 
@@ -79,7 +79,7 @@ let rec spec' c0 s0 = (
   if Spec_t.equal s1 s0 then s0 else spec' c0 s1)
 
 (* construct initial context, apply spec' *)
-let cd_earley c0 nt = (
+let se_spec_all_items c0 nt = (
   let (i,k) = (0,0) in
   let init = {nt;i;as_=[];k;bs=[NT nt]} in
   let nitms = [NTITM init] in

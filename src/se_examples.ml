@@ -1,4 +1,6 @@
-open E_common
+(* various examples *)
+
+open Se_common
 
 let eps = TM 1
 

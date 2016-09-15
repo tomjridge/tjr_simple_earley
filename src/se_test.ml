@@ -1,41 +1,43 @@
-open E_common
+(* testing ---------------------------------------- *)
 
-open E_bc (* spec *)
-open E_cd
-open E_cn
-open E_fg (* impl *)
+open Se_common
 
-open E_examples
+open Se_spec
+open Se_spec_all_items
+open Se_simple
+open Se_staged
+
+open Se_examples
 
 
-let bc_rs c nt = (spec c nt) |> Nt_item_set.elements
+let spec_rs c nt = (se_spec c nt) |> Nt_item_set.elements
 
 
-let cd_rs c nt =
-  cd_earley c nt
-  |> E_cd.Spec_t.elements
+let sai_rs c nt =
+  se_spec_all_items c nt
+  |> Spec_t.elements
   |> List.map (function | NTITM  x -> [x] | _ -> [])
   |> List.concat
 
 
-let cn_rs c nt = 
-  cn_earley c nt
+let simple_rs c nt = 
+  se_simple c nt
   |> (fun x -> x.todo_done)
   |> Nt_item_set.elements
 
 
-let fg_rs c nt = 
-  fg_earley c nt
+let staged_rs c nt = 
+  se_staged c nt
   |> (fun x -> x.all_done) 
   |> (List.fold_left (fun acc itms -> Nt_item_set.union acc itms) Nt_item_set.empty)
   |> Nt_item_set.elements
 
 
 let test c nt = (
-  let bc_rs = bc_rs c nt in
-  assert (bc_rs = cd_rs c nt);
-  assert (bc_rs = cn_rs c nt);
-  assert (bc_rs = fg_rs c nt))
+  let spec_rs = spec_rs c nt in
+  assert (spec_rs = sai_rs c nt);
+  assert (spec_rs = simple_rs c nt);
+  assert (spec_rs = staged_rs c nt))
   
 
 let _ = (

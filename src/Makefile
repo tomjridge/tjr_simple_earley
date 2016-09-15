@@ -1,3 +1,3 @@
 all:
-	scala e_cn_inline_comments.scala
-	asciidoctor e_cn_inline_comments.pp.adoc
+	scala se_simple.scala
+	asciidoctor se_simple.pp.adoc

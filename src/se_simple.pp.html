@@ -509,7 +509,7 @@ MathJax.Hub.Config({
 <h2 id="_meta">Meta</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>HTML preview: <a href="https://rawgit.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.html" class="bare">https://rawgit.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.html</a></p>
+<p>HTML preview: <a href="http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.pp.html" class="bare">http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/src/e_cn_inline_comments.pp.html</a></p>
 </div>
 <div class="paragraph">
 <p>We work with <code>nt_items</code> only (terminal parses are not cached). No
@@ -531,8 +531,8 @@ symbol \(S\) to complete. \(nitm \in bm(k,S)\) if \(nitm\) is of the form \(( X 
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-c">(* Earley, nt_items only, unstaged, O(n^3) *)</span>
 
-<span class="tok-k">open</span> <span class="tok-nc">E_common</span>
-<span class="tok-k">open</span> <span class="tok-nn">E_common</span><span class="tok-p">.</span><span class="tok-nc">Unstaged</span>
+<span class="tok-k">open</span> <span class="tok-nc">Se_common</span>
+<span class="tok-k">open</span> <span class="tok-nn">Se_common</span><span class="tok-p">.</span><span class="tok-nc">Unstaged</span>
 
 <span class="tok-k">let</span> <span class="tok-n">comp</span> <span class="tok-o">=</span> <span class="tok-nn">Pervasives</span><span class="tok-p">.</span><span class="tok-n">compare</span>
 
@@ -677,7 +677,7 @@ blocked items.</p>
         <span class="tok-k">let</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">fold</span> <span class="tok-n">f6</span> <span class="tok-n">bitms</span> <span class="tok-n">s1</span> <span class="tok-k">in</span>
         <span class="tok-n">s1</span><span class="tok-o">)</span>
     <span class="tok-k">in</span>
-    <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">while_not_nil</span> <span class="tok-n">citms</span> <span class="tok-n">s0</span> <span class="tok-n">f8</span> <span class="tok-n">s0</span> <span class="tok-n">citms</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">while_not_nil</span> <span class="tok-n">citms</span> <span class="tok-n">s0</span> <span class="tok-n">f8</span> <span class="tok-k">in</span>
     <span class="tok-n">s0</span> <span class="tok-o">)</span></code></pre>
 </div>
 </div>
@@ -712,7 +712,7 @@ it against any blocked items with the same key.</p>
           <span class="tok-k">let</span> <span class="tok-n">key</span> <span class="tok-o">=</span> <span class="tok-n">citm_to_key</span> <span class="tok-n">citm</span> <span class="tok-k">in</span>
           <span class="tok-n">process_citms</span> <span class="tok-n">key</span> <span class="tok-o">[</span><span class="tok-n">citm</span><span class="tok-o">]</span> <span class="tok-n">s0</span>
         <span class="tok-o">)</span>
-        <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>  <span class="tok-c">(* l:kl *)</span></code></pre>
+        <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -739,7 +739,7 @@ current complete items with the same key.</p>
           <span class="tok-k">let</span> <span class="tok-n">f2</span> <span class="tok-n">j</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-k">let</span> <span class="tok-n">nitm</span> <span class="tok-o">=</span> <span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">j</span> <span class="tok-k">in</span> <span class="tok-n">add_todo</span> <span class="tok-n">nitm</span> <span class="tok-n">s1</span><span class="tok-o">)</span> <span class="tok-k">in</span>
           <span class="tok-k">let</span> <span class="tok-n">js</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">cm_find</span> <span class="tok-n">key</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">complete</span><span class="tok-o">)</span> <span class="tok-o">|&gt;</span> <span class="tok-n">dest_Some</span> <span class="tok-k">in</span>
           <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-nn">Int_set</span><span class="tok-p">.</span><span class="tok-n">fold</span> <span class="tok-n">f2</span> <span class="tok-n">js</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
-          <span class="tok-c">(* now look at symbol we are blocked on *)</span>  <span class="tok-c">(* l:lm *)</span></code></pre>
+          <span class="tok-c">(* now look at symbol we are blocked on *)</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -794,7 +794,7 @@ are no more items to do.</p>
 <pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">earley&#39;</span> <span class="tok-n">ctxt</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
     <span class="tok-k">if</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo</span> <span class="tok-o">=</span> <span class="tok-bp">[]</span> <span class="tok-k">then</span> <span class="tok-n">s0</span> <span class="tok-k">else</span> <span class="tok-n">earley&#39;</span> <span class="tok-n">ctxt</span> <span class="tok-o">(</span><span class="tok-n">step</span> <span class="tok-n">ctxt</span> <span class="tok-n">s0</span><span class="tok-o">))</span>
 
-<span class="tok-k">let</span> <span class="tok-n">cn_earley</span> <span class="tok-n">c0</span> <span class="tok-n">nt</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+<span class="tok-k">let</span> <span class="tok-n">se_simple</span> <span class="tok-n">c0</span> <span class="tok-n">nt</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
     <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-mi">0</span><span class="tok-o">,</span><span class="tok-mi">0</span><span class="tok-o">)</span> <span class="tok-k">in</span>
     <span class="tok-k">let</span> <span class="tok-n">init</span> <span class="tok-o">=</span> <span class="tok-o">{</span><span class="tok-n">nt</span><span class="tok-o">;</span><span class="tok-n">i</span><span class="tok-o">;</span><span class="tok-n">as_</span><span class="tok-o">=</span><span class="tok-bp">[]</span><span class="tok-o">;</span><span class="tok-n">k</span><span class="tok-o">;</span><span class="tok-n">bs</span><span class="tok-o">=[</span><span class="tok-nc">NT</span> <span class="tok-n">nt</span><span class="tok-o">]}</span> <span class="tok-k">in</span>
     <span class="tok-k">let</span> <span class="tok-n">todo</span> <span class="tok-o">=</span> <span class="tok-o">[</span><span class="tok-n">init</span><span class="tok-o">]</span> <span class="tok-k">in</span>
@@ -829,7 +829,7 @@ complexity.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2016-09-14 12:04:36 BST
+Last updated 2016-09-15 10:32:03 BST
 </div>
 </div>
 </body>
