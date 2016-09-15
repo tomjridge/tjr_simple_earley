@@ -511,6 +511,12 @@ MathJax.Hub.Config({
 </li>
 <li><a href="#_simple_earley_parsing_file_se_simple">3. Simple Earley parsing (file: se_simple)</a></li>
 <li><a href="#_complexity">4. Complexity</a></li>
+<li><a href="#_staged_version_of_earley_file_se_staged_ml">5. Staged version of Earley (file: se_staged.ml)</a>
+<ul class="sectlevel2">
+<li><a href="#_loop_at_k">5.1. Loop at k</a></li>
+<li><a href="#_earley_loop_over_all_k">5.2. Earley loop over all k</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -556,8 +562,11 @@ symbol \(S\) to complete. \(nitm \in bm(k,S)\) if \(nitm\) is of the form \(( X 
 
 <span class="tok-k">let</span> <span class="tok-n">find_with_default</span> <span class="tok-n">d</span> <span class="tok-n">f</span> <span class="tok-n">k</span> <span class="tok-n">m</span> <span class="tok-o">=</span> <span class="tok-k">try</span> <span class="tok-o">(</span><span class="tok-n">f</span> <span class="tok-n">k</span> <span class="tok-n">m</span><span class="tok-o">)</span> <span class="tok-k">with</span> <span class="tok-nc">Not_found</span> <span class="tok-o">-&gt;</span> <span class="tok-n">d</span>
 
-<span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">while_not_nil</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span> <span class="tok-kt">list</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
-    <span class="tok-k">fun</span> <span class="tok-n">xs</span> <span class="tok-n">s0</span> <span class="tok-n">f</span> <span class="tok-o">-&gt;</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">fold_left</span> <span class="tok-n">f</span> <span class="tok-n">s0</span> <span class="tok-n">xs</span><span class="tok-o">)</span></code></pre>
+<span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">while_not_nil&#39;</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span> <span class="tok-kt">list</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+    <span class="tok-k">fun</span> <span class="tok-n">xs</span> <span class="tok-n">s0</span> <span class="tok-n">f</span> <span class="tok-o">-&gt;</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">fold_left</span> <span class="tok-n">f</span> <span class="tok-n">s0</span> <span class="tok-n">xs</span><span class="tok-o">)</span>
+
+<span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">while_not_nil</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span> <span class="tok-kt">list</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-k">&#39;</span><span class="tok-n">a</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">s</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+    <span class="tok-k">fun</span> <span class="tok-n">xs</span> <span class="tok-n">f</span> <span class="tok-n">s0</span> <span class="tok-o">-&gt;</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">fold_left</span> <span class="tok-o">(</span><span class="tok-k">fun</span> <span class="tok-n">x</span> <span class="tok-n">y</span> <span class="tok-o">-&gt;</span> <span class="tok-n">f</span> <span class="tok-n">y</span> <span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-n">xs</span><span class="tok-o">)</span></code></pre>
 </div>
 </div>
 </div>
@@ -748,6 +757,97 @@ interaction with terminal parsers).</p>
                    <span class="tok-o">(</span><span class="tok-n">sym_list_to_string</span> <span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">bs</span><span class="tok-o">))</span></code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>(* specification of Earley&#8217;s algorithm *)</p>
+</div>
+<div class="paragraph">
+<p>open Se_common
+open Se_common.Unstaged</p>
+</div>
+<div class="paragraph">
+<p>type spec_item_t = nt_item</p>
+</div>
+<div class="paragraph">
+<p>module Spec_t = struct
+  include Nt_item_set</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>(* for &lt; 4.02.0 *)
+let of_list: elt list -&gt; t = (
+  fun xs -&gt;
+    List.fold_left (fun a b -&gt; add b a) empty xs
+)</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>end</p>
+</div>
+<div class="paragraph">
+<p>type spec_t = Spec_t.t</p>
+</div>
+<div class="paragraph">
+<p>let spec_to_bitms: spec_t &#8594; b_key_t &#8594; bitm_t list = (
+  fun s0 key &#8594;
+    (Spec_t.elements s0)
+    |&gt; List.map (function
+        | nitm when (nitm.bs &lt;&gt; [] &amp;&amp; bitm_to_key nitm = key) &#8594; [nitm]
+        | _ &#8594; [])
+    |&gt; List.concat)</p>
+</div>
+<div class="paragraph">
+<p>let new_items : ctxt_t &#8594; spec_t &#8594; spec_item_t &#8594; spec_item_t list = (
+  fun c0 s0 nitm &#8594; (
+      let complete = (nitm.bs = []) in
+      match complete with
+      | true &#8594; (
+          let (k,sym,j) = (nitm.i,NT(nitm.nt),nitm.k) in
+          (* let citm : citm_t = {k;sym;j} in <strong>)
+          let key = (k,sym) in
+          let bitms = spec_to_bitms s0 key in
+          let f bitm = cut bitm j in
+          List.map f bitms)
+      | false &#8594; (
+          (</strong> blocked, so process next sym <strong>)
+          let bitm = nitm in
+          let (k,sym) = (bitm.k,List.hd nitm.bs) in
+          (</strong> now look at symbol we are blocked on <strong>)
+          match sym with
+          | NT nt &#8594; (
+              let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,k) in
+              nitms)
+          | TM tm &#8594; (
+              (</strong> parse tm and complete with item *)
+              let k = bitm.k in
+              let p = c0.g0.p_of_tm tm in
+              let js = p (c0.i0.str,k,c0.i0.len) in
+              let f j = cut bitm j in
+              List.map f js)
+        )
+    )
+)</p>
+</div>
+<div class="paragraph">
+<p>(* repeatedly apply step till no change *)
+let rec spec' c0 s0 = (
+  let new_itms = (
+    (Spec_t.elements s0)
+    |&gt; List.map (new_items c0 s0)
+    |&gt; List.concat
+    |&gt; Spec_t.of_list)
+  in
+  let s1 = Spec_t.union s0 new_itms in
+  if Spec_t.equal s1 s0 then s0 else spec' c0 s1)</p>
+</div>
+<div class="paragraph">
+<p>(* construct initial context, apply spec' <strong>)
+let se_spec : ctxt_t &#8594; nt &#8594; Nt_item_set.t = (
+  fun c0 nt &#8594;
+    let init = {nt;i=0;as_=[];k=0;bs=[NT nt]} in
+    let s0 = Spec_t.of_list [init] in
+    let s1 = spec' c0 s0 in
+    Spec_t.remove init s1)  (</strong> remove the dummy item *)</p>
+</div>
 </div>
 </div>
 </div>
@@ -770,12 +870,13 @@ interaction with terminal parsers).</p>
   <span class="tok-nn">Map</span><span class="tok-p">.</span><span class="tok-nc">Make</span><span class="tok-o">(</span><span class="tok-k">struct</span> <span class="tok-k">type</span> <span class="tok-n">t</span> <span class="tok-o">=</span> <span class="tok-n">c_key_t</span><span class="tok-o">;;</span> <span class="tok-k">let</span> <span class="tok-n">compare</span><span class="tok-o">:</span> <span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-kt">int</span> <span class="tok-o">=</span> <span class="tok-n">comp</span> <span class="tok-k">end</span><span class="tok-o">)</span>
 
 
+<span class="tok-c">(* use an option so that we can potentially optimize terminal parsing - see below *)</span>
 <span class="tok-k">type</span> <span class="tok-n">cm_t</span> <span class="tok-o">=</span> <span class="tok-nn">Int_set</span><span class="tok-p">.</span><span class="tok-n">t</span> <span class="tok-n">option</span> <span class="tok-nn">Complete_map</span><span class="tok-p">.</span><span class="tok-n">t</span>
 <span class="tok-k">type</span> <span class="tok-n">bm_t</span> <span class="tok-o">=</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">t</span> <span class="tok-nn">Blocked_map</span><span class="tok-p">.</span><span class="tok-n">t</span>
 
 <span class="tok-c">(* add some defaults *)</span>
 
-<span class="tok-k">let</span> <span class="tok-n">cm_find</span> <span class="tok-n">k</span> <span class="tok-n">m</span> <span class="tok-o">=</span> <span class="tok-k">try</span> <span class="tok-nn">Complete_map</span><span class="tok-p">.</span><span class="tok-n">find</span> <span class="tok-n">k</span> <span class="tok-n">m</span> <span class="tok-k">with</span> <span class="tok-nc">Not_found</span> <span class="tok-o">-&gt;</span> <span class="tok-nc">Some</span><span class="tok-o">(</span><span class="tok-nn">Int_set</span><span class="tok-p">.</span><span class="tok-n">empty</span><span class="tok-o">)</span> <span class="tok-c">(* FIXME add note about option *)</span>
+<span class="tok-k">let</span> <span class="tok-n">cm_find</span> <span class="tok-n">k</span> <span class="tok-n">m</span> <span class="tok-o">=</span> <span class="tok-k">try</span> <span class="tok-nn">Complete_map</span><span class="tok-p">.</span><span class="tok-n">find</span> <span class="tok-n">k</span> <span class="tok-n">m</span> <span class="tok-k">with</span> <span class="tok-nc">Not_found</span> <span class="tok-o">-&gt;</span> <span class="tok-nc">Some</span><span class="tok-o">(</span><span class="tok-nn">Int_set</span><span class="tok-p">.</span><span class="tok-n">empty</span><span class="tok-o">)</span>
 <span class="tok-k">let</span> <span class="tok-n">bm_find</span> <span class="tok-n">k</span> <span class="tok-n">m</span> <span class="tok-o">=</span> <span class="tok-k">try</span> <span class="tok-nn">Blocked_map</span><span class="tok-p">.</span><span class="tok-n">find</span> <span class="tok-n">k</span> <span class="tok-n">m</span> <span class="tok-k">with</span> <span class="tok-nc">Not_found</span> <span class="tok-o">-&gt;</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">empty</span></code></pre>
 </div>
 </div>
@@ -894,17 +995,17 @@ blocked items.</p>
 <pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-c">(* process citms; update complete map; cut against blocked items *)</span>
 
 <span class="tok-k">let</span> <span class="tok-n">process_citms</span> <span class="tok-n">key</span> <span class="tok-n">citms</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
-    <span class="tok-k">let</span> <span class="tok-n">f5</span> <span class="tok-n">s1</span> <span class="tok-n">citm</span> <span class="tok-o">=</span>
+    <span class="tok-k">let</span> <span class="tok-n">f5</span> <span class="tok-n">citm</span> <span class="tok-n">s1</span> <span class="tok-o">=</span>
       <span class="tok-o">{</span> <span class="tok-n">s1</span> <span class="tok-k">with</span> <span class="tok-n">complete</span><span class="tok-o">=(</span><span class="tok-n">c_add</span> <span class="tok-n">citm</span> <span class="tok-n">s1</span><span class="tok-o">.</span><span class="tok-n">complete</span><span class="tok-o">)</span> <span class="tok-o">}</span> <span class="tok-k">in</span>
-    <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">while_not_nil</span> <span class="tok-n">citms</span> <span class="tok-n">s0</span> <span class="tok-n">f5</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">while_not_nil</span> <span class="tok-n">citms</span> <span class="tok-n">f5</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
     <span class="tok-c">(* cut citm against blocked *)</span>
     <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">bm_find</span> <span class="tok-n">key</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">blocked</span> <span class="tok-k">in</span>
-    <span class="tok-k">let</span> <span class="tok-n">f8</span> <span class="tok-n">s1</span> <span class="tok-n">citm</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+    <span class="tok-k">let</span> <span class="tok-n">f8</span> <span class="tok-n">citm</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
         <span class="tok-k">let</span> <span class="tok-n">f6</span> <span class="tok-n">bitm</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-k">let</span> <span class="tok-n">nitm</span> <span class="tok-o">=</span> <span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">citm</span><span class="tok-o">.</span><span class="tok-n">j</span> <span class="tok-k">in</span> <span class="tok-n">add_todo</span> <span class="tok-n">nitm</span> <span class="tok-n">s1</span><span class="tok-o">)</span> <span class="tok-k">in</span>
         <span class="tok-k">let</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">fold</span> <span class="tok-n">f6</span> <span class="tok-n">bitms</span> <span class="tok-n">s1</span> <span class="tok-k">in</span>
         <span class="tok-n">s1</span><span class="tok-o">)</span>
     <span class="tok-k">in</span>
-    <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">while_not_nil</span> <span class="tok-n">citms</span> <span class="tok-n">s0</span> <span class="tok-n">f8</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">while_not_nil</span> <span class="tok-n">citms</span> <span class="tok-n">f8</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
     <span class="tok-n">s0</span> <span class="tok-o">)</span></code></pre>
 </div>
 </div>
@@ -980,8 +1081,8 @@ items.</p>
 <pre class="pygments highlight"><code data-lang="ocaml">          <span class="tok-k">match</span> <span class="tok-n">sym</span> <span class="tok-k">with</span>
           <span class="tok-o">|</span> <span class="tok-nc">NT</span> <span class="tok-n">nt</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
             <span class="tok-k">let</span> <span class="tok-n">nitms</span> <span class="tok-o">=</span> <span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">g0</span><span class="tok-o">.</span><span class="tok-n">nt_items_for_nt</span> <span class="tok-n">nt</span> <span class="tok-o">(</span><span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">str</span><span class="tok-o">,</span><span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-k">in</span>
-            <span class="tok-k">let</span> <span class="tok-n">f3</span> <span class="tok-n">s1</span> <span class="tok-n">nitm</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">add_todo</span> <span class="tok-n">nitm</span> <span class="tok-n">s1</span><span class="tok-o">)</span> <span class="tok-k">in</span>
-            <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">while_not_nil</span> <span class="tok-n">nitms</span> <span class="tok-n">s0</span> <span class="tok-n">f3</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">f3</span> <span class="tok-n">nitm</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">add_todo</span> <span class="tok-n">nitm</span> <span class="tok-n">s1</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">while_not_nil</span> <span class="tok-n">nitms</span> <span class="tok-n">f3</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
             <span class="tok-n">s0</span>
           <span class="tok-o">)</span>
           <span class="tok-o">|</span> <span class="tok-nc">TM</span> <span class="tok-n">tm</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
@@ -996,8 +1097,9 @@ items, using <code>process_citms</code>.</p>
 </div>
 <div class="paragraph">
 <p>There is a possible optimization here: if the key is already in the
-complete map, we don&#8217;t need to process it again. For simplicity we
-don&#8217;t incorporate this optimization.</p>
+complete map, we don&#8217;t need to process it again. This is why we use an
+option for the complete map codomain. For simplicity we don&#8217;t
+incorporate this optimization.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -1051,12 +1153,344 @@ maps. Thus, we can enumerate these items, and use the enumeration to
 implement e.g. a set as an array. This would give the \(O(n^3)\) desired
 complexity.</p>
 </div>
+<div class="paragraph">
+<p>(* staged version of Earley ---------------------------------------- *)</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_staged_version_of_earley_file_se_staged_ml">5. Staged version of Earley (file: se_staged.ml)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This version processes all items at index \(k\) (the current
+stage) before moving on to \(k+1\) (the next stage).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">let</span> <span class="tok-n">step_k</span><span class="tok-o">:</span> <span class="tok-n">ctxt_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">state_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">state_t</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+  <span class="tok-k">fun</span> <span class="tok-n">c0</span> <span class="tok-n">s0</span> <span class="tok-o">-&gt;</span>
+    <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;XXXstep_k&quot;</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">ab</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+      <span class="tok-n">counter</span><span class="tok-o">:=</span><span class="tok-mi">1</span> <span class="tok-o">+</span> <span class="tok-o">!</span><span class="tok-n">counter</span><span class="tok-o">;</span>
+      <span class="tok-k">if</span> <span class="tok-o">(!</span><span class="tok-n">counter</span> <span class="tok-ow">mod</span> <span class="tok-mi">1000</span> <span class="tok-o">=</span> <span class="tok-mi">0</span><span class="tok-o">)</span> <span class="tok-k">then</span> <span class="tok-nn">Gc</span><span class="tok-p">.</span><span class="tok-n">full_major</span><span class="tok-bp">()</span> <span class="tok-k">else</span> <span class="tok-bp">()</span> <span class="tok-o">)</span>
+    <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">ac</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">k</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">bitms</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-n">pop_todo</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+    <span class="tok-c">(* let _ = print_endline (nitm_to_string nitm) in *)</span>
+    <span class="tok-k">let</span> <span class="tok-n">complete</span> <span class="tok-o">=</span> <span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">bs</span> <span class="tok-o">=</span> <span class="tok-bp">[]</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">bc</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+    <span class="tok-k">match</span> <span class="tok-n">complete</span> <span class="tok-k">with</span>
+    <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We have a complete item <code>(i,X,k)</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">        <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">nitm</span><span class="tok-o">.</span><span class="tok-n">nt</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+        <span class="tok-c">(* possible NEW COMPLETE (i,X,k) *)</span>
+        <span class="tok-k">let</span> <span class="tok-n">already_done</span> <span class="tok-o">=</span> <span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">cd</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+        <span class="tok-k">match</span> <span class="tok-n">already_done</span> <span class="tok-k">with</span>
+        <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If the item has already been processed, don&#8217;t do anything.
+Otherwise, add to <code>ixk</code> map.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;already_done&quot;</span> <span class="tok-k">in</span>
+            <span class="tok-n">s0</span><span class="tok-o">)</span>
+        <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+            <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;not already_done&quot;</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">add_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-k">in</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then we need to process the complete item against the blocked items.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">bitms</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+        <span class="tok-c">(*</span>
+<span class="tok-c">        let fm bitm s1 = (add_todo (cut bitm k) s1) in</span>
+<span class="tok-c">        let r = Nt_item_set.fold fm bitms s0 in</span>
+<span class="tok-c">           *)</span>
+            <span class="tok-c">(* following is a fold using mutable state FIXME while_not_nil? *)</span>
+            <span class="tok-k">let</span> <span class="tok-n">r</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+              <span class="tok-c">(* FIXME possible optimization if we work with Y -&gt; {h} as i</span>
+<span class="tok-c">                 X bs *)</span>
+              <span class="tok-k">let</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-n">ref</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+              <span class="tok-k">let</span> <span class="tok-n">f</span> <span class="tok-n">bitm</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">s1</span><span class="tok-o">:=</span><span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-o">(!</span><span class="tok-n">s1</span><span class="tok-o">))</span> <span class="tok-k">in</span>
+              <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">iter</span> <span class="tok-n">f</span> <span class="tok-n">bitms</span> <span class="tok-k">in</span>
+              <span class="tok-o">!</span><span class="tok-n">s1</span>
+            <span class="tok-o">)</span>
+            <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">de</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+            <span class="tok-n">r</span>
+          <span class="tok-o">))</span>
+    <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Otherwise, we have an item <code>(X &#8594; i as k (S bs')</code> blocked on <code>k,S</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">        <span class="tok-c">(* NEW BLOCKED X -&gt; i as k (S bs&#39;) on k S*)</span>
+        <span class="tok-k">let</span> <span class="tok-n">bitm</span> <span class="tok-o">=</span> <span class="tok-n">nitm</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">s</span> <span class="tok-o">=</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">hd</span> <span class="tok-n">bitm</span><span class="tok-o">.</span><span class="tok-n">bs</span> <span class="tok-k">in</span>
+        <span class="tok-k">match</span> <span class="tok-n">s</span> <span class="tok-k">with</span>
+        <span class="tok-o">|</span> <span class="tok-nc">NT</span> <span class="tok-n">y</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>S</code> is a nonterminal <code>y</code>&#8230;&#8203;</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">ef</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+            <span class="tok-c">(* have we already processed k Y? *)</span>
+            <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">bitms</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">y</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">bitms_empty</span> <span class="tok-o">=</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">is_empty</span> <span class="tok-n">bitms</span> <span class="tok-k">in</span>
+            <span class="tok-c">(* record blocked FIXME we may already have processed k Y *)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>record the new blocked item.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">add_bitm_at_k</span> <span class="tok-n">bitm</span> <span class="tok-n">y</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">fg</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+            <span class="tok-k">match</span> <span class="tok-n">bitms_empty</span> <span class="tok-k">with</span>
+            <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If we have already processed <code>k,Y</code> (ie, this is not the first time we have seen nonterminal <code>Y</code> at stage <code>k</code>)&#8230;&#8203;</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;not bitms_empty&quot;</span> <span class="tok-k">in</span>
+                <span class="tok-c">(* already processed k Y, so no need to expand; but may have complete item kYk *)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>then we don&#8217;t need to expand <code>Y</code>, but we may have to consider the
+interaction of <code>bitm</code> with the complete item <code>(k,Y,k)</code>: if the
+complete item has been found, we need to cut it against the blocked
+item.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                <span class="tok-k">match</span> <span class="tok-o">(</span><span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">y</span><span class="tok-o">)</span> <span class="tok-n">s0</span><span class="tok-o">)</span> <span class="tok-k">with</span>
+                <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-n">s0</span><span class="tok-o">)</span>
+                <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span><span class="tok-o">)</span>
+            <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If we haven&#8217;t processed nt <code>Y</code> yet&#8230;&#8203;</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;bitms_empty&quot;</span> <span class="tok-k">in</span>
+                <span class="tok-c">(* need to process Y *)</span>
+                <span class="tok-c">(* do we have an item (k,Y,k) ? no *)</span>
+                <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span> <span class="tok-o">(</span><span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">y</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-bp">false</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+                <span class="tok-c">(* expand y *)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>expand <code>Y</code>, and add new items.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                <span class="tok-k">let</span> <span class="tok-n">new_itms</span> <span class="tok-o">=</span> <span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">g0</span><span class="tok-o">.</span><span class="tok-n">nt_items_for_nt</span> <span class="tok-n">y</span> <span class="tok-o">(</span><span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">str</span><span class="tok-o">,</span><span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+                <span class="tok-k">let</span> <span class="tok-n">fn</span> <span class="tok-n">s1</span> <span class="tok-n">nitm</span> <span class="tok-o">=</span> <span class="tok-n">add_todo</span> <span class="tok-n">nitm</span> <span class="tok-n">s1</span> <span class="tok-k">in</span>
+                <span class="tok-k">let</span> <span class="tok-n">r</span> <span class="tok-o">=</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">fold_left</span> <span class="tok-n">fn</span> <span class="tok-n">s0</span> <span class="tok-n">new_itms</span> <span class="tok-k">in</span>
+                <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">gh</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+                <span class="tok-n">r</span>
+              <span class="tok-o">)</span> <span class="tok-o">)</span>
+        <span class="tok-o">|</span> <span class="tok-nc">TM</span> <span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>S</code> is a nonterminal <code>T</code>&#8230;&#8203;</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-c">(* have we already processed k T ? *)</span>
+            <span class="tok-k">let</span> <span class="tok-n">ktjs</span> <span class="tok-o">=</span> <span class="tok-n">find_ktjs</span> <span class="tok-n">t</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">hi</span><span class="tok-o">)</span> <span class="tok-k">in</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>(we need to bind <code>js</code> to the indexes resulting from a terminal parse
+of <code>T</code> at this stage)</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+              <span class="tok-k">match</span> <span class="tok-n">ktjs</span> <span class="tok-k">with</span>
+              <span class="tok-o">|</span> <span class="tok-nc">None</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>if we have not already dealt with <code>T</code> at the current stage&#8230;&#8203;</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                  <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;ktjs None&quot;</span> <span class="tok-k">in</span>
+                  <span class="tok-c">(* process k T *)</span>
+                  <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;processing k T&quot;</span> <span class="tok-k">in</span>
+                  <span class="tok-k">let</span> <span class="tok-n">p</span> <span class="tok-o">=</span> <span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">g0</span><span class="tok-o">.</span><span class="tok-n">p_of_tm</span> <span class="tok-n">t</span> <span class="tok-k">in</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>we use the terminal parser to get a list of indexes <code>j</code>, and update the <code>ktjs</code> map.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                  <span class="tok-k">let</span> <span class="tok-n">js</span> <span class="tok-o">=</span> <span class="tok-n">p</span> <span class="tok-o">(</span><span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">str</span><span class="tok-o">,</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">len</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+                  <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-o">{</span> <span class="tok-n">s0</span> <span class="tok-k">with</span> <span class="tok-n">ktjs</span><span class="tok-o">=(</span><span class="tok-nn">Map_tm</span><span class="tok-p">.</span><span class="tok-n">add</span> <span class="tok-n">t</span> <span class="tok-o">(</span><span class="tok-nc">Some</span> <span class="tok-n">js</span><span class="tok-o">)</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">ktjs</span><span class="tok-o">)</span> <span class="tok-o">}</span> <span class="tok-k">in</span>
+                  <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">))</span>
+              <span class="tok-o">|</span> <span class="tok-nc">Some</span> <span class="tok-n">js</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>if we have already dealt with <code>T</code> at the current stage&#8230;&#8203;</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                  <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;ktjs Some&quot;</span> <span class="tok-k">in</span>
+                  <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">)))</span>
+            <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">ij</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+            <span class="tok-c">(* process blocked; there is only one item blocked at this point *)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now we have <code>js</code>, corresponding to a set of complete items. We need to
+process these against the relevant blocked items. Note that we only
+parse a terminal once at stage <code>k</code>, and this occurs when we meet the
+first corresponding blocked item. Thus, there is only one blocked item
+at this point.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-k">let</span> <span class="tok-n">fo</span> <span class="tok-n">s1</span> <span class="tok-n">j</span> <span class="tok-o">=</span> <span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">j</span><span class="tok-o">)</span> <span class="tok-n">s1</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">r</span> <span class="tok-o">=</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">fold_left</span> <span class="tok-n">fo</span> <span class="tok-n">s0</span> <span class="tok-n">js</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-o">_</span> <span class="tok-o">=</span> <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">jk</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+            <span class="tok-n">r</span>
+          <span class="tok-o">)</span>
+      <span class="tok-o">)</span>
+<span class="tok-o">)</span></code></pre>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_loop_at_k">5.1. Loop at k</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-c">(* loop at k *)</span>
+<span class="tok-k">let</span> <span class="tok-n">loop_k</span><span class="tok-o">:</span> <span class="tok-n">ctxt_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">state_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">state_t</span> <span class="tok-o">=</span>
+  <span class="tok-k">fun</span> <span class="tok-n">ctxt</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+      <span class="tok-k">let</span> <span class="tok-n">step_k</span> <span class="tok-o">=</span> <span class="tok-n">step_k</span> <span class="tok-n">ctxt</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">f</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+        <span class="tok-k">match</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo</span> <span class="tok-k">with</span>
+        <span class="tok-o">|</span> <span class="tok-bp">[]</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span>
+        <span class="tok-o">|</span> <span class="tok-o">_</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">f</span> <span class="tok-o">(</span><span class="tok-n">step_k</span> <span class="tok-n">s0</span><span class="tok-o">)))</span>
+      <span class="tok-k">in</span>
+      <span class="tok-n">f</span><span class="tok-o">)</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_earley_loop_over_all_k">5.2. Earley loop over all k</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-c">(* outer loop: repeatedly process items at stage k, then move to stage</span>
+<span class="tok-c">   k+1 *)</span>
+<span class="tok-k">let</span> <span class="tok-n">loop</span><span class="tok-o">:</span> <span class="tok-n">ctxt_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">state_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">state_t</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+  <span class="tok-k">fun</span> <span class="tok-n">c0</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+      <span class="tok-k">let</span> <span class="tok-n">loop_k</span> <span class="tok-o">=</span> <span class="tok-n">loop_k</span> <span class="tok-n">c0</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">f</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+        <span class="tok-k">match</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-o">&gt;</span> <span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">len</span> <span class="tok-o">+</span> <span class="tok-mi">1</span> <span class="tok-k">with</span>
+        <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span>
+        <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+            <span class="tok-c">(* process items *)</span>
+            <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">loop_k</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">old_k</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">k</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span><span class="tok-o">+</span><span class="tok-mi">1</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">todo</span> <span class="tok-o">=</span>
+              <span class="tok-n">wrap</span> <span class="tok-nn">Map_int</span><span class="tok-p">.</span><span class="tok-n">find</span> <span class="tok-n">k</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">empty</span>
+            <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">todo_done</span> <span class="tok-o">=</span> <span class="tok-n">todo</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">todo</span> <span class="tok-o">=</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">elements</span> <span class="tok-n">todo</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">todo_gt_k</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+              <span class="tok-c">(* keep debug into around *)</span>
+              <span class="tok-k">match</span> <span class="tok-o">!</span><span class="tok-n">debug</span> <span class="tok-k">with</span>
+              <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span> <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-nn">Map_int</span><span class="tok-p">.</span><span class="tok-n">remove</span> <span class="tok-n">k</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span><span class="tok-o">)</span>
+            <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">ixk_done</span> <span class="tok-o">=</span> <span class="tok-nn">Ixk_set</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">ktjs</span> <span class="tok-o">=</span> <span class="tok-nn">Map_tm</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">bitms_lt_k</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+              <span class="tok-c">(* FIXME the following hints that bitms_lt_k should be a</span>
+<span class="tok-c">                 map from k to a map from nt to ... since bitms_at_k is a</span>
+<span class="tok-c">                 map from nt *)</span>
+              <span class="tok-k">let</span> <span class="tok-n">b_init</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_lt_k</span> <span class="tok-k">in</span>
+              <span class="tok-nn">Blocked_map</span><span class="tok-p">.</span><span class="tok-n">add</span> <span class="tok-n">b_init</span> <span class="tok-n">old_k</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_at_k</span><span class="tok-o">)</span>
+            <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">bitms_at_k</span> <span class="tok-o">=</span> <span class="tok-nn">Map_nt</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">all_done</span> <span class="tok-o">=</span>  <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_done</span><span class="tok-o">::</span><span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">all_done</span> <span class="tok-k">in</span>
+            <span class="tok-k">let</span> <span class="tok-n">s1</span> <span class="tok-o">=</span> <span class="tok-o">{</span><span class="tok-n">k</span><span class="tok-o">;</span><span class="tok-n">todo</span><span class="tok-o">;</span><span class="tok-n">todo_done</span><span class="tok-o">;</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span><span class="tok-n">ixk_done</span><span class="tok-o">;</span><span class="tok-n">ktjs</span><span class="tok-o">;</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">;</span><span class="tok-n">bitms_at_k</span><span class="tok-o">;</span><span class="tok-n">all_done</span><span class="tok-o">}</span>
+            <span class="tok-k">in</span>
+            <span class="tok-n">f</span> <span class="tok-n">s1</span>
+          <span class="tok-o">)</span>
+      <span class="tok-o">)</span>
+      <span class="tok-k">in</span>
+      <span class="tok-n">f</span>
+    <span class="tok-o">)</span>
+<span class="tok-o">)</span>
+
+<span class="tok-c">(* construct initial context, apply loop *)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Initialize state, and run Earley loop:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">let</span> <span class="tok-n">se_staged</span><span class="tok-o">:</span> <span class="tok-n">ctxt_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">nt</span> <span class="tok-o">-&gt;</span> <span class="tok-n">state_t</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+  <span class="tok-k">fun</span> <span class="tok-n">c0</span> <span class="tok-n">nt</span> <span class="tok-o">-&gt;</span>
+    <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-mi">0</span><span class="tok-o">,</span><span class="tok-mi">0</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">init</span> <span class="tok-o">=</span> <span class="tok-o">{</span><span class="tok-n">nt</span><span class="tok-o">;</span><span class="tok-n">i</span><span class="tok-o">;</span><span class="tok-n">as_</span><span class="tok-o">=</span><span class="tok-bp">[]</span><span class="tok-o">;</span><span class="tok-n">k</span><span class="tok-o">;</span><span class="tok-n">bs</span><span class="tok-o">=[</span><span class="tok-nc">NT</span> <span class="tok-n">nt</span><span class="tok-o">]}</span> <span class="tok-k">in</span> <span class="tok-c">(* this is a dummy item to get things going *)</span>
+    <span class="tok-k">let</span> <span class="tok-n">todo</span> <span class="tok-o">=</span> <span class="tok-o">[</span><span class="tok-n">init</span><span class="tok-o">]</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">todo_done</span> <span class="tok-o">=</span> <span class="tok-nn">Nt_item_set</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">todo_gt_k</span> <span class="tok-o">=</span> <span class="tok-nn">Map_int</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">ixk_done</span> <span class="tok-o">=</span> <span class="tok-nn">Ixk_set</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">ktjs</span> <span class="tok-o">=</span> <span class="tok-nn">Map_tm</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">bitms_lt_k</span> <span class="tok-o">=</span> <span class="tok-nn">Blocked_map</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-n">c0</span><span class="tok-o">.</span><span class="tok-n">i0</span><span class="tok-o">.</span><span class="tok-n">len</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">bitms_at_k</span> <span class="tok-o">=</span> <span class="tok-nn">Map_nt</span><span class="tok-p">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">all_done</span> <span class="tok-o">=</span> <span class="tok-bp">[]</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-o">{</span><span class="tok-n">k</span><span class="tok-o">;</span><span class="tok-n">todo</span><span class="tok-o">;</span><span class="tok-n">todo_done</span><span class="tok-o">;</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span><span class="tok-n">ixk_done</span><span class="tok-o">;</span><span class="tok-n">ktjs</span><span class="tok-o">;</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">;</span><span class="tok-n">bitms_at_k</span><span class="tok-o">;</span><span class="tok-n">all_done</span><span class="tok-o">}</span> <span class="tok-k">in</span>
+    <span class="tok-n">loop</span> <span class="tok-n">c0</span> <span class="tok-n">s0</span><span class="tok-o">)</span></code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2016-09-15 11:15:13 BST
+Last updated 2016-09-15 15:09:37 BST
 </div>
 </div>
 </body>

@@ -1,38 +1,6 @@
-(*{|scala def l(s:String) = { "(l:"+s+")" }|}*)
+(*{|scala object se_simple {|}*)
 (*{|scala |}*)
-(*{|scala def nitm(nt:String,i:String,as:String,k:String,bs:String) = {|}*)
-(*{|scala   s"""latexmath:[( $nt \\rightarrow {}_{$i} $as {}_{$k} . $bs)]"""|}*)
-(*{|scala }|}*)
-(*{|scala |}*)
-(*{|scala def nitm_trad (nt:String,i:String,as:String,k:String,bs:String) = {|}*)
-(*{|scala   s"""latexmath:[( $nt \\rightarrow $as . $bs, $i, $k)]"""|}*)
-(*{|scala }|}*)
-(*{|scala |}*)
-(*{|scala val x = "X"|}*)
-(*{|scala val as = "\\alpha"|}*)
-(*{|scala val bs = "\\beta"|}*)
-(*{|scala |}*)
-(*{|scala val i = "i"|}*)
-(*{|scala val k = "k"|}*)
-(*{|scala val j = "j"|}*)
-(*{|scala val s = "S"|}*)
-(*{|scala val t = "T"|}*)
-(*{|scala |}*)
-(*{|scala val nt_item = "`nt_item`"|}*)
-(*{|scala val tm_item = "`tm_item`"|}*)
-(*{|scala |}*)
-(*{|scala def titm(k:String,t:String,j:String) = {|}*)
-(*{|scala   s"""latexmath:[( {}_{$k} ${t}_{$j})]"""|}*)
-(*{|scala }|}*)
-(*{|scala |}*)
-(*{|scala def titm(k:String,t:String) = {|}*)
-(*{|scala   s"""latexmath:[( {}_{$k} ${t}_{?})]"""|}*)
-(*{|scala }|}*)
-(*{|scala |}*)
-(*{|scala def citm(k:String,s:String,j:String) = {|}*)
-(*{|scala   s"""latexmath:[( {}_{$k} ${s}_{$j})]"""|}*)
-(*{|scala }|}*)
-(*{|scala |}*)
+(*{|scala import se_common._|}*)
 (*{|scala |}*)
 (*{|scala val adoc = s"""|}*)
 (*{|adoc == Simple Earley parsing (file: se_simple)|}*)
@@ -53,12 +21,13 @@ module Complete_map =
   Map.Make(struct type t = c_key_t;; let compare: t -> t -> int = comp end)
 
 
+(* use an option so that we can potentially optimize terminal parsing - see below *)
 type cm_t = Int_set.t option Complete_map.t
 type bm_t = Nt_item_set.t Blocked_map.t
 
 (* add some defaults *)
 
-let cm_find k m = try Complete_map.find k m with Not_found -> Some(Int_set.empty) (* FIXME add note about option *)
+let cm_find k m = try Complete_map.find k m with Not_found -> Some(Int_set.empty)
 let bm_find k m = try Blocked_map.find k m with Not_found -> Nt_item_set.empty
 
 (*{|adoc ----|}*)
@@ -172,17 +141,17 @@ let b_add: bitm_t -> bm_t -> bm_t = (
 (* process citms; update complete map; cut against blocked items *)
 
 let process_citms key citms s0 = (
-    let f5 s1 citm = 
+    let f5 citm s1 = 
       { s1 with complete=(c_add citm s1.complete) } in
-    let s0 = while_not_nil citms s0 f5 in
+    let s0 = while_not_nil citms f5 s0 in
     (* cut citm against blocked *)
     let bitms = bm_find key s0.blocked in
-    let f8 s1 citm = (
+    let f8 citm s1 = (
         let f6 bitm s1 = (let nitm = cut bitm citm.j in add_todo nitm s1) in
         let s1 = Nt_item_set.fold f6 bitms s1 in
         s1)
     in
-    let s0 = while_not_nil citms s0 f8 in
+    let s0 = while_not_nil citms f8 s0 in
     s0 )
 
 (*{|adoc ----|}*)
@@ -262,8 +231,8 @@ let step: ctxt_t -> state_t -> state_t = (
           match sym with
           | NT nt -> (
             let nitms = c0.g0.nt_items_for_nt nt (c0.i0.str,k) in
-            let f3 s1 nitm = (add_todo nitm s1) in
-            let s0 = while_not_nil nitms s0 f3 in
+            let f3 nitm s1 = (add_todo nitm s1) in
+            let s0 = while_not_nil nitms f3 s0 in
             s0
           )
           | TM tm -> (
@@ -276,8 +245,9 @@ let step: ctxt_t -> state_t -> state_t = (
 (*{|adoc items, using `process_citms`.|}*)
 (*{|adoc |}*)
 (*{|adoc There is a possible optimization here: if the key is already in the|}*)
-(*{|adoc complete map, we don't need to process it again. For simplicity we|}*)
-(*{|adoc don't incorporate this optimization.|}*)
+(*{|adoc complete map, we don't need to process it again. This is why we use an|}*)
+(*{|adoc option for the complete map codomain. For simplicity we don't|}*)
+(*{|adoc incorporate this optimization.|}*)
 (*{|adoc |}*)
 (*{|adoc [source,ocaml]|}*)
 (*{|adoc ----|}*)
@@ -337,6 +307,9 @@ let se_simple c0 nt = (
 (*{|scala |}*)
 (*{|scala // write doc to README.scala.adoc|}*)
 (*{|scala |}*)
-(*{|scala import java.io._|}*)
 (*{|scala |}*)
-(*{|scala new PrintWriter("se_simple.pp.adoc") { write(adoc2); close }|}*)
+(*{|scala }|}*)
+(*{|scala |}*)
+(*{|scala import java.io._|}*)
+(*{|scala new PrintWriter("se_simple.pp.adoc") { write(se_simple.adoc2); close }|}*)
+(*{|scala |}*)

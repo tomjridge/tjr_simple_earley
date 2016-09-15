@@ -1,3 +1,5 @@
+(*{|scala object se_common {|}*)
+(*{|scala |}*)
 (*{|scala def l(s:String) = { "(l:"+s+")" }|}*)
 (*{|scala |}*)
 (*{|scala def nitm(nt:String,i:String,as:String,k:String,bs:String) = {|}*)
@@ -64,8 +66,12 @@ let dest_Some = function Some x -> x | _ -> (failwith "dest_Some")
 
 let find_with_default d f k m = try (f k m) with Not_found -> d
 
-let rec while_not_nil: 'a list -> 's -> ('s -> 'a -> 's) -> 's = (
+let rec while_not_nil': 'a list -> 's -> ('s -> 'a -> 's) -> 's = (
     fun xs s0 f -> List.fold_left f s0 xs)
+
+let rec while_not_nil: 'a list -> ('a -> 's -> 's) -> 's -> 's = (
+    fun xs f s0 -> List.fold_left (fun x y -> f y x) s0 xs)
+
 
 (*{|adoc ----|}*)
 (*{|adoc |}*)
@@ -282,8 +288,11 @@ let nitm_to_string nitm = (
 (*{|scala   else if (s.startsWith("//ml ")) s.substring(5)|}*)
 (*{|scala   else s).mkString("\n")|}*)
 (*{|scala |}*)
+(*{|scala |}*)
+(*{|scala }|}*)
+(*{|scala |}*)
 (*{|scala // write doc to README.scala.adoc|}*)
 (*{|scala |}*)
 (*{|scala import java.io._|}*)
-(*{|scala |}*)
+(*{|scala import se_common._|}*)
 (*{|scala new PrintWriter("se_common.pp.adoc") { write(adoc2); close }|}*)

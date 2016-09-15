@@ -12,5 +12,9 @@ HTML preview: http://htmlpreview.github.io/?https://github.com/tomjridge/simple_
 
 include::se_common.pp.adoc[]
 
+include::se_spec.pp.adoc[]
+
 include::se_simple.pp.adoc[]
+
+include::se_staged.pp.adoc[]
 
