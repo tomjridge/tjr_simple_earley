@@ -6,18 +6,21 @@ Various types and definitions
 
 FIXME move
 
-We work with `nt_items` only (terminal parses are not cached). No
-staging. latexmath:[O(n^3)].
+// FIXME math rendering nicer with something like dollar{"xxx".m}? yes; change the below
 
-We define the map types that we need. From a set of
-complete items, we need to identify those for a given start index and
-symbol. This is the role of the complete map type `cm_t`. The codomain
-of the map is a set of integers latexmath:[j]. If latexmath:[j \in
-cm(k,S)] then there is a complete item latexmath:[( {}_{k} S_{j})].
+We work with `nt_items` only (terminal parses are not cached). No
+staging. +++\(O(n^3)\)+++.
+
+We define the map types that we need. From a set of complete items, we
+need to identify those for a given start index and symbol. This is the
+role of the complete map type `cm_t`. The codomain of the map is a set
+of integers +++\(j\)+++. If +++\(j \in cm(k,S)\)+++ then there is a
+complete item latexmath:[( {}_{k} S_{j})].
 
 The blocked map allows us to identify, from a set of nt items, those
-that are currently blocked at position latexmath:[k] waiting for a parse of
-symbol latexmath:[S] to complete. latexmath:[nitm \in bm(k,S)] if latexmath:[nitm] is of the form latexmath:[( X \rightarrow {}_{i} \alpha {}_{k} . S \beta)].
+that are currently blocked at position +++\(k\)+++ waiting for a parse
+of symbol +++\(S\)+++ to complete. +++\(nitm \in bm(k,S)\)+++ if
++++\(nitm\)+++ is of the form latexmath:[( X \rightarrow {}_{i} \alpha {}_{k} . S \beta)].
 
 
 === Utility functions
