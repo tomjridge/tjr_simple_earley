@@ -1,3 +1,2 @@
 all:
-	scala -i se_common.scala se_spec.scala se_simple.scala se_staged.scala -e "()"
-	asciidoctor simple_earley.adoc
+	ocamlfind ocamlc -thread -package core -c pervasives_.ml profile.ml staged.ml
