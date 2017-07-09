@@ -82,6 +82,8 @@ module Int_set =
 module Nt_item_set = 
   Set.Make(struct type t = nt_item;; let compare: t -> t -> int = comp end)
 
+type nt_item_set = Nt_item_set.t
+
 module Sym_item_set = 
   Set.Make(struct type t = sym_item;; let compare: t -> t -> int = comp end)
 
