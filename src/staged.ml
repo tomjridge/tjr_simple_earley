@@ -2,14 +2,40 @@
 
    use imperative hashmaps as set and map implementations *)
 
-module type S_ = sig
+module type Map_ = sig
+  type k_
+  type 'v map_
+  type 'v ops = {
+    find: k_ -> 'v map_ -> 'v;
+    add: k_ -> 'v -> 'v map_ -> 'v map_;
+    empty: 'v map_;
+    remove: k_ -> 'v map_ -> 'v map_
+  }
+end
 
-  type i_t
+module type Set_ = sig
+  type elt
+  type set
+  type ops = {
+    empty: set;
+    is_empty: set -> bool;
+    add: elt -> set -> set;
+    mem: elt -> set -> bool;
+    while_: 'a. (elt -> 'a -> 'a) -> set -> 'a -> 'a;
+    elements: set -> elt list;
+  }
+end
+
+let debug_endline s = ()
+let debug = ref true
+
+module type S_ = sig
+  type i_t = int
   type k_t = int
   type j_t = int
   type nt
   type tm
-  type sym
+  type sym = NT of nt | TM of tm
   type nt_item = {
     nt: nt;
     i: i_t;
@@ -18,49 +44,33 @@ module type S_ = sig
     bs: sym list
   }
 
-  type nt_item_set
+  module Map_nt : Map_ with type k_ = nt
+  type 'a map_nt = 'a Map_nt.map_
 
-  type 'a map_nt
-  type 'a map_int
-  type 'a map_tm
+  module Map_int: Map_ with type k_ = int
+  type 'a map_int = 'a Map_int.map_
 
-  type 'a map_nt_ops = {
-    find: nt -> 'a map_nt -> 'a;
-    add: nt -> 'a -> 'a map_nt -> 'a map_nt;
-  }
+  module Map_tm: Map_ with type k_ = tm
+  type 'a map_tm = 'a Map_tm.map_
 
+  val map_nt_ : 'a Map_nt.ops
+  val map_int_ : 'a Map_int.ops
+  val map_tm_: 'a Map_tm.ops
 
-  type 'a map_int_ops = {
-    find: int -> 'a map_int -> 'a;
-    add: int -> 'a -> 'a map_int -> 'a map_int;
-  }
-
-  type 'a map_tm_ops = {
-    find: tm -> 'a map_tm -> 'a;
-    add: tm -> 'a -> 'a map_tm -> 'a map_tm;
-  }
-
-  val map_tm_: 'a map_tm_ops
-
-  val map_int_ : 'a map_int_ops
-
-  val map_nt_ : 'a map_nt_ops
-
-  (* val map_nt_find: nt -> 'a map_nt -> 'a  *)
-
-  type nt_item_set_ops = {
-    empty: nt_item_set;
-    add: nt_item -> nt_item_set -> nt_item_set;
-    mem: nt_item -> nt_item_set -> bool;
-  }
-
-  val nt_item_set_ : nt_item_set_ops
-
+  module Set_nt_item : Set_ with type elt=nt_item
+  type nt_item_set = Set_nt_item.set
+  val nt_item_set_ : Set_nt_item.ops
 end
 
-
-module X = functor (S:S_) -> struct
+(* FIXME do all this in a monad, with particular monadic ops? would
+   this improve readability? probably yes *)
+module Make = functor (S:S_) -> struct
   open S
+  open S.Map_nt
+  open S.Map_int
+  open S.Map_tm
+  open S.Set_nt_item
+
   open Profile
 
   type ixk = (i_t * nt)  (* i X k *)
@@ -76,8 +86,8 @@ module X = functor (S:S_) -> struct
 
   type bitms_at_k = nt_item_set map_nt  (* bitms blocked at k,X *)
 
+  (* map from int to map from nt to nt_item_set *)
   type bitms_lt_k = (nt_item_set map_nt) option array
-
 
   module Blocked_map = struct
     type t = bitms_lt_k
@@ -104,6 +114,7 @@ module X = functor (S:S_) -> struct
     all_done: nt_item_set list;
   }
 
+  (* FIXME remove this - assume funs give default *)
   let wrap find k m default = (
     try find k m with Not_found -> default)
 
@@ -124,13 +135,10 @@ module X = functor (S:S_) -> struct
           let m' = map_nt_.add nt s' m in
           m' ) }
 
-
-
   let pop_todo s0 = (
     match s0.todo with
     | x::xs -> (x,{s0 with todo=xs})
     | _ -> (failwith "pop_todo"))
-
 
   let cut: nt_item -> j_t -> nt_item = (
     fun bitm j0 -> (
@@ -138,332 +146,200 @@ module X = functor (S:S_) -> struct
         let bs = List.tl bitm.bs in
         let k = j0 in
         let nitm ={bitm with k;as_;bs} in
-        nitm
-      )
-  )
+        nitm ))
 
   (* k is the current stage *)
-  (* FIXME avoid cost of double lookup by using new ocaml sets with boolean rv *)
-  let add_todo: nt_item -> state_t -> state_t = 
-    fun nitm s0 ->
-      let k = s0.k in
-      match nitm.k > k with
-      | true -> (
-          let nitms =
-            wrap map_int_.find nitm.k s0.todo_gt_k nt_item_set_.empty
-          in
-          let nitms = nt_item_set_.add nitm nitms in
-          { s0 with
-            todo_gt_k=(map_int_.add nitm.k nitms s0.todo_gt_k)})
-      | false -> (
-          match nt_item_set_.mem nitm s0.todo_done with
-          | true -> s0
-          | false -> (
-              { s0 with
-                todo=(nitm::s0.todo);
-                todo_done=nt_item_set_.add nitm s0.todo_done}))
+  (* FIXME avoid cost of double lookup by using new ocaml sets with
+     boolean rv *)
+  let add_todo: nt_item -> state_t -> state_t = fun nitm s0 ->
+    let k = s0.k in
+    match nitm.k > k with
+    | true -> (
+        let nitms = wrap map_int_.find nitm.k s0.todo_gt_k nt_item_set_.empty in
+        let nitms = nt_item_set_.add nitm nitms in
+        { s0 with todo_gt_k=(map_int_.add nitm.k nitms s0.todo_gt_k)})
+    | false -> (
+        match nt_item_set_.mem nitm s0.todo_done with
+        | true -> s0
+        | false -> (
+            { s0 with todo=(nitm::s0.todo);
+                      todo_done=nt_item_set_.add nitm s0.todo_done}))
 
   let add_ixk_done: ixk -> state_t -> state_t =
-    fun ix s0 ->
-      { s0 with ixk_done=(Ixk_set.add ix s0.ixk_done)}
-
+    fun ix s0 -> { s0 with ixk_done=(Ixk_set.add ix s0.ixk_done)}
 
   let mem_ixk_done: ixk -> state_t -> bool =
     fun ix s0 -> Ixk_set.mem ix s0.ixk_done 
 
-
   let find_ktjs: tm -> state_t -> int list option =
-    fun t s0 ->
-      wrap map_tm_.find t s0.ktjs None
-
+    fun t s0 -> wrap map_tm_.find t s0.ktjs None
 
   let counter = ref 0
 
-  let step_k: ctxt_t -> state_t -> state_t = (
-    fun c0 s0 ->
-      let _ = debug_endline "XXXstep_k" in
-      let _ = assert(log P.ab) in
+  
+  let in_ctxt ctxt = begin
+    ctxt @@ fun ~nt_items_for_nt ~input ~p_of_tm ~input_length -> 
+
+    (* step_k ------------------------------------------------------- *)
+    let step_k s0 = begin
+      debug_endline "XXXstep_k";
+      assert(log P.ab);
       let _ = (
         counter:=1 + !counter; 
         if (!counter mod 1000 = 0) then Gc.full_major() else () )
       in
-      let _ = assert(log P.ac) in
+      assert(log P.ac);
       let k = s0.k in    
       let bitms = bitms s0 in
       let (nitm,s0) = pop_todo s0 in
-      (* let _ = print_endline (nitm_to_string nitm) in *)
-      let complete = nitm.bs = [] in
-      let _ = assert(log P.bc) in
-      match complete with
+      let nitm_complete = nitm.bs = [] in
+      assert(log P.bc);
+      match nitm_complete with
       | true -> (
-          (*{|adoc ----|}*)
-          (*{|adoc |}*)
-          (*{|adoc We have a complete item `(i,X,k)`.|}*)
-          (*{|adoc |}*)
-          (*{|adoc [source,ocaml]|}*)
-          (*{|adoc ----|}*)
           let (i,x) = (nitm.i,nitm.nt) in
           (* possible NEW COMPLETE (i,X,k) *)
           let already_done = mem_ixk_done (i,x) s0 in
-          let _ = assert(log P.cd) in
+          assert(log P.cd);
           match already_done with
-          | true -> (
-              (*{|adoc ----|}*)
-              (*{|adoc |}*)
-              (*{|adoc If the item has already been processed, don't do anything.|}*)
-              (*{|adoc Otherwise, add to `ixk` map.|}*)
-              (*{|adoc |}*)
-              (*{|adoc |}*)
-              (*{|adoc [source,ocaml]|}*)
-              (*{|adoc ----|}*)
-              let _ = debug_endline "already_done" in
-              s0)
+          | true -> (debug_endline "already_done"; s0)
           | false -> (
-              let _ = debug_endline "not already_done" in
+              debug_endline "not already_done";
               let s0 = add_ixk_done (i,x) s0 in
-              (*{|adoc ----|}*)
-              (*{|adoc |}*)
-              (*{|adoc Then we need to process the complete item against the blocked items.|}*)
-              (*{|adoc |}*)
-              (*{|adoc [source,ocaml]|}*)
-              (*{|adoc ----|}*)
               let bitms = bitms (i,x) in
-        (*
-        let fm bitm s1 = (add_todo (cut bitm k) s1) in
-        let r = nt_item_set_.fold fm bitms s0 in
-           *)
-              (* following is a fold using mutable state FIXME while_not_nil? *)
               let r = (
                 (* FIXME possible optimization if we work with Y -> {h} as i
                    X bs *)
-                let s1 = ref s0 in
-                let f bitm = (s1:=add_todo (cut bitm k) (!s1)) in
-                let _ = nt_item_set_.iter f bitms in
-                !s1
-              )
+                let f bitm s = add_todo (cut bitm k) s in
+                nt_item_set_.while_ f bitms s0)
               in
-              let _ = assert(log P.de) in
-              r
-            ))
+              assert(log P.de);
+              r))
       | false -> (
-          (*{|adoc ----|}*)
-          (*{|adoc |}*)
-          (*{|adoc Otherwise, we have an item `(X -> i as k (S bs'))` blocked on `k,S`.|}*)
-          (*{|adoc |}*)
-          (*{|adoc [source,ocaml]|}*)
-          (*{|adoc ----|}*)
           (* NEW BLOCKED X -> i as k (S bs') on k S*)
           let bitm = nitm in
           let s = List.hd bitm.bs in
           match s with
           | NT y -> (
-              (*{|adoc ----|}*)
-              (*{|adoc |}*)
-              (*{|adoc If `S` is a nonterminal `y`...|}*)
-              (*{|adoc |}*)
-              (*{|adoc [source,ocaml]|}*)
-              (*{|adoc ----|}*)
-              let _ = assert(log P.ef) in
+              assert(log P.ef);
               (* have we already processed k Y? *)
               let bitms = bitms (k,y) in
               let bitms_empty = nt_item_set_.is_empty bitms in
               (* record blocked FIXME we may already have processed k Y *)
-              (*{|adoc ----|}*)
-              (*{|adoc |}*)
-              (*{|adoc record the new blocked item.|}*)
-              (*{|adoc |}*)
-              (*{|adoc [source,ocaml]|}*)
-              (*{|adoc ----|}*)
               let s0 = add_bitm_at_k bitm y s0 in
-              let _ = assert(log P.fg) in
+              assert(log P.fg);
               match bitms_empty with
               | false -> (
-                  (*{|adoc ----|}*)
-                  (*{|adoc |}*)
-                  (*{|adoc If we have already processed `k,Y` (ie, this is not the first time we have seen nonterminal `Y` at stage `k`)...|}*)
-                  (*{|adoc |}*)
-                  (*{|adoc [source,ocaml]|}*)
-                  (*{|adoc ----|}*)
-                  let _ = debug_endline "not bitms_empty" in
-                  (* already processed k Y, so no need to expand; but may have complete item kYk *)
-                  (*{|adoc ----|}*)
-                  (*{|adoc |}*)
-                  (*{|adoc then we don't need to expand `Y`, but we may have to consider the|}*)
-                  (*{|adoc interaction of `bitm` with the complete item `(k,Y,k)`: if the|}*)
-                  (*{|adoc complete item has been found, we need to cut it against the blocked|}*)
-                  (*{|adoc item.|}*)
-                  (*{|adoc |}*)
-                  (*{|adoc [source,ocaml]|}*)
-                  (*{|adoc ----|}*)
+                  debug_endline "not bitms_empty";
+                  (* already processed k Y, so no need to expand;
+                     but may have complete item kYk *)
                   match (mem_ixk_done (k,y) s0) with
                   | true -> (add_todo (cut bitm k) s0)
                   | false -> s0)
               | true -> (
-                  (*{|adoc ----|}*)
-                  (*{|adoc |}*)
-                  (*{|adoc If we haven't processed nt `Y` yet...|}*)
-                  (*{|adoc |}*)
-                  (*{|adoc [source,ocaml]|}*)
-                  (*{|adoc ----|}*)
-                  let _ = debug_endline "bitms_empty" in
-                  (* need to process Y *)
-                  (* do we have an item (k,Y,k) ? no *)
-                  let _ = assert (mem_ixk_done (k,y) s0 = false) in
+                  debug_endline "bitms_empty";
+                  assert (mem_ixk_done (k,y) s0 = false);
                   (* expand y *)
-                  (*{|adoc ----|}*)
-                  (*{|adoc |}*)
-                  (*{|adoc expand `Y`, and add new items. Note that there cannot be any complete|}*)
-                  (*{|adoc items `(k,Y,k)` because this is the first time we are processing `Y`|}*)
-                  (*{|adoc at this stage.|}*)
-                  (*{|adoc |}*)
-                  (*{|adoc [source,ocaml]|}*)
-                  (*{|adoc ----|}*)
-                  let new_itms = c0.g0.nt_items_for_nt y (c0.i0.str,k) in
+                  let new_itms = nt_items_for_nt y (input,k) in
                   let fn s1 nitm = add_todo nitm s1 in
                   let r = List.fold_left fn s0 new_itms in
-                  let _ = assert(log P.gh) in
-                  r
-                ) )
-          | TM t -> (
-              (*{|adoc ----|}*)
-              (*{|adoc |}*)
-              (*{|adoc If `S` is a nonterminal `T`...|}*)
-              (*{|adoc |}*)
-              (*{|adoc [source,ocaml]|}*)
-              (*{|adoc ----|}*)
-              (* have we already processed k T ? *)
-              let ktjs = find_ktjs t s0 in
-              let _ = assert(log P.hi) in
-              (*{|adoc ----|}*)
-              (*{|adoc |}*)
-              (*{|adoc (we need to bind `js` to the indexes resulting from a terminal parse|}*)
-              (*{|adoc of `T` at this stage)|}*)
-              (*{|adoc |}*)
-              (*{|adoc [source,ocaml]|}*)
-              (*{|adoc ----|}*)
-              let (js,s0) = (
-                match ktjs with
-                | None -> (
-                    (*{|adoc ----|}*)
-                    (*{|adoc |}*)
-                    (*{|adoc if we have not already dealt with `T` at the current stage...|}*)
-                    (*{|adoc |}*)
-                    (*{|adoc [source,ocaml]|}*)
-                    (*{|adoc ----|}*)
-                    let _ = debug_endline "ktjs None" in
-                    (* process k T *)
-                    let _ = debug_endline "processing k T" in
-                    let p = c0.g0.p_of_tm t in
-                    (*{|adoc ----|}*)
-                    (*{|adoc |}*)
-                    (*{|adoc we use the terminal parser to get a list of indexes `j`, and update the `ktjs` map.|}*)
-                    (*{|adoc |}*)
-                    (*{|adoc [source,ocaml]|}*)
-                    (*{|adoc ----|}*)
-                    let js = p (c0.i0.str,k,c0.i0.len) in
-                    let s0 = { s0 with ktjs=(map_tm_.add t (Some js) s0.ktjs) } in
-                    (js,s0))
-                | Some js -> (
-                    (*{|adoc ----|}*)
-                    (*{|adoc |}*)
-                    (*{|adoc if we have already dealt with `T` at the current stage...|}*)
-                    (*{|adoc |}*)
-                    (*{|adoc [source,ocaml]|}*)
-                    (*{|adoc ----|}*)
-                    let _ = debug_endline "ktjs Some" in
-                    (js,s0)))
-              in
-              let _ = assert(log P.ij) in
-              (* process blocked; there is only one item blocked at this point *)
-              (*{|adoc ----|}*)
-              (*{|adoc |}*)
-              (*{|adoc Now we have `js`, corresponding to a set of complete items. We need to|}*)
-              (*{|adoc process these against the relevant blocked items. Note that we only|}*)
-              (*{|adoc parse a terminal once at stage `k`, and this occurs when we meet the|}*)
-              (*{|adoc first corresponding blocked item. Thus, there is only one blocked item|}*)
-              (*{|adoc at this point.|}*)
-              (*{|adoc |}*)
-              (*{|adoc [source,ocaml]|}*)
-              (*{|adoc ----|}*)
-              let fo s1 j = add_todo (cut bitm j) s1 in
-              let r = List.fold_left fo s0 js in
-              let _ = assert(log P.jk) in
-              r
-            )
-        )            
-  )
+                  assert(log P.gh);
+                  r))
+          | TM t -> 
+            (* have we already processed k T ? *)
+            let ktjs = find_ktjs t s0 in
+            assert(log P.hi);
+            let (js,s0) = 
+              match ktjs with
+              | None -> (
+                  debug_endline "ktjs None";
+                  (* process k T *)
+                  debug_endline "processing k T";
+                  let p = p_of_tm t in
+                  let js = p (input,k,input_length) in
+                  let s0 = {s0 with ktjs=(map_tm_.add t (Some js) s0.ktjs) } in
+                  (js,s0))
+              | Some js -> (debug_endline "ktjs Some"; (js,s0))
+            in
+            assert(log P.ij);
+            (* process blocked; there is only one item blocked at
+               this point *)
+            let fo s1 j = add_todo (cut bitm j) s1 in
+            let r = List.fold_left fo s0 js in
+            assert(log P.jk);
+            r)
+    end (*  step_k *)
+    in
 
 
-  (* loop at k *)
-  let loop_k: ctxt_t -> state_t -> state_t = 
-    fun ctxt -> (
-        let step_k = step_k ctxt in
-        let rec f s0 = (
-          match s0.todo with
-          | [] -> s0
-          | _ -> (f (step_k s0)))
-        in
-        f)
+    (* loop_k: loop at k -------------------------------------------- *)
+    let rec loop_k s0 = 
+      match s0.todo with
+      | [] -> s0
+      | _ -> loop_k (step_k s0)
+    in
 
 
-  (* outer loop: repeatedly process items at stage k, then move to stage
-     k+1 *)
-  let loop: ctxt_t -> state_t -> state_t = (
-    fun c0 -> (
-        let loop_k = loop_k c0 in
-        let rec f s0 = (
-          match s0.k > c0.i0.len + 1 with
-          | true -> s0
-          | false -> (
-              (* process items *)
-              let s0 = loop_k s0 in
-              let old_k = s0.k in
-              let k = s0.k+1 in
-              let todo =
-                wrap map_int_.find k s0.todo_gt_k nt_item_set_.empty
-              in
-              let todo_done = todo in
-              let todo = nt_item_set_.elements todo in
-              let todo_gt_k = (
-                (* keep debug into around *)
-                match !debug with 
-                | true -> s0.todo_gt_k | false -> map_int_.remove k s0.todo_gt_k) 
-              in
-              let ixk_done = Ixk_set.empty in
-              let ktjs = map_tm_.empty in
-              let bitms_lt_k = (
-                (* FIXME the following hints that bitms_lt_k should be a
-                   map from k to a map from nt to ... since bitms_at_k is a
-                   map from nt *)
-                let b_init = s0.bitms_lt_k in
-                Blocked_map.add b_init old_k s0.bitms_at_k)
-              in
-              let bitms_at_k = map_nt_.empty in
-              let all_done =  s0.todo_done::s0.all_done in
-              let s1 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k;all_done}
-              in
-              f s1
-            )
-        )
-        in
-        f
-      )
-  )
+    (* loop --------------------------------------------------------- *)
+    (* outer loop: repeatedly process items at stage k, then move to stage
+       k+1 *)
+    let rec loop s0 = begin
+      match s0.k > input_length + 1 with
+      | true -> s0
+      | false -> (
+          (* process items *)
+          let s0 = loop_k s0 in
+          let old_k = s0.k in
+          let k = s0.k+1 in
+          let todo = wrap map_int_.find k s0.todo_gt_k nt_item_set_.empty in
+          let todo_done = todo in
+          let todo = nt_item_set_.elements todo in
+          let todo_gt_k = (
+            (* keep debug into around *)
+            match !debug with 
+            | true -> s0.todo_gt_k 
+            | false -> map_int_.remove k s0.todo_gt_k)
+          in
+          let ixk_done = Ixk_set.empty in
+          let ktjs = map_tm_.empty in
+          let bitms_lt_k = (
+            (* FIXME the following hints that bitms_lt_k should be a
+               map from k to a map from nt to ... since bitms_at_k is a
+               map from nt *)
+            let b_init = s0.bitms_lt_k in
+            Blocked_map.add b_init old_k s0.bitms_at_k)
+          in
+          let bitms_at_k = map_nt_.empty in
+          let all_done =  s0.todo_done::s0.all_done in
+          let s1 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;
+                    bitms_at_k;all_done} in
+          loop s1)
+    end (* loop *)
+    in
 
-  (* construct initial context, apply loop *)
-  let staged: ctxt_t -> nt -> state_t = (
-    fun c0 nt ->
+    (* staged: main entry point ------------------------------------- *)
+
+    (* construct initial context, apply loop *)
+    let staged nt = (
       let (i,k) = (0,0) in
-      let init = {nt;i;as_=[];k;bs=[NT nt]} in (* this is a dummy item to get things going *)
+      (* this is a dummy item to get things going *)
+      let init = {nt;i;as_=[];k;bs=[NT nt]} in 
       let todo = [init] in  
       let todo_done = nt_item_set_.empty in
       let todo_gt_k = map_int_.empty in
       let ixk_done = Ixk_set.empty in
       let ktjs = map_tm_.empty in
-      let bitms_lt_k = Blocked_map.empty c0.i0.len in
+      let bitms_lt_k = Blocked_map.empty input_length in
       let bitms_at_k = map_nt_.empty in
       let all_done = [] in
-      let s0 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k;all_done} in
-      loop c0 s0)
+      let s0 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;
+                bitms_at_k;all_done} in
+      loop s0)
+    in
 
-end
+    staged
+
+  end  (* end in_ctxt *)
+
+  let staged c nt = in_ctxt c nt
+
+end (* Make *)
