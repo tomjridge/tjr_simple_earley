@@ -1,12 +1,25 @@
 (* TODO:
 
-   use imperative hashmaps as set and map implementations *)
+   use imperative hashmaps as set and map implementations 
 
+   test with a default implementation
+
+   replace all type ascriptions with named args
+   
+*)
+
+(* all maps are "with default" ie to option, or empty set; no
+   exceptions thrown; so we need different map_ops for each map (since
+   map_int may need two different defaults), or else take a default
+   param FIXME add defaults to maps, or options*)
 module type Map_ = sig
   type k_
   type 'v map_
   type 'v ops = {
     find: k_ -> 'v map_ -> 'v;
+    (* FIXME following is preferred type? Stick with find for now,
+       with specialized defaults *)
+    find': 'a. k_ -> _Some:('v -> 'a) -> _None:(unit -> 'a) -> 'v map_ -> 'a;
     add: k_ -> 'v -> 'v map_ -> 'v map_;
     empty: 'v map_;
     remove: k_ -> 'v map_ -> 'v map_
@@ -21,13 +34,32 @@ module type Set_ = sig
     is_empty: set -> bool;
     add: elt -> set -> set;
     mem: elt -> set -> bool;
-    while_: 'a. (elt -> 'a -> 'a) -> set -> 'a -> 'a;
+    with_each_elt: 'a. f:(state:'a -> elt -> 'a) -> init_state:'a -> set -> 'a;
     elements: set -> elt list;
   }
 end
 
-let debug_endline s = ()
-let debug = ref true
+
+
+module List_ = struct
+
+let fold_left_ ~step ~init_state xs = 
+  List.fold_left 
+    (fun a b -> step ~state:a b)
+    init_state
+    xs
+
+let with_each_elt = fold_left_
+end
+
+
+let bool_case ~true_ ~false_ x = (
+  match x with 
+  | true -> true_ ()
+  | false -> false_ ()
+)
+
+let _ = bool_case
 
 module type S_ = sig
   type i_t = int
@@ -35,14 +67,27 @@ module type S_ = sig
   type j_t = int
   type nt
   type tm
-  type sym = NT of nt | TM of tm
+  type sym
+  val sym_case: nt:(nt -> 'a) -> tm:(tm -> 'a) -> sym -> 'a
+  val _NT: nt -> sym
+
   type nt_item = {
     nt: nt;
     i: i_t;
-    as_: sym list;
+    as_: sym list;  (* NOTE in "reversed" order *)
     k: k_t;
     bs: sym list
   }
+
+  module Set_nt_item : Set_ with type elt=nt_item
+  type nt_item_set = Set_nt_item.set
+  val nt_item_set_ : Set_nt_item.ops
+
+  type ixk = (i_t * nt)  (* i X k *)
+  module Set_ixk : Set_ with type elt=ixk
+  type ixk_set = Set_ixk.set
+  val ixk_set : Set_ixk.ops
+
 
   module Map_nt : Map_ with type k_ = nt
   type 'a map_nt = 'a Map_nt.map_
@@ -53,38 +98,31 @@ module type S_ = sig
   module Map_tm: Map_ with type k_ = tm
   type 'a map_tm = 'a Map_tm.map_
 
-  val map_nt_ : 'a Map_nt.ops
-  val map_int_ : 'a Map_int.ops
-  val map_tm_: 'a Map_tm.ops
+  (* these have obvious defaults for find operation *)
+  val map_int_ : nt_item_set Map_int.ops
+  val map_tm_: (int list option) Map_tm.ops
+  val map_nt_ : nt_item_set Map_nt.ops
 
-  module Set_nt_item : Set_ with type elt=nt_item
-  type nt_item_set = Set_nt_item.set
-  val nt_item_set_ : Set_nt_item.ops
+
 end
 
 (* FIXME do all this in a monad, with particular monadic ops? would
-   this improve readability? probably yes *)
+   this improve readability? probably yes 
+
+   FIXME make eg find_ktjs etc take s.ktjs, not s?
+*)
 module Make = functor (S:S_) -> struct
   open S
   open S.Map_nt
   open S.Map_int
   open S.Map_tm
   open S.Set_nt_item
+  open S.Set_ixk
 
   open Profile
 
-  type ixk = (i_t * nt)  (* i X k *)
-
-  module Ixk_set =
-    Set.Make(
-    struct
-      type t = ixk
-      let compare: t -> t -> int = Pervasives.compare
-    end)
-
-  type ixk_set = Ixk_set.t
-
   type bitms_at_k = nt_item_set map_nt  (* bitms blocked at k,X *)
+  (* can use map_nt_ operations for at_k *)
 
   (* map from int to map from nt to nt_item_set *)
   type bitms_lt_k = (nt_item_set map_nt) option array
@@ -114,15 +152,11 @@ module Make = functor (S:S_) -> struct
     all_done: nt_item_set list;
   }
 
-  (* FIXME remove this - assume funs give default *)
-  let wrap find k m default = (
-    try find k m with Not_found -> default)
-
   let bitms: state_t -> (k_t * nt) -> nt_item_set = (
     fun s0 (k,x) ->
       match (k=s0.k) with
-      | true -> (wrap map_nt_.find x s0.bitms_at_k nt_item_set_.empty)
-      | false -> (wrap Blocked_map.find (k,x) s0.bitms_lt_k nt_item_set_.empty))
+      | true -> (s0.bitms_at_k |> map_nt_.find x)
+      | false -> (Blocked_map.find (k,x) s0.bitms_lt_k))
 
   (* nt_item blocked on nt at k *)
   let add_bitm_at_k: nt_item -> nt -> state_t -> state_t =
@@ -130,7 +164,7 @@ module Make = functor (S:S_) -> struct
       { s0 with
         bitms_at_k = (
           let m = s0.bitms_at_k in
-          let s = wrap map_nt_.find nt m nt_item_set_.empty in
+          let s = map_nt_.find nt m in
           let s' = nt_item_set_.add nitm s in
           let m' = map_nt_.add nt s' m in
           m' ) }
@@ -155,7 +189,7 @@ module Make = functor (S:S_) -> struct
     let k = s0.k in
     match nitm.k > k with
     | true -> (
-        let nitms = wrap map_int_.find nitm.k s0.todo_gt_k nt_item_set_.empty in
+        let nitms = map_int_.find nitm.k s0.todo_gt_k in
         let nitms = nt_item_set_.add nitm nitms in
         { s0 with todo_gt_k=(map_int_.add nitm.k nitms s0.todo_gt_k)})
     | false -> (
@@ -166,19 +200,20 @@ module Make = functor (S:S_) -> struct
                       todo_done=nt_item_set_.add nitm s0.todo_done}))
 
   let add_ixk_done: ixk -> state_t -> state_t =
-    fun ix s0 -> { s0 with ixk_done=(Ixk_set.add ix s0.ixk_done)}
+    fun ix s0 -> { s0 with ixk_done=(ixk_set.add ix s0.ixk_done)}
 
   let mem_ixk_done: ixk -> state_t -> bool =
-    fun ix s0 -> Ixk_set.mem ix s0.ixk_done 
+    fun ix s0 -> ixk_set.mem ix s0.ixk_done 
 
   let find_ktjs: tm -> state_t -> int list option =
-    fun t s0 -> wrap map_tm_.find t s0.ktjs None
+    fun t s0 -> map_tm_.find t s0.ktjs
 
   let counter = ref 0
 
   
   let in_ctxt ctxt = begin
-    ctxt @@ fun ~nt_items_for_nt ~input ~p_of_tm ~input_length -> 
+    ctxt @@ fun ~new_items ~input ~parse_tm ~input_length 
+      ~debug_enabled ~debug_endline -> 
 
     (* step_k ------------------------------------------------------- *)
     let step_k s0 = begin
@@ -193,80 +228,89 @@ module Make = functor (S:S_) -> struct
       let bitms = bitms s0 in
       let (nitm,s0) = pop_todo s0 in
       let nitm_complete = nitm.bs = [] in
-      assert(log P.bc);
-      match nitm_complete with
-      | true -> (
+      assert(log P.bc);  
+      (* NOTE waypoints before each split and at end of branch *)
+      nitm_complete |> bool_case
+        ~true_: (fun () ->
           let (i,x) = (nitm.i,nitm.nt) in
           (* possible NEW COMPLETE (i,X,k) *)
           let already_done = mem_ixk_done (i,x) s0 in
           assert(log P.cd);
-          match already_done with
-          | true -> (debug_endline "already_done"; s0)
-          | false -> (
+          already_done |> bool_case
+            ~true_:(fun () -> 
+              debug_endline "already_done"; 
+              s0)
+            ~false_:(fun () -> 
               debug_endline "not already_done";
               let s0 = add_ixk_done (i,x) s0 in
-              let bitms = bitms (i,x) in
-              let r = (
-                (* FIXME possible optimization if we work with Y -> {h} as i
-                   X bs *)
-                let f bitm s = add_todo (cut bitm k) s in
-                nt_item_set_.while_ f bitms s0)
-              in
+              (* FIXME possible optimization if we work with Y ->
+                   {h} as i X bs *)
+              bitms (i,x)
+              |> nt_item_set_.with_each_elt
+                ~f:(fun ~state:s bitm -> add_todo (cut bitm k) s)
+                ~init_state:s0
+              |> fun s ->
               assert(log P.de);
-              r))
-      | false -> (
-          (* NEW BLOCKED X -> i as k (S bs') on k S*)
+              s))
+        ~false_: (fun () -> 
+          (* NEW BLOCKED X -> i as k (S bs') on k S; here S is _Y *)
           let bitm = nitm in
           let s = List.hd bitm.bs in
-          match s with
-          | NT y -> (
-              assert(log P.ef);
+          s |> sym_case
+            ~nt:(fun _Y -> 
               (* have we already processed k Y? *)
-              let bitms = bitms (k,y) in
+              let bitms = bitms (k,_Y) in
               let bitms_empty = nt_item_set_.is_empty bitms in
-              (* record blocked FIXME we may already have processed k Y *)
-              let s0 = add_bitm_at_k bitm y s0 in
+              (* NOTE already_processed_kY = not bitms_empty *)
+              let s0 = add_bitm_at_k bitm _Y s0 in
               assert(log P.fg);
-              match bitms_empty with
-              | false -> (
+              bitms_empty |> bool_case
+                ~false_:(fun () -> 
+                  (* already processed k Y, so no need to expand; but
+                     may have complete item kYk *)
+                  (* FIXME when dpes kYk get added to ixk_done? *)
                   debug_endline "not bitms_empty";
-                  (* already processed k Y, so no need to expand;
-                     but may have complete item kYk *)
-                  match (mem_ixk_done (k,y) s0) with
-                  | true -> (add_todo (cut bitm k) s0)
-                  | false -> s0)
-              | true -> (
+                  mem_ixk_done (k,_Y) s0 |> bool_case
+                    ~true_:(fun () -> add_todo (cut bitm k) s0)
+                    ~false_:(fun () -> s0))  (* FIXME waypoint? *)
+                ~true_:(fun () ->
+                  (* we have not processed k Y; expand sym Y *)
                   debug_endline "bitms_empty";
-                  assert (mem_ixk_done (k,y) s0 = false);
-                  (* expand y *)
-                  let new_itms = nt_items_for_nt y (input,k) in
-                  let fn s1 nitm = add_todo nitm s1 in
-                  let r = List.fold_left fn s0 new_itms in
+                  assert (mem_ixk_done (k,_Y) s0 = false);
+                  new_items ~nt:_Y ~input ~k 
+                  |> List_.with_each_elt 
+                    ~step:(fun ~state:s nitm -> add_todo nitm s) 
+                    ~init_state:s0
+                  |> fun s -> 
                   assert(log P.gh);
-                  r))
-          | TM t -> 
-            (* have we already processed k T ? *)
-            let ktjs = find_ktjs t s0 in
-            assert(log P.hi);
-            let (js,s0) = 
-              match ktjs with
-              | None -> (
-                  debug_endline "ktjs None";
-                  (* process k T *)
-                  debug_endline "processing k T";
-                  let p = p_of_tm t in
-                  let js = p (input,k,input_length) in
-                  let s0 = {s0 with ktjs=(map_tm_.add t (Some js) s0.ktjs) } in
-                  (js,s0))
-              | Some js -> (debug_endline "ktjs Some"; (js,s0))
-            in
-            assert(log P.ij);
-            (* process blocked; there is only one item blocked at
-               this point *)
-            let fo s1 j = add_todo (cut bitm j) s1 in
-            let r = List.fold_left fo s0 js in
-            assert(log P.jk);
-            r)
+                  s))
+            ~tm:(fun t ->
+              (* have we already processed k T ? *)
+              find_ktjs t s0 |> fun ktjs ->
+              assert(log P.hi);
+              ktjs 
+              |> begin function 
+                | None -> (
+                    (* process k T *)
+                    debug_endline "ktjs None";
+                    debug_endline "processing k T";
+                    let js = parse_tm ~tm:t ~input ~k ~input_length in
+                    let ktjs = map_tm_.add t (Some js) s0.ktjs in
+                    (js,{s0 with ktjs}))
+                | Some js -> (
+                    debug_endline "ktjs Some"; (js,s0)) 
+              end
+              |> fun (js,s0) -> 
+              assert(log P.ij);
+              (* process blocked; there is only one item blocked at
+                 this point *)
+              js 
+              |> List_.with_each_elt
+                ~step:(fun ~state:s j -> add_todo (cut bitm j) s)
+                ~init_state:s0 
+              |> fun s -> 
+              assert(log P.jk);
+              s))
     end (*  step_k *)
     in
 
@@ -290,16 +334,16 @@ module Make = functor (S:S_) -> struct
           let s0 = loop_k s0 in
           let old_k = s0.k in
           let k = s0.k+1 in
-          let todo = wrap map_int_.find k s0.todo_gt_k nt_item_set_.empty in
+          let todo = map_int_.find k s0.todo_gt_k in
           let todo_done = todo in
           let todo = nt_item_set_.elements todo in
           let todo_gt_k = (
             (* keep debug into around *)
-            match !debug with 
+            match debug_enabled with 
             | true -> s0.todo_gt_k 
             | false -> map_int_.remove k s0.todo_gt_k)
           in
-          let ixk_done = Ixk_set.empty in
+          let ixk_done = ixk_set.empty in
           let ktjs = map_tm_.empty in
           let bitms_lt_k = (
             (* FIXME the following hints that bitms_lt_k should be a
@@ -309,7 +353,7 @@ module Make = functor (S:S_) -> struct
             Blocked_map.add b_init old_k s0.bitms_at_k)
           in
           let bitms_at_k = map_nt_.empty in
-          let all_done =  s0.todo_done::s0.all_done in
+          let all_done = s0.todo_done::s0.all_done in
           let s1 = {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;
                     bitms_at_k;all_done} in
           loop s1)
@@ -322,11 +366,11 @@ module Make = functor (S:S_) -> struct
     let staged nt = (
       let (i,k) = (0,0) in
       (* this is a dummy item to get things going *)
-      let init = {nt;i;as_=[];k;bs=[NT nt]} in 
+      let init = {nt;i;as_=[];k;bs=[_NT nt]} in 
       let todo = [init] in  
       let todo_done = nt_item_set_.empty in
       let todo_gt_k = map_int_.empty in
-      let ixk_done = Ixk_set.empty in
+      let ixk_done = ixk_set.empty in
       let ktjs = map_tm_.empty in
       let bitms_lt_k = Blocked_map.empty input_length in
       let bitms_at_k = map_nt_.empty in
