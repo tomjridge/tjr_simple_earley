@@ -230,13 +230,15 @@ module Make = functor (S:S_) -> struct
       let nitm_complete = nitm.bs = [] in
       assert(log P.bc);  
       (* NOTE waypoints before each split and at end of branch *)
-      nitm_complete |> bool_case
+      nitm_complete 
+      |> bool_case
         ~true_: (fun () ->
           let (i,x) = (nitm.i,nitm.nt) in
           (* possible NEW COMPLETE (i,X,k) *)
           let already_done = mem_ixk_done (i,x) s0 in
           assert(log P.cd);
-          already_done |> bool_case
+          already_done 
+          |> bool_case
             ~true_:(fun () -> 
               debug_endline "already_done"; 
               s0)
@@ -256,7 +258,8 @@ module Make = functor (S:S_) -> struct
           (* NEW BLOCKED X -> i as k (S bs') on k S; here S is _Y *)
           let bitm = nitm in
           let s = List.hd bitm.bs in
-          s |> sym_case
+          s 
+          |> sym_case
             ~nt:(fun _Y -> 
               (* have we already processed k Y? *)
               let bitms = bitms (k,_Y) in
@@ -264,7 +267,8 @@ module Make = functor (S:S_) -> struct
               (* NOTE already_processed_kY = not bitms_empty *)
               let s0 = add_bitm_at_k bitm _Y s0 in
               assert(log P.fg);
-              bitms_empty |> bool_case
+              bitms_empty 
+              |> bool_case
                 ~false_:(fun () -> 
                   (* already processed k Y, so no need to expand; but
                      may have complete item kYk *)
