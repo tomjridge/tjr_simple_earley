@@ -5,7 +5,28 @@
    test with a default implementation
 
    replace all type ascriptions with named args
-   
+
+
+   remove functorization; 'sym nt_item amd sym_case as a record field
+   ('sym)sym_ops: sym_case: 'a. ...
+
+   can we assume there is a map from nt to int? if we keep nt
+   abstract, we have that some modules for maps and sets depend on
+   this abstract type; but perhaps this doesn't matter because we can
+   use first class modules inside a function? but what is end result
+   exported back to user? nt_item_set list, which depends on nt; maybe
+   we keep nt abstract and allow user to instantiate this however they
+   like;
+
+   return val should be nt -> i -> j -> ks
+
+   so nt is a free type var when removing functorization
+
+
+   FIXME add links in code to sects of doc? use ++++ passthrough
+
+   FIXME convert to C
+
 *)
 
 (* all maps are "with default" ie to option, or empty set; no
@@ -146,7 +167,7 @@ module Make = functor (S:S_) -> struct
     todo_done: nt_item_set; (* most efficient representation? todo_done at stage k; 1d array indexed with values a set of nt,as,bs *)
     todo_gt_k: nt_item_set map_int; (* array to nt_item_set *)
     ixk_done: ixk_set;  (* i X k *)  (* 2d array with values a set of nt; set of nt implemented by binary upto 63/64 bits *)
-    ktjs: int list option map_tm;  (* k T j *)  (* 2d array with values a set of tm *)
+    ktjs: int list option map_tm;  (* k T j *)  (* 2d array with values a list of int *)
     bitms_lt_k: bitms_lt_k;  (* array to ... *)
     bitms_at_k: bitms_at_k;
     all_done: nt_item_set list;  
@@ -274,7 +295,8 @@ module Make = functor (S:S_) -> struct
                      may have complete item kYk *)
                   (* FIXME when dpes kYk get added to ixk_done? *)
                   debug_endline "not bitms_empty";
-                  mem_ixk_done (k,_Y) s0 |> bool_case
+                  mem_ixk_done (k,_Y) s0 
+                  |> bool_case
                     ~true_:(fun () -> add_todo (cut bitm k) s0)
                     ~false_:(fun () -> s0))  (* FIXME waypoint? *)
                 ~true_:(fun () ->
