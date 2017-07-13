@@ -142,14 +142,14 @@ module Make = functor (S:S_) -> struct
 
   type state_t = {
     k: int;
-    todo: nt_item list;
-    todo_done: nt_item_set;
-    todo_gt_k: nt_item_set map_int;
-    ixk_done: ixk_set;  (* i X k *)
-    ktjs: int list option map_tm;  (* k T j *)
-    bitms_lt_k: bitms_lt_k;
+    todo: nt_item list;  
+    todo_done: nt_item_set; (* most efficient representation? todo_done at stage k; 1d array indexed with values a set of nt,as,bs *)
+    todo_gt_k: nt_item_set map_int; (* array to nt_item_set *)
+    ixk_done: ixk_set;  (* i X k *)  (* 2d array with values a set of nt; set of nt implemented by binary upto 63/64 bits *)
+    ktjs: int list option map_tm;  (* k T j *)  (* 2d array with values a set of tm *)
+    bitms_lt_k: bitms_lt_k;  (* array to ... *)
     bitms_at_k: bitms_at_k;
-    all_done: nt_item_set list;
+    all_done: nt_item_set list;  
   }
 
   let bitms: state_t -> (k_t * nt) -> nt_item_set = (
