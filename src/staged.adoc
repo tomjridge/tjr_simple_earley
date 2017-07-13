@@ -1,0 +1,73 @@
+= Staged version of Earley
+Author: Tom Ridge
+:toc:
+:sectnums:
+:stem: latexmath
+:source-highlighter: pygments
+
+== `step_k`
+
+This version processes all items at index latexmath:[k] (the current
+stage) before moving on to latexmath:[k+1] (the next stage).
+
+
+`nitm.complete`, true::
+We have a complete item `(i,X,k)`.
+
+`already_done`, true:::
+
+If the item has already been processed, don't do anything.
+
+`already_done`, false:::
+
+Otherwise, add to `ixk_done` map.
+Then we need to process the complete item against the blocked items.
+
+`nitm.complete`, false::
+
+Otherwise, we have an item `(X -> i as k (S bs'))` blocked on `k,S`.
+
+`S` is a nonterminal `_Y`:::
+
+Then record the new blocked item.
+
+`bitms_empty`, false::::
+
+If we have already processed `k,Y` (ie, this is not the first time we
+have seen nonterminal `Y` at stage `k`) then we don't need to expand
+`Y`, but we may have to consider the interaction of `bitm` with the
+complete item `(k,Y,k)`: if the complete item has been found, we need
+to cut it against the blocked item.
+
+`bitms_empty`, true::::
+
+If we haven't processed nt `Y` yet expand `Y`, and add new items. Note
+that there cannot be any complete items `(k,Y,k)` because this is the
+first time we are processing `Y` at this stage.
+
+`S` is a terminal `T`:::
+
+We need to bind `js` to the indexes
+resulting from a terminal parse of `T` at this stage. 
+//-
+If we have not
+already dealt with `T` at the current stage we use the terminal parser
+to get a list of indexes `j`, and update the `ktjs` map.
+//-
+If we have already dealt with `T` at the current stage we use the
+results of the initial parse of `T`.
+//-
+Now we have `js`, corresponding to a set of complete items. We need to
+process these against the relevant blocked items. Note that we only
+parse a terminal once at stage `k`, and this occurs when we meet the
+first corresponding blocked item. Thus, there is only one blocked item
+at this point.
+
+
+== Loop at k
+
+
+== Earley loop over all k
+
+
+Initialize state, and run Earley loop.

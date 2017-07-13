@@ -255,7 +255,7 @@ module Make = functor (S:S_) -> struct
               assert(log P.de);
               s))
         ~false_: (fun () -> 
-          (* NEW BLOCKED X -> i as k (S bs') on k S; here S is _Y *)
+          (* NEW BLOCKED X -> i as k (S bs') on k S; here S is _Y or t *)
           let bitm = nitm in
           let s = List.hd bitm.bs in
           s 
