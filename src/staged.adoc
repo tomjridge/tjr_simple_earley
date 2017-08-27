@@ -5,6 +5,77 @@ Author: Tom Ridge
 :stem: latexmath
 :source-highlighter: pygments
 
+
+== Comment on datastructures required
+
+The `S_` functor has:
+
+----
+  type nt_item = {
+    nt: nt;
+    i: i_t;
+    as_: sym list;  (* NOTE in "reversed" order *)
+    k: k_t;
+    bs: sym list
+  }
+----
+
+which could be 3 ints and 2 int lists. The int lists have max length
+the max length of any rhs, which is expected to be small. So roughly
+this is a list of int, of approx size `2*|rhs| + 3`.
+
+
+The `Make` functor has type `state_t`:
+
+----
+  type state_t = {
+    k: int;
+    todo: nt_item list;  
+    todo_done: nt_item_set; 
+    (* todo_done at stage k; most efficient representation? 1d array
+       from i? *)
+
+    todo_gt_k: nt_item_set map_int; 
+    (* array to nt_item_set? empty for large k *)
+
+    ixk_done: ixk_set;  (* i X k *)  
+    (* 1d array with values a set of nt?; set of nt implemented by
+       binary upto 63/64 bits *)
+
+    ktjs: int list option map_tm;  (* k T j *)  
+    (* array (tms) with values a list of int *)
+
+    bitms_lt_k: bitms_lt_k;  (* defined locally, see above *)
+
+    bitms_at_k: bitms_at_k;  (* ditto *)
+
+    all_done: nt_item_set list;  
+    (* not really needed - just for returning results as a list *)
+  }
+----
+
+Maps from int are typically indexed by `k`. Typically eg `todo_gt_k`
+would be sparse and, after the first few k, have no entries (since
+this gets filled when a terminal completes).
+
+The main datastructure is a "set of nt items". One thing to note is
+that, for finite BNFs, there are a very small number of possible `as_`
+and `bs`, and that `as_` is determined by `bs`. The operation we have
+on `bs` is to take the head, and the tail, and these can be
+precomputed based on the grammar.
+
+So an `nt_item` could be `nt*i_t*k_t*(bs)^` where `(bs)^` is the int
+repr. of `bs`. This is two small ints and two `length(input)` ints,
+one of which can typically be omitted (because known in some other
+way).
+
+Of interest is that OCaml GC does not scan float arrays (but does scan
+int arrays), see
+https://stackoverflow.com/questions/42976380/ocaml-int-array-and-garbage-collection . 
+
+That post suggests that bigarrays can be used when gc is an issue.
+
+
 == `step_k`
 
 This version processes all items at index latexmath:[k] (the current
