@@ -430,19 +430,98 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#__code_step_k_code">1. <code>step_k</code></a></li>
-<li><a href="#_loop_at_k">2. Loop at k</a></li>
-<li><a href="#_earley_loop_over_all_k">3. Earley loop over all k</a></li>
+<li><a href="#_comment_on_datastructures_required">1. Comment on datastructures required</a></li>
+<li><a href="#__code_step_k_code">2. <code>step_k</code></a></li>
+<li><a href="#_loop_at_k">3. Loop at k</a></li>
+<li><a href="#_earley_loop_over_all_k">4. Earley loop over all k</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="__code_step_k_code">1. <code>step_k</code></h2>
+<h2 id="_comment_on_datastructures_required">1. Comment on datastructures required</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>FIXME change the code so that there are waypoints before every split</p>
+<p>The <code>S_</code> functor has:</p>
 </div>
+<div class="listingblock">
+<div class="content">
+<pre>  type nt_item = {
+    nt: nt;
+    i: i_t;
+    as_: sym list;  (* NOTE in "reversed" order *)
+    k: k_t;
+    bs: sym list
+  }</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>which could be 3 ints and 2 int lists. The int lists have max length
+the max length of any rhs, which is expected to be small. So roughly
+this is a list of int, of approx size <code>2*|rhs| + 3</code>.</p>
+</div>
+<div class="paragraph">
+<p>The <code>Make</code> functor has type <code>state_t</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>  type state_t = {
+    k: int;
+    todo: nt_item list;
+    todo_done: nt_item_set;
+    (* todo_done at stage k; most efficient representation? 1d array
+       from i? *)
+
+    todo_gt_k: nt_item_set map_int;
+    (* array to nt_item_set? empty for large k *)
+
+    ixk_done: ixk_set;  (* i X k *)
+    (* 1d array with values a set of nt?; set of nt implemented by
+       binary upto 63/64 bits *)
+
+    ktjs: int list option map_tm;  (* k T j *)
+    (* array (tms) with values a list of int *)
+
+    bitms_lt_k: bitms_lt_k;  (* defined locally, see above *)
+
+    bitms_at_k: bitms_at_k;  (* ditto *)
+
+    all_done: nt_item_set list;
+    (* not really needed - just for returning results as a list *)
+  }</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Maps from int are typically indexed by <code>k</code>. Typically eg <code>todo_gt_k</code>
+would be sparse and, after the first few k, have no entries (since
+this gets filled when a terminal completes).</p>
+</div>
+<div class="paragraph">
+<p>The main datastructure is a "set of nt items". One thing to note is
+that, for finite BNFs, there are a very small number of possible <code>as_</code>
+and <code>bs</code>, and that <code>as_</code> is determined by <code>bs</code>. The operation we have
+on <code>bs</code> is to take the head, and the tail, and these can be
+precomputed based on the grammar.</p>
+</div>
+<div class="paragraph">
+<p>So an <code>nt_item</code> could be <code>nt*i_t*k_t*(bs)^</code> where <code>(bs)^</code> is the int
+repr. of <code>bs</code>. This is two small ints and two <code>length(input)</code> ints,
+one of which can typically be omitted (because known in some other
+way).</p>
+</div>
+<div class="paragraph">
+<p>Of interest is that OCaml GC does not scan float arrays (but does scan
+int arrays), see
+<a href="https://stackoverflow.com/questions/42976380/ocaml-int-array-and-garbage-collection" class="bare">https://stackoverflow.com/questions/42976380/ocaml-int-array-and-garbage-collection</a> .</p>
+</div>
+<div class="paragraph">
+<p>That post suggests that bigarrays can be used when gc is an issue.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="__code_step_k_code">2. <code>step_k</code></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>This version processes all items at index \(k\) (the current
 stage) before moving on to \(k+1\) (the next stage).</p>
@@ -516,13 +595,13 @@ at this point.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_loop_at_k">2. Loop at k</h2>
+<h2 id="_loop_at_k">3. Loop at k</h2>
 <div class="sectionbody">
 
 </div>
 </div>
 <div class="sect1">
-<h2 id="_earley_loop_over_all_k">3. Earley loop over all k</h2>
+<h2 id="_earley_loop_over_all_k">4. Earley loop over all k</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Initialize state, and run Earley loop.</p>
@@ -532,7 +611,7 @@ at this point.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-07-13 14:23:25 BST
+Last updated 2017-08-27 11:22:34 BST
 </div>
 </div>
 <script type="text/x-mathjax-config">
