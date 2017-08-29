@@ -144,6 +144,16 @@ let main () = Staged.staged ~ctxt |> string_of_int |> print_endline
 let _ = main ()
 
 (* FIXME check this is actually giving the right results 
+$ src $ time ./test.native 200
+200
+
+real	0m0.623s
+user	0m0.596s
+sys	0m0.024s
+
+
+This compares with e3 Start example 17y ......stop in 1.804879 seconds, so much faster (and we are using bash time rather than core)
+
 
 $ src $ time ./test.native 400
 400
