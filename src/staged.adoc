@@ -69,7 +69,12 @@ precomputed based on the grammar.
 So an `nt_item` could be `nt*i_t*k_t*(bs)^` where `(bs)^` is the int
 repr. of `bs`. This is two small ints and two `length(input)` ints,
 one of which can typically be omitted (because known in some other
-way).
+way.. this is (always?) `k`). So we have `nt * i_t * (bs)^` which is 3
+ints (only one of which is expected to be large). 32 bits is enough to
+handle inputs of length 2^32 or approx 1GB. Then could use the
+remaining 32 (31) bits to record nt and i_t. This would give an
+efficient implementation of `nt_item_set` which is not scanned by the
+GC.
 
 Of interest is that OCaml GC does not scan float arrays (but does scan
 int arrays), see
