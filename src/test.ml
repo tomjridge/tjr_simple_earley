@@ -112,8 +112,12 @@ let new_items ~nt ~input ~k = match () with
 let input = String.make (Sys.argv.(1) |> int_of_string) '1'
 
 let parse_tm ~tm ~input ~k ~input_length = 
-  (* print_endline (string_of_int k); *)
-  if String.get input k = '1' then [k+1] else []
+  match () with
+  | _ when tm = eps -> [k]
+  | _ when tm = _1 -> 
+    (* print_endline (string_of_int k); *)
+    if String.get input k = '1' then [k+1] else []
+  | _ -> failwith __LOC__
 
 let input_length = String.length input
 
@@ -144,22 +148,23 @@ let main () = Staged.staged ~ctxt |> string_of_int |> print_endline
 let _ = main ()
 
 (* FIXME check this is actually giving the right results 
+
 $ src $ time ./test.native 200
 200
 
-real	0m0.623s
-user	0m0.596s
-sys	0m0.024s
+real	0m2.321s
+user	0m2.304s
+sys	0m0.012s
 
-
-This compares with e3 Start example 17y ......stop in 1.804879 seconds, so much faster (and we are using bash time rather than core)
+This compares with e3 Start example 17y ......stop in 1.804879 seconds, so about the same
 
 
 $ src $ time ./test.native 400
 400
 
-real	0m7.108s
-user	0m7.044s
-sys	0m0.060s
+real	0m28.918s
+user	0m28.764s
+sys	0m0.152s
+
 
 *)
