@@ -257,10 +257,10 @@ module Make = functor (S:S_) -> struct
       let step_k s0 = begin
         debug_endline "XXXstep_k";
         assert(log P.ab);
-        let _ = (
+(*        let _ = (
           counter:=1 + !counter; 
           if (!counter mod 1000 = 0) then Gc.full_major() else () )
-        in
+        in*)
         assert(log P.ac);
         let k = s0.k in    
         let bitms = bitms s0 in

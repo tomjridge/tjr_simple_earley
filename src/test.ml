@@ -152,19 +152,19 @@ let _ = main ()
 $ src $ time ./test.native 200
 200
 
-real	0m2.321s
-user	0m2.304s
+real	0m0.984s
+user	0m0.968s
 sys	0m0.012s
 
-This compares with e3 Start example 17y ......stop in 1.804879 seconds, so about the same
+This compares with e3 Start example 17y ......stop in 1.804879 seconds, so quicker
 
 
 $ src $ time ./test.native 400
 400
 
-real	0m28.918s
-user	0m28.764s
-sys	0m0.152s
+real	0m7.821s
+user	0m7.732s
+sys	0m0.084s
 
 
 *)
