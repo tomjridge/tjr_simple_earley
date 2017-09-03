@@ -141,6 +141,9 @@ parse a terminal once at stage `k`, and this occurs when we meet the
 first corresponding blocked item. Thus, there is only one blocked item
 at this point.
 
+FIXME if we have expanded T previously, why do we need to process it
+against blocked items at this point? FIXME adjust code
+
 
 == Loop at k
 
