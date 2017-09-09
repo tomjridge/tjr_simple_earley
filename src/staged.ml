@@ -190,6 +190,20 @@ module Make = functor (S:S_) -> struct
     (* not really needed - just for returning results as a list *)
   }
 
+  (* want to separate out the state at k and the other state *)
+  module X_ = struct
+    type state_at_k = {
+      k:k_t;
+      todo:nt_item list;
+      todo_done:nt_item_set;
+      todo_gt_k:nt_item_set map_int;
+      ixk_done:ixk_set;
+      ktjs:int list option map_tm;
+      bitms_at_k:bitms_at_k;
+    }
+    (* bitms_lt_k is read-only; all_done accumulates todo_done when move to k+1 *)
+  end
+
   let bitms: state_t -> (k_t * nt) -> nt_item_set = (
     fun s0 (k,x) ->
       match (k=s0.k) with
