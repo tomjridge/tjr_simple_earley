@@ -72,7 +72,7 @@ one of which can typically be omitted (because known in some other
 way.. this is (always?) `k`). So we have `nt * i_t * (bs)^` which is 3
 ints (only one of which is expected to be large). 32 bits is enough to
 handle inputs of length 2^32 or approx 1GB. Then could use the
-remaining 32 (31) bits to record nt and i_t. This would give an
+remaining 32 (31) bits to record nt and `(bs)^`. This would give an
 efficient implementation of `nt_item_set` which is not scanned by the
 GC.
 
