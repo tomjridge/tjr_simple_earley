@@ -63,13 +63,18 @@ module Set_ops = struct
 end
 
 module Map_ops = struct
-  let map_add (a,b,c,d) :'k -> 'v -> 't -> 't = a
-  let map_find (a,b,c,d) :'k -> 't -> 'v = b
-  let map_empty (a,b,c,d) :'t = c
-  let map_remove (a,b,c,d) :'k -> 't -> 't = d
-  let wf_map_ops x = 
-    let (_,_,_,_) = (map_add x,map_find x,map_empty x,map_remove x) in
-    true
+  let (map_add,map_find,map_empty,map_remove,wf_map_ops) = 
+    let map_add (a,b,c,d) :'k -> 'v -> 't -> 't = a in
+    let map_find (a,b,c,d) :'k -> 't -> 'v = b in
+    let map_empty (a,b,c,d) :'t = c in
+    let map_remove (a,b,c,d) :'k -> 't -> 't = d in
+    let wf_map_ops x = 
+      let (_,_,_,_) = (map_add x,map_find x,map_empty x,map_remove x) in
+      true
+    in
+    (map_add,map_find,map_empty,map_remove,wf_map_ops)
+
+  let _ = wf_map_ops
 end
 
 open Profile
