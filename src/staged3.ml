@@ -31,10 +31,6 @@
 
 *)
 
-let bool_case ~true_ ~false_ = function
-  | true -> true_ ()
-  | false -> false_ ()
-
 
 module List_ = struct
 
@@ -229,22 +225,22 @@ module Make = functor (S:S_) -> struct
           (* possible NEW COMPLETE (i,X,k) *)
           let already_done = mem_ixk_done (i,x) s0 in
           assert(log P.cd);
-          already_done |> bool_case
-            ~true_:(fun () -> 
-                debug_endline "already_done"; 
-                s0)
-            ~false_:(fun () -> 
-                debug_endline "not already_done";
-                let s0 = add_ixk_done (i,x) s0 in
-                (* FIXME possible optimization if we work with Y ->
-                     {h} as i X bs *)
-                bitms (i,x)
-                |> nt_item_set_with_each_elt
-                  ~f:(fun ~state:s bitm -> add_todo (cut bitm k) s)
-                  ~init_state:s0
-                |> fun s ->
-                assert(log P.de);
-                s))  
+          already_done |> function
+          | true -> (
+              debug_endline "already_done"; 
+              s0)
+          | false -> (
+              debug_endline "not already_done";
+              let s0 = add_ixk_done (i,x) s0 in
+              (* FIXME possible optimization if we work with Y ->
+                   {h} as i X bs *)
+              bitms (i,x)
+              |> nt_item_set_with_each_elt
+                ~f:(fun ~state:s bitm -> add_todo (cut bitm k) s)
+                ~init_state:s0
+              |> fun s ->
+              assert(log P.de);
+              s))  
       | false (* nitm_complete *) -> (
           (* NEW BLOCKED X -> i as k (S bs') on k S; here S is _Y or t *)
           let bitm = nitm in
@@ -257,27 +253,26 @@ module Make = functor (S:S_) -> struct
                 (* NOTE already_processed_kY = not bitms_empty *)
                 let s0 = add_bitm_at_k bitm _Y s0 in
                 assert(log P.fg);
-                bitms_empty |> bool_case
-                  ~false_:(fun () -> 
-                      (* already processed k Y, so no need to expand; but
-                         may have complete item kYk *)
-                      (* FIXME when dpes kYk get added to ixk_done? *)
-                      debug_endline "not bitms_empty";
-                      mem_ixk_done (k,_Y) s0 
-                      |> bool_case
-                        ~true_:(fun () -> add_todo (cut bitm k) s0)
-                        ~false_:(fun () -> s0))  (* FIXME waypoint? *)
-                  ~true_:(fun () ->
-                      (* we have not processed k Y; expand sym Y *)
-                      debug_endline "bitms_empty";
-                      assert (mem_ixk_done (k,_Y) s0 = false);
-                      new_items ~nt:_Y ~input ~k 
-                      |> List_.with_each_elt 
-                        ~step:(fun ~state:s nitm -> add_todo nitm s) 
-                        ~init_state:s0
-                      |> fun s -> 
-                      assert(log P.gh);
-                      s))
+                bitms_empty |> function
+                | false -> (
+                    (* already processed k Y, so no need to expand; but
+                       may have complete item kYk *)
+                    (* FIXME when dpes kYk get added to ixk_done? *)
+                    debug_endline "not bitms_empty";
+                    mem_ixk_done (k,_Y) s0 |> function
+                      | true -> add_todo (cut bitm k) s0
+                      | false -> s0)  (* FIXME waypoint? *)
+                | true -> (
+                    (* we have not processed k Y; expand sym Y *)
+                    debug_endline "bitms_empty";
+                    assert (mem_ixk_done (k,_Y) s0 = false);
+                    new_items ~nt:_Y ~input ~k 
+                    |> List_.with_each_elt 
+                      ~step:(fun ~state:s nitm -> add_todo nitm s) 
+                      ~init_state:s0
+                    |> fun s -> 
+                    assert(log P.gh);
+                    s))
             ~tm:(fun t ->
                 (* have we already processed k T ? *)
                 find_ktjs t s0 |> fun ktjs ->
@@ -318,7 +313,7 @@ module Make = functor (S:S_) -> struct
     (* loop --------------------------------------------------------- *)
     (* outer loop: repeatedly process items at stage k, then move to
        stage k+1 *)
-    let rec loop s0 = (
+    let rec loop s0 = 
       match s0.k >= input_length with  (* correct? FIXME don't we have to go one further? *)
       | true -> s0
       | false -> 
@@ -333,7 +328,7 @@ module Make = functor (S:S_) -> struct
           (* keep debug into around *)
           match debug_enabled with 
           | true -> s0.todo_gt_k 
-          | false -> s0.todo_gt_k (* FIXME todo_gt_k_ops.remove k s0.todo_gt_k) *)
+          | false -> todo_gt_k_ops.map_remove k s0.todo_gt_k
         in
         let ixk_done = ixk_set_ops.empty in
         let ktjs = map_tm_ops.map_empty in
@@ -347,8 +342,8 @@ module Make = functor (S:S_) -> struct
         (* FIXME let all_done = s0.todo_done::s0.all_done in *)
         let s1 = 
           {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k} in
-        loop s1
-    ) (* loop *)
+        loop s1  
+        (* end loop *)
     in
 
     (* staged: main entry point ------------------------------------- *)
