@@ -84,7 +84,7 @@ open Map_ops
 (* type 'a bitms_lt_k = 'a option array *)
 (* 'a = map(nt -> nt_item_set) *)
 
-let staged (type nt tm sym nt_item nt_item_set ixk_set bitms_lt_k bitms_at_k todo_gt_k) 
+let staged (type nt tm sym nt_item nt_item_set ixk_set bitms_lt_k bitms_at_k todo_gt_k map_tm) 
     ~(sym_case:nt:(nt->'a) -> tm:(tm->'a) -> sym -> 'a) ~(_NT:nt->sym) 
     ~dot_nt ~dot_i ~dot_k ~dot_bs
     ~nt_item_set_ops
@@ -122,7 +122,17 @@ let staged (type nt tm sym nt_item nt_item_set ixk_set bitms_lt_k bitms_at_k tod
   (* step_k ------------------------------------------------------- *)
 
   let at_k ~exit ~k ~(bitms_lt_k:bitms_lt_k) =
-    
+    let module M = 
+    struct 
+      type state_at_k = {
+        bitms_at_k:bitms_at_k;
+        todo_at_k:nt_item list;
+        todo_gt_k:todo_gt_k;
+        ixk_done:ixk_set;
+        ktjs:map_tm;
+      }
+    end 
+    in
     let step_k ~kk ~(bitms_at_k:bitms_at_k) ~todo_at_k ~(todo_gt_k:todo_gt_k) ~(ixk_done:ixk_set) ~ktjs = (
       debug_endline "XXXstep_k";
       assert(log P.ab);
@@ -168,7 +178,7 @@ let staged (type nt tm sym nt_item nt_item_set ixk_set bitms_lt_k bitms_at_k tod
                     let bitms = bitms ~k ~bitms_lt_k ~bitms_at_k (k,_Y) in
                     let bitms_empty = (nt_item_set_ops|>is_empty) bitms in
                     (* NOTE already_processed_kY = not bitms_empty *)
-                    let bitms_at_k = add_bitm_at_k bitm _Y bitms_at_k in
+                    let bitms_at_k : bitms_at_k = add_bitm_at_k bitm _Y bitms_at_k in
                     assert(log P.fg);
                     bitms_empty 
                     |> bool_case
@@ -228,10 +238,15 @@ let staged (type nt tm sym nt_item nt_item_set ixk_set bitms_lt_k bitms_at_k tod
     ) (*  step_k *)
     in
 
+    let _ = step_k in
+    
+
     (* repeat step at k ----------------------------------------------- *)
     let rec loop_k ~bitms_at_k ~todo_at_k ~todo_gt_k ~ixk_done ~ktjs =
       step_k ~kk:loop_k ~bitms_at_k ~todo_at_k ~todo_gt_k ~ixk_done ~ktjs
     in
+
+    let _ = loop_k in
 
     (* start loop at k ------------------------------------------------- *)
     let run_loop_k ~todo_gt_k = 
@@ -254,10 +269,10 @@ let staged (type nt tm sym nt_item nt_item_set ixk_set bitms_lt_k bitms_at_k tod
   (* loop over all k *)
   let rec loop ~k ~(all_done:nt_item_set list) ~bitms_lt_k ~bitms_at_k ~todo_gt_k = 
       match k >= input_length with  (* correct? FIXME don't we have to go one further? *)
-        | true -> all_done
+        | true -> ()
         | false -> 
         (* process items *)
-          at_k 
+          at_k
             ~exit:(fun ~bitms_at_k ~todo_gt_k ->
                 loop ~k:(k+1) ~all_done ~bitms_lt_k ~bitms_at_k ~todo_gt_k (* FIXME *) )
             ~k ~bitms_lt_k ~todo_gt_k ~bitms_at_k 
