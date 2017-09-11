@@ -202,7 +202,7 @@ module Make = functor (S:S_) -> struct
   let counter = ref 0
 
 
-  let in_ctxt ~new_items ~input ~parse_tm ~input_length ~init_nt = (
+  let run_earley ~new_items ~input ~parse_tm ~input_length ~init_nt = (
 
     (* step_k ------------------------------------------------------- *)
     let step_k s0 = (
@@ -364,11 +364,7 @@ module Make = functor (S:S_) -> struct
       loop s0
     in
 
-    (result.k : int)  
-    (* want to return something that can be given a type outside the
-       functor FIXME *)
-  ) (* in_ctxt *)
+    result
+  ) (* run_earley *)
     
-  (* FIXME more to do *)
-
 end (* Make *)

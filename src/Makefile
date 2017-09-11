@@ -4,7 +4,8 @@ OPT:=ocamlfind ocamlopt $(ASS) -thread -package core -g
 
 all: 
 	$(OPT) -c $(MLS)
-	$(OPT) -linkpkg -o test.native $(MLS)
+	$(OPT) -linkpkg -o test.native profile.cmx staged.cmx test.cmx 
+	$(OPT) -linkpkg -o test3.native profile.cmx staged3.cmx test3.cmx 
 	echo Now try: time ./test.native 200
 
 doc:

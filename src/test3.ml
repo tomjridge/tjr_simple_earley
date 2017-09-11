@@ -2,19 +2,6 @@ open Staged3
 open Set_ops
 open Map_ops
 
-(*
-module Set_make = functor (Ord:Set.OrderedType) -> struct
-  module X = Set.Make(Ord)
-  include struct
-    open X
-    let add = add
-    let mem = mem
-    let empty = empty
-    let is_empty = is_empty
-    let elements = elements
-  end
-end
-*)
 
 module Map_make = functor (Ord:Set.OrderedType) -> struct
   include struct
@@ -28,6 +15,7 @@ module Map_make = functor (Ord:Set.OrderedType) -> struct
     let map_remove = remove
   end
 end
+
 
 module S = struct
   type i_t = int
@@ -61,7 +49,6 @@ module S = struct
   let nt_item_set_with_each_elt ~f ~init_state set =
     Set_nt_item.fold (fun e acc -> f ~state:acc e) set init_state
 
-  (* FIXME find needs to be wrapped to return the default elt *)
   type ixk=(i_t*nt)
   module Set_ixk = Set.Make(
     struct type t = ixk let compare : t -> t -> int = Pervasives.compare end)
@@ -104,12 +91,11 @@ module S = struct
 end
 
 module Staged = Staged3.Make(S)
-
+open Staged
 
 (* simple test ------------------------------------------------------ *)
 
 open S
-open Staged
 
 let _E = 0
 let eps = 1
@@ -133,29 +119,11 @@ let parse_tm ~tm ~input ~k ~input_length =
 
 let input_length = String.length input
 
-let debug_enabled = false
-
-let debug_endline = fun s -> ()
-
-(*
-ctxt:((new_items:(nt:S.nt -> input:'a -> k:int -> S.nt_item list) ->
-       input:'a ->
-       parse_tm:(tm:S.Map_tm.k_ ->
-                 input:'a -> k:int -> input_length:int -> S.j_t list) ->
-       input_length:int ->
-       debug_enabled:bool ->
-       debug_endline:(string -> 'b) -> init_nt:S.nt -> int) ->
-      int) ->
-int
-
-*)
-
 let init_nt = _E
 
-let ctxt = fun f ->
-  f ~new_items ~input ~parse_tm ~input_length ~debug_enabled ~debug_endline ~init_nt
-
-let main () = Staged.staged ~ctxt |> string_of_int |> print_endline
+let main () = 
+  run_earley ~new_items ~input ~parse_tm ~input_length ~init_nt 
+  |> fun s -> s.k |> string_of_int |> print_endline
 
 let _ = main ()
 
