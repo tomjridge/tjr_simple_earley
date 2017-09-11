@@ -72,11 +72,11 @@ module S = struct
   let map_tm_ops = Map_tm.{ map_add;map_find=map_find None;map_empty;map_remove }
 
   type bitms_lt_k = (*nt_item_set*) map_nt array
-  let bitms_lt_k_ops = {
-    map_add=(fun k v t -> t.(k) <- v; t);
-    map_find=(fun k t -> t.(k));
-    map_empty=(Array.make 401 map_nt_ops.map_empty);  (* FIXME size *)
-    map_remove=(fun k t -> failwith __LOC__);  (* not used *)
+  let bitms_lt_k_ops = Bitms_lt_k_ops.{
+    ltk_add=(fun k v t -> t.(k) <- v; t);
+    ltk_find=(fun k t -> t.(k));
+    ltk_empty=(fun l -> Array.make l map_nt_ops.map_empty);  
+    ltk_remove=(fun k t -> failwith __LOC__);  (* not used *)
   }
 
   type todo_gt_k = map_int
