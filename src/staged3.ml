@@ -69,6 +69,16 @@ open Set_ops
 
 open Map_ops
 
+module Bitms_lt_k_ops = struct
+  type ('k,'v,'t) ltk_map_ops = {
+    ltk_add: 'k -> 'v -> 't -> 't;
+    ltk_find:'k -> 't -> 'v;
+    ltk_empty:int -> 't;  (* need to*)
+    ltk_remove:'k -> 't -> 't;
+  }
+end
+
+open Bitms_lt_k_ops
 
 module type S_ = sig
   type i_t = int
@@ -110,7 +120,7 @@ module type S_ = sig
    *)
 
   type bitms_lt_k  (* int -> nt -> nt_item_set; implement by array *)
-  val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) map_ops
+  val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) ltk_map_ops
 
   type todo_gt_k
   val todo_gt_k_ops: (int,nt_item_set,todo_gt_k) map_ops
@@ -155,7 +165,7 @@ module Make = functor (S:S_) -> struct
   let bitms s0 (k,x) : nt_item_set = 
     match (k=s0.k) with
     | true -> (s0.bitms_at_k |> bitms_at_k_ops.map_find x)
-    | false -> (s0.bitms_lt_k |> bitms_lt_k_ops.map_find k |> map_nt_ops.map_find x)
+    | false -> (s0.bitms_lt_k |> bitms_lt_k_ops.ltk_find k |> map_nt_ops.map_find x)
 
   (* nt_item blocked on nt at k *)
   let add_bitm_at_k nitm nt s0 : state = 
@@ -336,7 +346,7 @@ module Make = functor (S:S_) -> struct
           (* FIXME the following hints that bitms_lt_k should be a
              map from k to a map from nt to ... since bitms_at_k is a
              map from nt *)
-          bitms_lt_k_ops.map_add old_k s0.bitms_at_k s0.bitms_lt_k
+          bitms_lt_k_ops.ltk_add old_k s0.bitms_at_k s0.bitms_lt_k
         in
         let bitms_at_k = map_nt_ops.map_empty in
         (* FIXME let all_done = s0.todo_done::s0.all_done in *)
@@ -356,7 +366,7 @@ module Make = functor (S:S_) -> struct
       let todo_gt_k = todo_gt_k_ops.map_empty in
       let ixk_done = ixk_set_ops.empty in
       let ktjs = map_tm_ops.map_empty in
-      let bitms_lt_k = bitms_lt_k_ops.map_empty (* input_length *) in
+      let bitms_lt_k = bitms_lt_k_ops.ltk_empty input_length in
       let bitms_at_k = bitms_at_k_ops.map_empty in
       (* let all_done = [] in *)
       let s0 = 
