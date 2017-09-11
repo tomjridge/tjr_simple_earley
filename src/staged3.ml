@@ -260,8 +260,8 @@ module Make = functor (S:S_) -> struct
                     (* FIXME when dpes kYk get added to ixk_done? *)
                     debug_endline "not bitms_empty";
                     mem_ixk_done (k,_Y) s0 |> function
-                      | true -> add_todo (cut bitm k) s0
-                      | false -> s0)  (* FIXME waypoint? *)
+                    | true -> add_todo (cut bitm k) s0
+                    | false -> s0)  (* FIXME waypoint? *)
                 | true -> (
                     (* we have not processed k Y; expand sym Y *)
                     debug_endline "bitms_empty";
@@ -309,7 +309,7 @@ module Make = functor (S:S_) -> struct
       | _ -> loop_k (step_k s0)
     in
 
-    
+
     (* loop --------------------------------------------------------- *)
     (* outer loop: repeatedly process items at stage k, then move to
        stage k+1 *)
@@ -349,8 +349,8 @@ module Make = functor (S:S_) -> struct
     (* staged: main entry point ------------------------------------- *)
     (* construct initial context, apply loop *)
     let result : state = 
-      let (i,k) = (0,0) in
-      let init_items = new_items ~nt:init_nt ~input ~k:0 in
+      let k = 0 in
+      let init_items = new_items ~nt:init_nt ~input ~k in
       let todo = init_items in  
       let todo_done = nt_item_set_ops.empty in
       let todo_gt_k = todo_gt_k_ops.map_empty in
@@ -366,5 +366,5 @@ module Make = functor (S:S_) -> struct
 
     result
   ) (* run_earley *)
-    
+
 end (* Make *)
