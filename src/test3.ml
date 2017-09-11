@@ -71,8 +71,13 @@ module S = struct
   type map_tm = int list option Map_tm.t
   let map_tm_ops = Map_tm.{ map_add;map_find=map_find None;map_empty;map_remove }
 
-  type bitms_lt_k (* FIXME*)
-  let bitms_lt_k_ops = failwith __LOC__
+  type bitms_lt_k = (*nt_item_set*) map_nt array
+  let bitms_lt_k_ops = {
+    map_add=(fun k v t -> t.(k) <- v; t);
+    map_find=(fun k t -> t.(k));
+    map_empty=(Array.make 401 map_nt_ops.map_empty);  (* FIXME size *)
+    map_remove=(fun k t -> failwith __LOC__);  (* not used *)
+  }
 
   type todo_gt_k = map_int
   let todo_gt_k_ops = map_int_ops
@@ -145,6 +150,15 @@ $ src $ time ./test.native 400
 real	0m7.821s
 user	0m7.732s
 sys	0m0.084s
+
+
+$ src $ time ./test3.native 400
+400
+
+real	0m7.593s
+user	0m7.556s
+sys	0m0.032s
+
 
 
 *)
