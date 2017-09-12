@@ -83,6 +83,7 @@ module S = struct
 
   (* NOTE this is potentially wrong if we have multiple nt with the
      same rhs, because we pick out a rhs for the "wrong" nt TODO *)
+  (* possible fix: have per-nt array ie 2D array *)
   let lookup arr rhs =
     scan arr (fun x -> x=rhs)
 
