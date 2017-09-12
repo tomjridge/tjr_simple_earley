@@ -10,6 +10,7 @@ all:
 
 doc:
 	asciidoctor tjr_earley.adoc
+	cp tjr_earley.html ../docs
 
 clean:
 	rm -f *.{cmi,cmo,cmx,o,cmt} a.out *.cma *.cmxa *.a *.byte *.native
