@@ -430,109 +430,48 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_comment_on_datastructures_required">1. Comment on datastructures required</a></li>
-<li><a href="#__code_step_k_code">2. <code>step_k</code></a></li>
-<li><a href="#_loop_at_k">3. Loop at k</a></li>
-<li><a href="#_earley_loop_over_all_k">4. Earley loop over all k</a></li>
+<li><a href="#_staged_earley">1. Staged Earley</a></li>
+<li><a href="#_code_structure">2. Code structure</a></li>
+<li><a href="#__code_step_k_code">3. <code>step_k</code></a></li>
+<li><a href="#_loop_at_k">4. Loop at k</a></li>
+<li><a href="#_earley_loop_over_all_k">5. Earley loop over all k</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_comment_on_datastructures_required">1. Comment on datastructures required</h2>
+<h2 id="_staged_earley">1. Staged Earley</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>The <code>S_</code> functor has:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>  type nt_item = {
-    nt: nt;
-    i: i_t;
-    as_: sym list;  (* NOTE in "reversed" order *)
-    k: k_t;
-    bs: sym list
-  }</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>which could be 3 ints and 2 int lists. The int lists have max length
-the max length of any rhs, which is expected to be small. So roughly
-this is a list of int, of approx size <code>2*|rhs| + 3</code>.</p>
-</div>
-<div class="paragraph">
-<p>The <code>Make</code> functor has type <code>state_t</code>:</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>  type state_t = {
-    k: int;
-    todo: nt_item list;
-    (* per k *)
-
-    todo_done: nt_item_set;
-    (* per k; todo_done at stage k *)
-
-    todo_gt_k: nt_item_set map_int;
-    (* array (int/j) to nt_item_set? empty for large k' &gt; k_current
-       and not needed for j&lt;k *)
-
-    ixk_done: ixk_set;  (* i X k *)
-    (* per k; array (int/i) with values a set of nt?; set of nt
-       implemented by binary upto 63/64 bits *)
-
-    ktjs: int list option map_tm;  (* k T j *)
-    (* per k; array (tm) with values a list of int *)
-
-    bitms_lt_k: bitms_lt_k;  (* for all k; defined locally, see above *)
-
-    bitms_at_k: bitms_at_k;  (* per k; ditto *)
-
-    all_done: nt_item_set list;
-    (* not really needed - just for returning results as a list *)
-  }</pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Maps from int are typically indexed by <code>k</code>. Typically eg <code>todo_gt_k</code>
-would be sparse and, after the first few k, have no entries (since
-this gets filled when a terminal completes).</p>
-</div>
-<div class="paragraph">
-<p>The main datastructure is a "set of nt items". One thing to note is
-that, for finite BNFs, there are a very small number of possible <code>as_</code>
-and <code>bs</code>, and that <code>as_</code> is determined by <code>bs</code>. The operation we have
-on <code>bs</code> is to take the head, and the tail, and these can be
-precomputed based on the grammar.</p>
-</div>
-<div class="paragraph">
-<p>So an <code>nt_item</code> could be <code>nt*i_t*k_t*(bs)^</code> where <code>(bs)^</code> is the int
-repr. of <code>bs</code>. This is two small ints and two <code>length(input)</code> ints,
-one of which can typically be omitted (because known in some other
-way.. this is (always?) <code>k</code>). So we have <code>nt * i_t * (bs)^</code> which is 3
-ints (only one of which is expected to be large). 32 bits is enough to
-handle inputs of length 2^32 or approx 1GB. Then could use the
-remaining 32 (31) bits to record nt and <code>(bs)^</code>. This would give an
-efficient implementation of <code>nt_item_set</code> which is not scanned by the
-GC.</p>
-</div>
-<div class="paragraph">
-<p>Of interest is that OCaml GC does not scan float arrays (but does scan
-int arrays), see
-<a href="https://stackoverflow.com/questions/42976380/ocaml-int-array-and-garbage-collection" class="bare">https://stackoverflow.com/questions/42976380/ocaml-int-array-and-garbage-collection</a> .</p>
-</div>
-<div class="paragraph">
-<p>That post suggests that bigarrays can be used when gc is an issue.</p>
+<p>This version processes all items at index \(k\) (the current
+stage) before moving on to \(k+1\) (the next stage). In
+general, this is more efficient than just processing items blindly.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="__code_step_k_code">2. <code>step_k</code></h2>
+<h2 id="_code_structure">2. Code structure</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>This version processes all items at index \(k\) (the current
-stage) before moving on to \(k+1\) (the next stage).</p>
+<p>In the main <code>tjr_earley.ml</code> file, we have some initial preliminaries.</p>
 </div>
+<div class="paragraph">
+<p>The <code>S_</code> signature abstracts over what the alg. requires from the environment.</p>
+</div>
+<div class="paragraph">
+<p>The <code>Make</code> functor implements the algorithm itself, a version of Earley.</p>
+</div>
+<div class="paragraph">
+<p>The key function is <code>run_earley</code>, which is divided into further functions, <code>step_k</code> etc.</p>
+</div>
+<div class="paragraph">
+<p>To invoke the algorithm, see <code>test.ml</code>.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="__code_step_k_code">3. <code>step_k</code></h2>
+<div class="sectionbody">
 <div class="dlist">
 <dl>
 <dt class="hdlist1"><code>nitm.complete</code>, true</dt>
@@ -602,13 +541,13 @@ at this point.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_loop_at_k">3. Loop at k</h2>
+<h2 id="_loop_at_k">4. Loop at k</h2>
 <div class="sectionbody">
 
 </div>
 </div>
 <div class="sect1">
-<h2 id="_earley_loop_over_all_k">4. Earley loop over all k</h2>
+<h2 id="_earley_loop_over_all_k">5. Earley loop over all k</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Initialize state, and run Earley loop.</p>
@@ -618,7 +557,7 @@ at this point.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-09-12 09:48:30 BST
+Last updated 2017-09-12 10:01:28 BST
 </div>
 </div>
 <script type="text/x-mathjax-config">

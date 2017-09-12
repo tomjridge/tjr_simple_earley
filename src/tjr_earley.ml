@@ -69,18 +69,6 @@ open Set_ops
 
 open Map_ops
 
-(*
-module Bitms_lt_k_ops = struct
-  type ('k,'v,'t) ltk_map_ops = {
-    ltk_add: 'k -> 'v -> 't -> 't;
-    ltk_find:'k -> 't -> 'v;
-    ltk_empty:int -> 't;  (* need to*)
-    ltk_remove:'k -> 't -> 't;
-  }
-end
-
-open Bitms_lt_k_ops
-*)
 
 module type S_ = sig
   type i_t = int
@@ -117,11 +105,6 @@ module type S_ = sig
 
   type map_tm
   val map_tm_ops : (tm,int list option,map_tm) map_ops
-
-  (*
-  type bitms_at_k
-  val bitms_at_k_ops: (nt,nt_item_set,bitms_at_k) map_ops
-   *)
 
   type bitms_lt_k  (* int -> nt -> nt_item_set; implement by array *)
   type bitms_lt_k_ops = (int,map_nt,bitms_lt_k) map_ops
