@@ -74,7 +74,7 @@ module S = struct
   let _ = mk_table
 
   (* scan array entries till property holds; return arr index; FIXME move to tjr_lib *)
-  let scan arr p = 
+  let scan_SLOW arr p = 
     let rec f n = 
       if n >= Array.length arr then None else
         if p (arr.(n)) then Some n else f (n+1)
@@ -82,10 +82,14 @@ module S = struct
     f 0
 
   (* NOTE this is potentially wrong if we have multiple nt with the
-     same rhs, because we pick out a rhs for the "wrong" nt TODO *)
-  (* possible fix: have per-nt array ie 2D array *)
-  let lookup arr rhs =
-    scan arr (fun x -> x=rhs)
+     same rhs, because we pick out a rhs for the "wrong" nt *)
+  (* no need for a fix: the semantics is that each rhs has a number,
+     and that incrementing the number (if non-[]) gives the suffix;
+     don't need to link to nt FIXME introduce a better interface to
+     make this semantics clear; don't access arr directly; perhaps
+     call this a "rhs_numbering" *)
+  let lookup_NOTE_SLOW arr rhs =
+    scan_SLOW arr (fun x -> x=rhs)
 
   (*
   let _arr = mk_table [[1;1;1]]
@@ -107,10 +111,12 @@ module S = struct
   let to_int (nt,i,k,bs) = 
     nt*b3 + i*b2 + k*b1 + bs
 
-  let mk_nt_item arr nt i k bs =
+  (* not needed?
+  let mk_nt_item_SLOW arr nt i k bs =
     let bs' = lookup arr bs|>function Some x -> x | _ -> failwith __LOC__ in
     assert(bs'<b1);      (* assume lookup ... < 1024 *)
     to_int (nt,i,k,bs')
+  *)
 
   let dot_nt nitm = nitm / b3
   let dot_i nitm = (nitm / b2) mod b1
@@ -216,12 +222,13 @@ let rhss = [ [_E;_E;_E]; [_1]; [eps] ]
 
 let arr : int list array = S.mk_table rhss
 
-(* let rhss = rhss |> List.map @@ S.lookup arr *)
+let rhss' = rhss |> List.map @@ fun  x-> 
+  S.lookup_NOTE_SLOW arr x |> function Some x -> x | None -> failwith __LOC__
 
 let new_items ~nt ~input ~k = match () with
   | _ when nt = _E -> 
-    rhss   (* E -> E E E | "1" | eps *)
-    |> List.map (fun bs -> let i = k in S.mk_nt_item arr nt i k bs)
+    rhss'   (* E -> E E E | "1" | eps *)
+    |> List.map (fun bs -> let i = k in S.to_int (nt,i,k,bs))
   | _ -> failwith __LOC__
 
 (* NOTE input length given by command line arg *)
