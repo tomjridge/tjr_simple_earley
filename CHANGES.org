@@ -1,0 +1,3 @@
+* 2017-09-12 tidying up dev and merging into master
+
+Looks in good shape.
