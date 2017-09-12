@@ -11,5 +11,5 @@ On github, to preview the documented code, try http://htmlpreview.github.io/?htt
 
 == Building
 
-To build, type ~make~
+To build, type `make`
 
