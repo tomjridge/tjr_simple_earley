@@ -6,7 +6,7 @@ simplicity.
 
 == Meta
 
-On github, to preview the documented code, try http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/src/simple_earley.html
+On github, to preview the documented code, try http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/src/tjr_earley.html
 
 
 == Building

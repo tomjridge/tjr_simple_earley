@@ -1,6 +1,6 @@
 (* test, represent nt_item as int *)
 
-open Staged
+open Tjr_earley
 open Set_ops
 open Map_ops
 
@@ -173,8 +173,8 @@ module S = struct
 
 end
 
-module Staged = Staged.Make(S)
-open Staged
+module Earley = Tjr_earley.Make(S)
+open Earley
 
 
 (* simple test ------------------------------------------------------ *)

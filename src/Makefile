@@ -1,5 +1,6 @@
+SHELL:=bash
 ASS:=-noassert
-MLS:=profile.ml staged.ml test.ml # $(shell ocamldep -one-line -sort *.ml)
+MLS:=profile.ml tjr_earley.ml test.ml # $(shell ocamldep -one-line -sort *.ml)
 OPT:=ocamlfind ocamlopt $(ASS) -thread -package core -g
 
 all: 
@@ -8,7 +9,7 @@ all:
 	echo Now try: time ./test.native 200
 
 doc:
-	asciidoctor staged.adoc
+	asciidoctor tjr_earley.adoc
 
 clean:
 	rm -f *.{cmi,cmo,cmx,o,cmt} a.out *.cma *.cmxa *.a *.byte *.native
