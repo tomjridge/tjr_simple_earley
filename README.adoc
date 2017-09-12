@@ -11,10 +11,5 @@ On github, to preview the documented code, try http://htmlpreview.github.io/?htt
 
 == Building
 
-To build the code, you need the nix package manager: https://nixos.org/nix/
-
-Then, in the project root directory, type: `nix-shell` to drop to a
-bash shell with all the dependencies installed. Then type `make`. You
-should end up with various executables that you can run (the files
-ending `.native`).
+To build, type ~make~
 

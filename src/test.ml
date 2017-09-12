@@ -1,6 +1,6 @@
-(* test3_alt: represent nt_item as int *)
+(* test, represent nt_item as int *)
 
-open Staged3
+open Staged
 open Set_ops
 open Map_ops
 
@@ -173,7 +173,7 @@ module S = struct
 
 end
 
-module Staged = Staged3.Make(S)
+module Staged = Staged.Make(S)
 open Staged
 
 
