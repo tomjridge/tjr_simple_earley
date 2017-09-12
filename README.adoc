@@ -4,14 +4,14 @@ Author: Tom Ridge
 An implementation of an Earley-like algorithm, designed for
 simplicity.
 
-== Meta
+== Documentation
 
 On github, to view the documentation, try:
 
 http://tomjridge.github.io/simple_earley/tjr_earley.html
 
 
-== Building
+== Build and run
 
-To build, type `make`
+To build, type `make`. Then run example `test.native 200` in `src/`.
 
