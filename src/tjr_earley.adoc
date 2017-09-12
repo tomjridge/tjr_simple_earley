@@ -84,10 +84,12 @@ at this point.
 // item, we have to process it against all complete items.
 
 
-== Loop at k
+== `loop_k`
+
+Loop at k until no more items to do.
 
 
-== Earley loop over all k
+== `loop`
 
-
-Initialize state, and run Earley loop.
+Initialize state, and run Earley loop. Earley loop over all k from 0
+to length of input.

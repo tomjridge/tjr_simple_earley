@@ -433,8 +433,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_staged_earley">1. Staged Earley</a></li>
 <li><a href="#_code_structure">2. Code structure</a></li>
 <li><a href="#__code_step_k_code">3. <code>step_k</code></a></li>
-<li><a href="#_loop_at_k">4. Loop at k</a></li>
-<li><a href="#_earley_loop_over_all_k">5. Earley loop over all k</a></li>
+<li><a href="#__code_loop_k_code">4. <code>loop_k</code></a></li>
+<li><a href="#__code_loop_code">5. <code>loop</code></a></li>
 </ul>
 </div>
 </div>
@@ -541,23 +541,26 @@ at this point.</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_loop_at_k">4. Loop at k</h2>
+<h2 id="__code_loop_k_code">4. <code>loop_k</code></h2>
 <div class="sectionbody">
-
+<div class="paragraph">
+<p>Loop at k until no more items to do.</p>
+</div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_earley_loop_over_all_k">5. Earley loop over all k</h2>
+<h2 id="__code_loop_code">5. <code>loop</code></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Initialize state, and run Earley loop.</p>
+<p>Initialize state, and run Earley loop. Earley loop over all k from 0
+to length of input.</p>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-09-12 10:01:28 BST
+Last updated 2017-09-12 10:03:50 BST
 </div>
 </div>
 <script type="text/x-mathjax-config">
