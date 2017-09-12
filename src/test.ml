@@ -201,76 +201,82 @@ module Earley = Tjr_earley.Make(S)
 open Earley
 
 
-(* simple test ------------------------------------------------------ *)
+(* simple tests ----------------------------------------------------- *)
 
-(* this is a simple test of the grammar:
 
-E -> E E E | "1" | ""
+(* E -> E E E | "1" | "" -------------------------------------------- *)
 
-*)
+module G1 = struct 
 
-open S
+  (* this is a simple test of the grammar:
 
-(* terminals and non-terminals *)
+     E -> E E E | "1" | ""
 
-let _E = 0
-let eps = 1
-let _1 = 3
+  *)
 
-(* E -> E E E | "1" | ""; terminal "" is aka epsilon *)
-let rhss = [ [_E;_E;_E]; [_1]; [eps] ]
+  open S
 
-let arr : int list array = S.mk_table rhss
+  (* terminals and non-terminals *)
 
-let rhss' = rhss |> List.map @@ fun  x-> 
-  S.lookup_NOTE_SLOW arr x |> function Some x -> x | None -> failwith __LOC__
+  let _E = 0
+  let eps = 1
+  let _1 = 3
 
-let new_items ~nt ~input ~k = match () with
-  | _ when nt = _E -> 
-    rhss'   (* E -> E E E | "1" | eps *)
-    |> List.map (fun bs -> let i = k in S.to_int (nt,i,k,bs))
-  | _ -> failwith __LOC__
+  (* E -> E E E | "1" | ""; terminal "" is aka epsilon *)
+  let rhss = [ [_E;_E;_E]; [_1]; [eps] ]
 
-(* NOTE input length given by command line arg *)
-let input = String.make (Sys.argv.(1) |> int_of_string) '1'
+  let arr : int list array = S.mk_table rhss
 
-let parse_tm ~tm ~input ~k ~input_length = 
-  match () with
-  | _ when tm = eps -> [k]
-  | _ when tm = _1 -> 
-    (* print_endline (string_of_int k); *)
-    if String.get input k = '1' then [k+1] else []
-  | _ -> failwith __LOC__
+  let rhss' = rhss |> List.map @@ fun  x-> 
+    S.lookup_NOTE_SLOW arr x |> function Some x -> x | None -> failwith __LOC__
 
-let input_length = String.length input
+  let new_items ~nt ~input ~k = match () with
+    | _ when nt = _E -> 
+      rhss'   (* E -> E E E | "1" | eps *)
+      |> List.map (fun bs -> let i = k in S.to_int (nt,i,k,bs))
+    | _ -> failwith __LOC__
 
-let init_nt = _E
+  (* NOTE input length given by command line arg *)
+  let input = String.make (Sys.argv.(1) |> int_of_string) '1'
 
-let dot_bs = dot_bs' arr
+  let parse_tm ~tm ~input ~k ~input_length = 
+    match () with
+    | _ when tm = eps -> [k]
+    | _ when tm = _1 -> 
+      (* print_endline (string_of_int k); *)
+      if String.get input k = '1' then [k+1] else []
+    | _ -> failwith __LOC__
 
-let nt_item_ops = {
-  dot_nt;
-  dot_i;
-  dot_k;
-  dot_bs
-}
+  let input_length = String.length input
 
-let bitms_lt_k_ops = {
-  map_add=(fun k v t -> t.(k) <- v; t);
-  map_find=(fun k t -> t.(k));
-  map_empty=(Array.make (input_length + 1) map_nt_ops.map_empty);   (* FIXME +1? *)
-  map_remove=(fun k t -> failwith __LOC__);  (* not used *)
-}
+  let init_nt = _E
 
-let cut = S.cut
+  let dot_bs = dot_bs' arr
 
-let main () = 
-  run_earley ~nt_item_ops ~bitms_lt_k_ops ~cut ~new_items ~input ~parse_tm ~input_length ~init_nt 
-  |> fun s -> s.k |> string_of_int |> print_endline
+  let nt_item_ops = {
+    dot_nt;
+    dot_i;
+    dot_k;
+    dot_bs
+  }
 
-let _ = main ()
+  let bitms_lt_k_ops = {
+    map_add=(fun k v t -> t.(k) <- v; t);
+    map_find=(fun k t -> t.(k));
+    map_empty=(Array.make (input_length + 1) map_nt_ops.map_empty);   (* FIXME +1? *)
+    map_remove=(fun k t -> failwith __LOC__);  (* not used *)
+  }
+
+  let cut = S.cut
+
+  let main () = 
+    run_earley ~nt_item_ops ~bitms_lt_k_ops ~cut ~new_items ~input ~parse_tm ~input_length ~init_nt 
+    |> fun s -> s.k |> string_of_int |> print_endline
+
 
 (* FIXME check this is actually giving the right results 
+
+G1:
 
 $ src $ time ./test3.native 400
 400
@@ -301,3 +307,218 @@ sys	0m0.008s
 
 
 *)
+
+end
+
+
+(* S -> S S "x" | "x" ----------------------------------------------- *)
+
+module G2 = struct
+
+  open S
+
+  (* terminals and non-terminals *)
+
+  let _S = 0
+  let _x = 1
+
+  let rhss = [ [_S;_S;_x]; [_x] ]
+
+  let arr : int list array = S.mk_table rhss
+
+  let rhss' = rhss |> List.map @@ fun  x-> 
+    S.lookup_NOTE_SLOW arr x |> function Some x -> x | None -> failwith __LOC__
+
+  let new_items ~nt ~input ~k = match () with
+    | _ when nt = _S -> 
+      rhss'   (* E -> E E E | "1" | eps *)
+      |> List.map (fun bs -> let i = k in S.to_int (nt,i,k,bs))
+    | _ -> failwith __LOC__
+
+  (* NOTE input length given by command line arg *)
+  let input = String.make (Sys.argv.(1) |> int_of_string) 'x'
+
+  let parse_tm ~tm ~input ~k ~input_length = 
+    match () with
+    | _ when tm = _x -> 
+      (* print_endline (string_of_int k); *)
+      if String.get input k = 'x' then [k+1] else []
+    | _ -> failwith __LOC__
+
+  let input_length = String.length input
+
+  let init_nt = _S
+
+  let dot_bs = dot_bs' arr
+
+  let nt_item_ops = {
+    dot_nt;
+    dot_i;
+    dot_k;
+    dot_bs
+  }
+
+  let bitms_lt_k_ops = {
+    map_add=(fun k v t -> t.(k) <- v; t);
+    map_find=(fun k t -> t.(k));
+    map_empty=(Array.make (input_length + 1) map_nt_ops.map_empty);   (* FIXME +1? *)
+    map_remove=(fun k t -> failwith __LOC__);  (* not used *)
+  }
+
+  let cut = S.cut
+
+  let main () = 
+    run_earley ~nt_item_ops ~bitms_lt_k_ops ~cut ~new_items ~input ~parse_tm ~input_length ~init_nt 
+    |> fun s -> s.k |> string_of_int |> print_endline
+
+(* G2 timings:
+
+$ src $ time ./test.native 200
+8
+6
+200
+
+real	0m0.093s
+user	0m0.072s
+sys	0m0.000s
+
+
+   compare with "Directly executable Earley parsing", 2001, Fig. 8
+   (dmittedly this was rather a long time ago)
+
+*)
+
+end
+
+
+(* S -> SSS | SS | "b" ---------------------------------------------- *)
+
+module G3 = struct
+
+  (* 
+
+     S -> SSS | SS | "b"
+
+See Gamma_3 grammar in "Practical, general parser combinators", 2016
+
+https://cdn.rawgit.com/meerkat-parser/papers/master/pepm16.pdf
+
+  *)
+
+  open S
+
+  (* terminals and non-terminals *)
+
+  let _S = 0
+  let _S2 = 2  (* we binarize the grammar *)
+  let _b = 1
+
+  (* binarized *)
+(*
+  let rhss_S = [ [_S;_S2]; [_S2]; [_b] ]
+  let rhss_S2 = [ [_S;_S] ]
+  let rhss = (rhss_S@rhss_S2)
+
+  let arr : int list array = S.mk_table rhss
+
+  let rhss_S' = rhss_S |> List.map @@ fun  x-> 
+    S.lookup_NOTE_SLOW arr x |> function Some x -> x | None -> failwith __LOC__
+
+  let rhss_S2' = rhss_S2 |> List.map @@ fun  x-> 
+    S.lookup_NOTE_SLOW arr x |> function Some x -> x | None -> failwith __LOC__
+
+  let new_items ~nt ~input ~k = match () with
+    | _ when nt = _S -> 
+      rhss_S'  
+      |> List.map (fun bs -> let i = k in S.to_int (nt,i,k,bs))
+    | _ when nt = _S2 -> 
+      rhss_S2' 
+      |> List.map (fun bs -> let i = k in S.to_int (nt,i,k,bs))
+    | _ -> failwith __LOC__
+*)
+  
+  (* unbinarized *)
+ 
+  let rhss = [ [_S;_S; _S]; [_S;_S]; [_b] ]
+
+  let arr : int list array = S.mk_table rhss
+
+  let rhss_S' = rhss |> List.map @@ fun  x-> 
+    S.lookup_NOTE_SLOW arr x |> function Some x -> x | None -> failwith __LOC__
+
+  let new_items ~nt ~input ~k = match () with
+    | _ when nt = _S -> 
+      rhss_S'  
+      |> List.map (fun bs -> let i = k in S.to_int (nt,i,k,bs))
+    | _ -> failwith __LOC__
+
+
+  (* NOTE input length given by command line arg *)
+  let input = String.make (Sys.argv.(1) |> int_of_string) 'b'
+
+  let parse_tm ~tm ~input ~k ~input_length = 
+    match () with
+    | _ when tm = _b -> 
+      (* print_endline (string_of_int k); *)
+      if String.get input k = 'b' then [k+1] else []
+    | _ -> failwith __LOC__
+
+  let input_length = String.length input
+
+  let init_nt = _S
+
+  let dot_bs = dot_bs' arr
+
+  let nt_item_ops = {
+    dot_nt;
+    dot_i;
+    dot_k;
+    dot_bs
+  }
+
+  let bitms_lt_k_ops = {
+    map_add=(fun k v t -> t.(k) <- v; t);
+    map_find=(fun k t -> t.(k));
+    map_empty=(Array.make (input_length + 1) map_nt_ops.map_empty);   (* FIXME +1? *)
+    map_remove=(fun k t -> failwith __LOC__);  (* not used *)
+  }
+
+  let cut = S.cut
+
+  let main () = 
+    run_earley ~nt_item_ops ~bitms_lt_k_ops ~cut ~new_items ~input ~parse_tm ~input_length ~init_nt 
+    |> fun s -> s.k |> string_of_int |> print_endline
+
+(* G3 timings:
+
+unbinarized: 
+
+$ src $ time ./test.native 400
+8
+6
+9
+400
+
+real	0m3.674s
+user	0m3.528s
+sys	0m0.040s
+
+   This is in a vm on a macbook air from 2013. Even so, a bit faster than
+   the paper
+
+
+binarized: no real difference :(
+
+*)
+
+end
+
+
+
+
+
+let _ = G3.main () 
+
+
+
+
