@@ -47,10 +47,12 @@ module S = struct
     | [] -> [[]]
     | _::xs' as xs -> xs::tails xs'
 
+  type rhs = sym list
+
   (* xs are right-hand sides; every suffix must be numbered *)
-  let mk_table xs =
+  let mk_table xs : rhs array =
     let count = ref 0 in
-    let arr = Array.make 100 [] in  (* array of sym_list *) 
+    let arr = Array.make 100 [] in  (* array of sym_list *)  (* FIXME 100 *)
     List.iter 
       (fun x ->
          (* x is a rhs, so take all suffixes *)
@@ -59,6 +61,8 @@ module S = struct
     ;
     Printf.printf "%d\n" !count;
     arr
+
+  let _ = mk_table
 
   (* scan array entries till property holds; return arr index; FIXME move to tjr_lib *)
   let scan arr p = 
@@ -71,9 +75,11 @@ module S = struct
   let lookup arr rhs =
     scan arr (fun x -> x=rhs)
 
+  (*
   let _arr = mk_table [[1;1;1]]
 
   let _tmp = lookup _arr [1]
+  *)
 
   (* nt,i,k,bs - repn as int, nt*b^3 + i*b^2 + k*b^1 + bs? *)
   type nt_item = int
@@ -83,22 +89,49 @@ module S = struct
   let b2 = b1 * 1024 
   let b3 = b2 * 1024 
 
+  let to_int (nt,i,k,bs) = 
+    nt*b3 + i*b2 + k*b1 + bs
+
   let mk_nt_item arr nt i k bs =
     let bs' = lookup arr bs|>function Some x -> x | _ -> failwith __LOC__ in
     assert(bs'<b1);      (* assume lookup ... < 1024 *)
-    nt*b3 + i*b2 + k*b1 + bs'
+    to_int (nt,i,k,bs')
 
   let dot_nt nitm = nitm / b3
   let dot_i nitm = (nitm / b2) mod b1
   let dot_k nitm = (nitm / b1) mod b1
-  let dot_bs' arr nitm = nitm mod b1 |> fun x -> arr.(x)  (* notice that we need the array to get the actual list *)
+  let dot_bs_as_int nitm = nitm mod b1
+  let dot_bs' (arr:sym list array) nitm = dot_bs_as_int nitm |> fun x -> arr.(x)  (* notice that we need the array to get the actual list *)
 
   (* FIXME do we want to pass an aux data around for dot_bs and cut? no, better to pass operations at runtime *)
 
+(*
   let _nitm = mk_nt_item _arr 3 4 5 [1]
 
   let _nt = _nitm |> dot_nt
   let _i,_k,_bs = (_nitm|>dot_i),(_nitm|>dot_k),(_nitm|>dot_bs' _arr)
+*)
+
+  (* NOTE following doesn't actually depend on arr *)
+  let cut : nt_item -> j_t -> nt_item = 
+    let from_int nitm = (dot_nt nitm,dot_i nitm, dot_k nitm, dot_bs_as_int nitm) in
+    fun bitm j0 -> 
+      (*        let as_ = (List.hd bitm.bs)::bitm.as_ in*)
+      let (nt,i,k,bs) = from_int bitm in
+      let bs = bs+1 in (* NOTE artefact of the numbering *)
+      let k = j0 in
+      let nitm =to_int (nt,i,k,bs) in
+      nitm 
+  type cut = nt_item -> j_t -> nt_item
+
+
+  type nt_item_ops = {
+    dot_nt: nt_item -> nt;
+    dot_i: nt_item -> i_t;
+    dot_k: nt_item -> k_t;
+    dot_bs: nt_item -> sym list;
+  }
+
                       
   module Set_nt_item = Set.Make(
     struct type t = nt_item let compare : t -> t -> int = Pervasives.compare end)
@@ -130,23 +163,10 @@ module S = struct
   let map_tm_ops = Map_tm.{ map_add;map_find=map_find None;map_empty;map_remove }
 
   type bitms_lt_k = (*nt_item_set*) map_nt array
-  let bitms_lt_k_ops = Bitms_lt_k_ops.{
-    ltk_add=(fun k v t -> t.(k) <- v; t);
-    ltk_find=(fun k t -> t.(k));
-    ltk_empty=(fun l -> Array.make l map_nt_ops.map_empty);  
-    ltk_remove=(fun k t -> failwith __LOC__);  (* not used *)
-  }
+  type bitms_lt_k_ops = (int,map_nt,bitms_lt_k) map_ops
 
   type todo_gt_k = map_int
   let todo_gt_k_ops = map_int_ops
-
-  let cut : nt_item -> j_t -> nt_item = 
-    fun bitm j0 -> (
-        let as_ = (List.hd bitm.bs)::bitm.as_ in
-        let bs = List.tl bitm.bs in
-        let k = j0 in
-        let nitm ={bitm with k;as_;bs} in
-        nitm )
 
   let debug_enabled = false
   let debug_endline (s:string) = ()
@@ -156,6 +176,7 @@ end
 module Staged = Staged3.Make(S)
 open Staged
 
+
 (* simple test ------------------------------------------------------ *)
 
 open S
@@ -164,10 +185,16 @@ let _E = 0
 let eps = 1
 let _1 = 3
 
+let rhss = [ [_E;_E;_E]; [_1]; [eps] ]
+
+let arr : int list array = S.mk_table rhss
+
+(* let rhss = rhss |> List.map @@ S.lookup arr *)
+
 let new_items ~nt ~input ~k = match () with
   | _ when nt = _E -> 
-    [ [_E;_E;_E]; [_1]; [eps] ]   (* E -> E E E | "1" | eps *)
-    |> List.map (fun bs -> {nt;i=k;as_=[];k;bs})
+    rhss   (* E -> E E E | "1" | eps *)
+    |> List.map (fun bs -> let i = k in S.mk_nt_item arr nt i k bs)
   | _ -> failwith __LOC__
 
 let input = String.make (Sys.argv.(1) |> int_of_string) '1'
@@ -184,31 +211,31 @@ let input_length = String.length input
 
 let init_nt = _E
 
+let dot_bs = dot_bs' arr
+
+let nt_item_ops = {
+  dot_nt;
+  dot_i;
+  dot_k;
+  dot_bs
+}
+
+let bitms_lt_k_ops = {
+  map_add=(fun k v t -> t.(k) <- v; t);
+  map_find=(fun k t -> t.(k));
+  map_empty=(Array.make (input_length + 1) map_nt_ops.map_empty);   (* FIXME +1? *)
+  map_remove=(fun k t -> failwith __LOC__);  (* not used *)
+}
+
+let cut = S.cut
+
 let main () = 
-  run_earley ~new_items ~input ~parse_tm ~input_length ~init_nt 
+  run_earley ~nt_item_ops ~bitms_lt_k_ops ~cut ~new_items ~input ~parse_tm ~input_length ~init_nt 
   |> fun s -> s.k |> string_of_int |> print_endline
 
 let _ = main ()
 
 (* FIXME check this is actually giving the right results 
-
-$ src $ time ./test.native 200
-200
-
-real	0m0.984s
-user	0m0.968s
-sys	0m0.012s
-
-This compares with e3 Start example 17y ......stop in 1.804879 seconds, so quicker
-
-
-$ src $ time ./test.native 400
-400
-
-real	0m7.821s
-user	0m7.732s
-sys	0m0.084s
-
 
 $ src $ time ./test3.native 400
 400
@@ -217,6 +244,25 @@ real	0m7.593s
 user	0m7.556s
 sys	0m0.032s
 
+
+2017-09-12 with ints
+
+$ src $ time ./test3_alt.native 200
+8
+200
+
+real	0m0.444s
+user	0m0.436s
+sys	0m0.004s
+
+
+$ src $ time ./test3_alt.native 400
+8
+400
+
+real	0m3.670s
+user	0m3.556s
+sys	0m0.008s
 
 
 *)

@@ -69,6 +69,7 @@ open Set_ops
 
 open Map_ops
 
+(*
 module Bitms_lt_k_ops = struct
   type ('k,'v,'t) ltk_map_ops = {
     ltk_add: 'k -> 'v -> 't -> 't;
@@ -79,6 +80,7 @@ module Bitms_lt_k_ops = struct
 end
 
 open Bitms_lt_k_ops
+*)
 
 module type S_ = sig
   type i_t = int
@@ -91,10 +93,12 @@ module type S_ = sig
   val _NT: nt -> sym
 
   type nt_item
-  val dot_nt: nt_item -> nt
-  val dot_i: nt_item -> i_t
-  val dot_k: nt_item -> k_t
-  val dot_bs: nt_item -> sym list 
+  type nt_item_ops = {
+    dot_nt: nt_item -> nt;
+    dot_i: nt_item -> i_t;
+    dot_k: nt_item -> k_t;
+    dot_bs: nt_item -> sym list;
+  }
 
   type nt_item_set
   val nt_item_set_ops: (nt_item,nt_item_set) set_ops
@@ -120,12 +124,13 @@ module type S_ = sig
    *)
 
   type bitms_lt_k  (* int -> nt -> nt_item_set; implement by array *)
-  val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) ltk_map_ops
+  type bitms_lt_k_ops = (int,map_nt,bitms_lt_k) map_ops
+  (* passed in dynamically val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) map_ops *)
 
   type todo_gt_k
   val todo_gt_k_ops: (int,nt_item_set,todo_gt_k) map_ops
 
-  val cut: nt_item -> j_t -> nt_item
+  type cut = nt_item -> j_t -> nt_item
 
   val debug_enabled : bool
   val debug_endline : string -> unit
@@ -162,10 +167,10 @@ module Make = functor (S:S_) -> struct
     (* per k; array (tm) with values a list of int *)
   }
 
-  let bitms s0 (k,x) : nt_item_set = 
+  let bitms ~bitms_lt_k_ops s0 (k,x) : nt_item_set = 
     match (k=s0.k) with
     | true -> (s0.bitms_at_k |> bitms_at_k_ops.map_find x)
-    | false -> (s0.bitms_lt_k |> bitms_lt_k_ops.ltk_find k |> map_nt_ops.map_find x)
+    | false -> (s0.bitms_lt_k |> bitms_lt_k_ops.map_find k |> map_nt_ops.map_find x)
 
   (* nt_item blocked on nt at k *)
   let add_bitm_at_k nitm nt s0 : state = 
@@ -185,9 +190,9 @@ module Make = functor (S:S_) -> struct
   (* k is the current stage *)
   (* FIXME avoid cost of double lookup by using new ocaml sets with
      boolean rv *)
-  let add_todo nitm s0 : state = 
+  let add_todo ~nt_item_ops nitm s0 : state = 
     let k = s0.k in
-    let nitm_k = nitm|>dot_k in
+    let nitm_k = nitm|>(nt_item_ops.dot_k) in
     match nitm_k > k with
     | true -> 
       let nitms = todo_gt_k_ops.map_find nitm_k s0.todo_gt_k in
@@ -212,7 +217,12 @@ module Make = functor (S:S_) -> struct
   let counter = ref 0
 
 
-  let run_earley ~new_items ~input ~parse_tm ~input_length ~init_nt = (
+  let run_earley ~nt_item_ops ~bitms_lt_k_ops ~cut ~new_items ~input ~parse_tm 
+      ~input_length ~init_nt = (
+
+    let {dot_nt;dot_i;dot_k;dot_bs} = nt_item_ops in
+    let add_todo = add_todo ~nt_item_ops in
+    let bitms = bitms ~bitms_lt_k_ops in
 
     (* step_k ------------------------------------------------------- *)
     let step_k s0 = (
@@ -346,7 +356,7 @@ module Make = functor (S:S_) -> struct
           (* FIXME the following hints that bitms_lt_k should be a
              map from k to a map from nt to ... since bitms_at_k is a
              map from nt *)
-          bitms_lt_k_ops.ltk_add old_k s0.bitms_at_k s0.bitms_lt_k
+          bitms_lt_k_ops.map_add old_k s0.bitms_at_k s0.bitms_lt_k
         in
         let bitms_at_k = map_nt_ops.map_empty in
         (* FIXME let all_done = s0.todo_done::s0.all_done in *)
@@ -366,7 +376,7 @@ module Make = functor (S:S_) -> struct
       let todo_gt_k = todo_gt_k_ops.map_empty in
       let ixk_done = ixk_set_ops.empty in
       let ktjs = map_tm_ops.map_empty in
-      let bitms_lt_k = bitms_lt_k_ops.ltk_empty input_length in
+      let bitms_lt_k = bitms_lt_k_ops.map_empty in
       let bitms_at_k = bitms_at_k_ops.map_empty in
       (* let all_done = [] in *)
       let s0 = 
