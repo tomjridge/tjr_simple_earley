@@ -1,5 +1,14 @@
 (* test, represent nt_item as int *)
 
+(* this test is relatively complicated because we are using quite a
+   few performance hacks; a generic use of the Earley parser would be
+   much simpler TODO *)
+
+(* init ------------------------------------------------------------- *)
+
+(* implement various things needed by the S_ input structure to
+   Tjr_earley.Make *)
+
 open Tjr_earley
 open Set_ops
 open Map_ops
@@ -81,6 +90,9 @@ module S = struct
   let _tmp = lookup _arr [1]
   *)
 
+
+  (* encode nt items as ints ---------- *)
+
   (* nt,i,k,bs - repn as int, nt*b^3 + i*b^2 + k*b^1 + bs? *)
   type nt_item = int
 
@@ -101,9 +113,11 @@ module S = struct
   let dot_i nitm = (nitm / b2) mod b1
   let dot_k nitm = (nitm / b1) mod b1
   let dot_bs_as_int nitm = nitm mod b1
-  let dot_bs' (arr:sym list array) nitm = dot_bs_as_int nitm |> fun x -> arr.(x)  (* notice that we need the array to get the actual list *)
+  let dot_bs' (arr:sym list array) nitm = dot_bs_as_int nitm |> fun x -> arr.(x)  
+  (* notice that we need the array to get the actual list *)
 
-  (* FIXME do we want to pass an aux data around for dot_bs and cut? no, better to pass operations at runtime *)
+  (* FIXME do we want to pass an aux data around for dot_bs and cut?
+     no, better to pass operations at runtime *)
 
 (*
   let _nitm = mk_nt_item _arr 3 4 5 [1]
@@ -122,6 +136,7 @@ module S = struct
       let k = j0 in
       let nitm =to_int (nt,i,k,bs) in
       nitm 
+
   type cut = nt_item -> j_t -> nt_item
 
 
@@ -179,12 +194,21 @@ open Earley
 
 (* simple test ------------------------------------------------------ *)
 
+(* this is a simple test of the grammar:
+
+E -> E E E | "1" | ""
+
+*)
+
 open S
+
+(* terminals and non-terminals *)
 
 let _E = 0
 let eps = 1
 let _1 = 3
 
+(* E -> E E E | "1" | ""; terminal "" is aka epsilon *)
 let rhss = [ [_E;_E;_E]; [_1]; [eps] ]
 
 let arr : int list array = S.mk_table rhss
@@ -197,6 +221,7 @@ let new_items ~nt ~input ~k = match () with
     |> List.map (fun bs -> let i = k in S.mk_nt_item arr nt i k bs)
   | _ -> failwith __LOC__
 
+(* NOTE input length given by command line arg *)
 let input = String.make (Sys.argv.(1) |> int_of_string) '1'
 
 let parse_tm ~tm ~input ~k ~input_length = 
