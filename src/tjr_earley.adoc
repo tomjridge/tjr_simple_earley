@@ -25,8 +25,13 @@ other "general" parser implementations can either).
 
 The problem with these other implementations is that they seem to be
 buggy as far as performance goes, and these bugs tend to manifest when
-using "horrible" grammars like the above, and long inputs. This code
-is meant to be a reference implementation for Earley-like parsing.
+using "horrible" grammars like the above, and long inputs. 
+
+This code is meant to be a reference implementation for Earley-like
+parsing, thereby providing a base line against which to measure
+performance of other algorithms. It is also intended to guide
+implementations of Earley in other languages: just copy the code
+below.
 
 
 
@@ -65,13 +70,15 @@ symbols.
 Traditional Earley works with "items" of the form latexmath:[X
 \rightarrow \alpha . \beta,j]. The algorithm works in stages. At stage
 latexmath:[k] the algorithm is looking at the input string at position
-latexmath:[k]. The existence of an item at stage latexmath:[k] means
+latexmath:[k]. The existence of an item latexmath:[X
+\rightarrow \alpha . \beta,j] at stage latexmath:[k] means
 that, starting from input position latexmath:[j], using rule
 latexmath:[X \rightarrow \alpha \beta], it was possible to parse the
 symbols latexmath:[\alpha] to match the input between position
 latexmath:[j] and latexmath:[k].
 
 From now on we will use verbatim rather than LaTeX math.
+
 
 Our version of the algorithm works with items of the form `X ->
 i,as,k,bs`. This means the same as above: starting from position `i`
@@ -88,6 +95,7 @@ attention to the datastructures and representations. We have also made
 a few optimizations that perhaps have not been noticed before. We
 operate in stages, with the current stage denoted `k`.
 
+
 === Notational conventions
 
 We make use of notational conventions. Usually the following is true:
@@ -99,6 +107,76 @@ We make use of notational conventions. Usually the following is true:
 * `T` is a terminal
 
 * `S` is a symbol
+
+
+=== Items
+
+Traditional Earley works with a single notion of item. We extend this to the following:
+
+* `X -> i,as,k,bs` - the "traditional" item; we refer to this as a
+  "nonterminal" item, or just "item"
+
+* `i,X,k` - a complete (nonterminal) item; arises from nonterminal
+  items of the form `X -> i,as,k,[]`, by omitting the irrelevant `as`
+  and `[]` components. The meaning is: the nonterminal `X` matches the
+  input between `i` and `k`.
+
+* `k,T,j` - a complete (terminal) item; arises from matching a
+  terminal against the input from position `k` to `j`.
+
+* `X -> i,as,k,S bs` - a "traditional" item, but where the final
+  component is not empty and starts with symbol `S`; we refer to this
+  as a "blocked" item, because progress depends on parsing the symbol
+  `S` against the input starting from position `k` (we sometimes say
+  the item is blocked on `k,S`); if the parse of `S` is successful, we get a
+  complete item `k,S,j` which we can cut against the original item to
+  get a new item of the form `X -> i,as S,k,bs`.
+
+
+=== The essential step
+
+At the heart of all general parsing algorithms is the following step.
+
+Suppose we have an item `X -> i,as,k,S bs` (here, S is a symbol). This
+means that the sequence `as` matched the input from position `i` to
+`k`. Suppose we also have an item `S -> k,cs,j,[]` (i.e., the symbol
+`S` matched the input from position `k` to `j`). Then we are justified
+in concluding that `X -> i,as S,j,bs` (i.e., the sequence `as S`
+matches the input from position `i` to `j`). This rule can be
+expressed as follows:
+
+----
+X -> i,as,k,S bs     S -> k,...,j,[]
+------------------------------------ Cut
+X -> i,as S,j,bs
+----
+
+This should be read as: given the two things above the line, we can
+conclude with the thing below the line, and the reasoning step is
+called "Cut".
+
+In the terms of the last section, we take a "blocked" item `X ->
+i,as,k,S bs` and a complete item `k,S,j` and cut them to give an item
+`X -> i,as S,j,bs`.
+
+
+=== From the "essential step" to Earley's algorithm
+
+Roughly the idea is as follows: from an initial nonterminal `X`, keep
+adding more and more items until you end up with a complete item
+`(0,X,l)`, where `l` is the length of the input. This is a
+straightforward "stupid" algorithm. With appropriate datastructures,
+this is latexmath:[O(n^3)].
+
+Earley adds a single optimization: process the input character by
+character. At stage `k`, process all items of the form `X ->
+i,as,k,bs` (and similar) before moving on to stage `k+1`. It seems
+plausible that in practice this will run faster than the "stupid"
+algorithm above.
+
+To arrive at the code below, I took these ideas and then examined the
+steps that were needed in minute detail, taking care to retain good
+performance and (hopefully) correctness.
 
 
 == Code
@@ -115,6 +193,12 @@ maps.
 ----
 include::snips/tjr_earley.ml/ma-mm[]
 ----
+
+Note that the type `('e,'t) set_ops` involves a type of elements `'e`,
+and a type `'t` for the set itself. Similarly, the type `('k,'v,'t)
+map_ops` is a map from keys `'k` to values `'v`, implemented by type
+`'t`.
+
 
 === Input signature
 
@@ -137,11 +221,13 @@ First we declare the types for nonterminals, terminals and symbols.
 include::snips/tjr_earley.ml/mn-mo[]
 ----
 
-The type for (nonterminal) items, together with associated
-operations. An item is like a record, of the form `{nt;i;as;k;bs}`,
-indicating that the sequence of symbols `as` could be parsed between
-`i` and `k`; this corresponds to an attempt to parse the production
-`nt -> as bs` starting at position `i`).
+Next we give the type for (nonterminal) items, together with
+associated operations. An item is like a record, of the form
+`{nt;i;as;k;bs}`, indicating that the sequence of symbols `as` could
+be parsed between `i` and `k`; this corresponds to an attempt to parse
+the production `nt -> as bs` starting at position `i`. Note that we
+keep the type abstract, and the record provides the usual record
+projection functions.
 
 [source,ocaml]
 ----
@@ -152,9 +238,9 @@ Next we have various types for
 
 * sets of items
 
-* triples `(i,X,k)` of a symbol `X` and two integers `i,k`, which
+* triples `(i,X,k)` of a nonterminal `X` and two integers `i,k`, which
   corresponds to a parsed item of the form `X -> ...` between `i` and
-  `k` in the input
+  `k` in the input (a "complete" nonterminal item); note that because `k` is the "current stage", it suffices to record only `(i,X)` rather than `(i,X,k)`.
 
 * maps from nonterminals, integers, and terminals
 
@@ -270,7 +356,7 @@ include::snips/tjr_earley.ml/ns-nt[]
 
 === Auxiliary functions: `find_ktjs`
 
-Finally we have a function to find the set of `j`s corresponding to a
+Finally we have a function to find the set of `j` s corresponding to a
 parsed terminal item `(k,T,j)`.
 
 [source,ocaml]
@@ -315,8 +401,8 @@ include::snips/tjr_earley.ml/od-oe[]
 
 === Complete items
 
-If it is complete, we have a complete item `(i,X,k)` which we may have
-seen before or not. We check whether it is `already_done`.
+If `bitm` is complete, we have a complete item `(i,X,k)` which we may have
+seen before or not. We check whether it ha already been done or not.
 
 
 [source,ocaml]
@@ -324,7 +410,7 @@ seen before or not. We check whether it is `already_done`.
 include::snips/tjr_earley.ml/oe-of[]
 ----
 
-If it is already done, we do nothing:
+If it has already been done, we do nothing:
 
 [source,ocaml]
 ----
@@ -418,10 +504,17 @@ include::snips/tjr_earley.ml/ol-om[]
 ----
 
 If we have already processed `k,T`, then we just retrieve the `js`
-from previously. In either case, we have the list `js` of `j`s that we
-need to process against items blocked on `k,T`. In fact, we only need
-to worry about the current blocked item (FIXME what was the reason?),
-which we cut against each of the `j`s to get new todo items.
+from previously. In either case, we have the list `js` of `j` s that we
+need to process against items blocked on `k,T`. 
+
+Recall that we are processing item `X -> i,as,k,(T bs')`. Certainly we
+need to cut this against all the `(k,T,j)` items we have just
+found. Do we need to deal with any other items blocked on `k,T`?
+Suppose there was such an item; then it would have been processed at
+some earlier stage, and at that point it would have been cut against
+the items `(k,T,j)`. So in fact, we only need to worry about the
+current blocked item, which we cut against each of the `j` s to get
+new todo items.  FIXME this could be checked with an assert
 
 [source,ocaml]
 ----

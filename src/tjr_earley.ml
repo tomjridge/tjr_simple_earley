@@ -311,7 +311,6 @@ module Make = functor (S:S_) -> struct
                 | false -> (
                     (* already processed k Y, so no need to expand; but
                        may have complete item kYk *)
-                    (* FIXME when dpes kYk get added to ixk_done? *)
                     debug_endline "not bitms_empty";
                     mem_ixk_done (k,_Y) s0 |> function
                     | true -> add_todo (cut bitm k) s0
