@@ -31,7 +31,7 @@
 
 *)
 
-
+(*:ma:*)
 module List_ = struct
 
   let fold_left_ ~step ~init_state xs = 
@@ -69,21 +69,9 @@ open Set_ops
 
 open Map_ops
 
-(*
-module Bitms_lt_k_ops = struct
-  type ('k,'v,'t) ltk_map_ops = {
-    ltk_add: 'k -> 'v -> 't -> 't;
-    ltk_find:'k -> 't -> 'v;
-    ltk_empty:int -> 't;  (* need to*)
-    ltk_remove:'k -> 't -> 't;
-  }
-end
 
-open Bitms_lt_k_ops
-*)
-
-module type S_ = sig
-  type i_t = int
+module type S_ = sig  (*:mm:*)
+  type i_t = int  (*:mn:*)
   type k_t = int
   type j_t = int
   type nt
@@ -92,7 +80,9 @@ module type S_ = sig
   val sym_case: nt:(nt -> 'a) -> tm:(tm -> 'a) -> sym -> 'a
   val _NT: nt -> sym
 
-  type nt_item
+  (*:mo:*)    
+
+  type nt_item  
   type nt_item_ops = {
     dot_nt: nt_item -> nt;
     dot_i: nt_item -> i_t;
@@ -100,6 +90,8 @@ module type S_ = sig
     dot_bs: nt_item -> sym list;
   }
 
+  (*:mp:*)
+  
   type nt_item_set
   val nt_item_set_ops: (nt_item,nt_item_set) set_ops
   val nt_item_set_with_each_elt: 
@@ -118,6 +110,8 @@ module type S_ = sig
   type map_tm
   val map_tm_ops : (tm,int list option,map_tm) map_ops
 
+  (*:mq:*)
+
   (*
   type bitms_at_k
   val bitms_at_k_ops: (nt,nt_item_set,bitms_at_k) map_ops
@@ -127,16 +121,24 @@ module type S_ = sig
   type bitms_lt_k_ops = (int,map_nt,bitms_lt_k) map_ops
   (* passed in dynamically val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) map_ops *)
 
+  (*:mr:*)
+
   type todo_gt_k
   val todo_gt_k_ops: (int,nt_item_set,todo_gt_k) map_ops
 
+  (*:ms:*)
+
   type cut = nt_item -> j_t -> nt_item
 
+  (* FIXME why are these here? *)
   val debug_enabled : bool
   val debug_endline : string -> unit
 end
 
+(*:nm:*)
+
 module Make = functor (S:S_) -> struct
+  (*:np:*)
   open S
   open Profile
 
@@ -144,28 +146,42 @@ module Make = functor (S:S_) -> struct
   let bitms_at_k_ops = map_nt_ops 
 
   (* state at k changes at k *)
+  (* at stage k, there are items that have not been processed (todo
+     items) and those that have already been processed (done items) *)
   type state = {
-    k:k_t;
-    todo:nt_item list;
-    (* at k *)
+    k:k_t;  (* current stage *)
+    todo:nt_item list;  (* todo items at stage k *)
 
     todo_done:nt_item_set;
-    (* per k; todo_done at stage k *)
+    (* todo and done items at stage k; per k *)
 
     todo_gt_k:todo_gt_k;
-    (* forall k' > k; array (int/j) to nt_item_set? empty for large k'
-       > k_current and not needed for j<k *)
+    (* todo items at later stages *)
+    (* impl: forall k' > k; empty for large k' > k_current and not
+       needed for j<k *)
 
+    (* blocked items are items that are "waiting" for some other parse
+       to complete before they can continue; they are split into those at
+       the current stage, bitms_at_k, and those at earlier stages,
+       bitms_lt_k *)
     bitms_lt_k:bitms_lt_k;
     bitms_at_k:bitms_at_k;
 
     ixk_done:ixk_set;
-    (* per k; array (int/i) with values a set of nt?; set of nt
+    (* Completed items are of the form X -> i,as,k,[]; we record only
+       i,X,k *)
+    (* impl: per k; array (int/i) with values a set of nt?; set of nt
        implemented by binary upto 63/64 bits *)
 
     ktjs:map_tm;
-    (* per k; array (tm) with values a list of int *)
+    (* Terminals T require parsing the input from k; a successful
+       terminal parse will match the input between position k and j; the
+       corresponding terminal item is (k,T,j). This map stores those
+       items (k,T,j) *)
+    (* impl: per k; array (tm) with values a list of int *) 
   }
+
+  (*:nq:*)
 
   let bitms ~bitms_lt_k_ops s0 (k,x) : nt_item_set = 
     match (k=s0.k) with
@@ -181,6 +197,8 @@ module Make = functor (S:S_) -> struct
         let s' = nt_item_set_ops.add nitm s in
         let m' = map_nt_ops.map_add nt s' m in
         m' }
+
+  (*:nr:*)
 
   let pop_todo s0 =
     match s0.todo with
@@ -205,14 +223,20 @@ module Make = functor (S:S_) -> struct
         { s0 with todo=(nitm::s0.todo);
                   todo_done=nt_item_set_ops.add nitm s0.todo_done}
 
+  (*:ns:*)
+
   let add_ixk_done ix s0 : state =
     { s0 with ixk_done=(ixk_set_ops.add ix s0.ixk_done)}
 
   let mem_ixk_done ix s0 : bool =
     ixk_set_ops.mem ix s0.ixk_done 
 
+  (*:nt:*)
+
   let find_ktjs t s0 : int list option =
     map_tm_ops.map_find t s0.ktjs
+
+  (*:nu:*)
 
   let counter = ref 0
 
@@ -220,9 +244,13 @@ module Make = functor (S:S_) -> struct
   let run_earley ~nt_item_ops ~bitms_lt_k_ops ~cut ~new_items ~input ~parse_tm 
       ~input_length ~init_nt = (
 
+    (*:oc:*)
+
     let {dot_nt;dot_i;dot_k;dot_bs} = nt_item_ops in
     let add_todo = add_todo ~nt_item_ops in
     let bitms = bitms ~bitms_lt_k_ops in
+
+    (*:od:*)
 
     (* step_k ------------------------------------------------------- *)
     let step_k s0 = (
@@ -240,15 +268,18 @@ module Make = functor (S:S_) -> struct
       assert(log P.bc);  
       (* NOTE waypoints before each split and at end of branch *)
       match nitm_complete with
+      (*:oe:*)
       | true -> (
           let (i,x) = (nitm|>dot_i,nitm|>dot_nt) in
           (* possible NEW COMPLETE (i,X,k) *)
           let already_done = mem_ixk_done (i,x) s0 in
-          assert(log P.cd);
+          assert(log P.cd);          
           already_done |> function
+            (*:of:*)
           | true -> (
               debug_endline "already_done"; 
               s0)
+          (*:og:*)
           | false -> (
               debug_endline "not already_done";
               let s0 = add_ixk_done (i,x) s0 in
@@ -261,11 +292,13 @@ module Make = functor (S:S_) -> struct
               |> fun s ->
               assert(log P.de);
               s))  
+      (*:og:*)
       | false (* nitm_complete *) -> (
           (* NEW BLOCKED X -> i as k (S bs') on k S; here S is _Y or t *)
           let bitm = nitm in
           let s = List.hd (bitm|>dot_bs) in
           s |> sym_case
+            (*:oh:*)
             ~nt:(fun _Y -> 
                 (* have we already processed k Y? *)
                 let bitms = bitms (k,_Y) in
@@ -274,6 +307,7 @@ module Make = functor (S:S_) -> struct
                 let s0 = add_bitm_at_k bitm _Y s0 in
                 assert(log P.fg);
                 bitms_empty |> function
+                  (*:oi:*)
                 | false -> (
                     (* already processed k Y, so no need to expand; but
                        may have complete item kYk *)
@@ -282,6 +316,7 @@ module Make = functor (S:S_) -> struct
                     mem_ixk_done (k,_Y) s0 |> function
                     | true -> add_todo (cut bitm k) s0
                     | false -> s0)  (* FIXME waypoint? *)
+                (*:oj:*)
                 | true -> (
                     (* we have not processed k Y; expand sym Y *)
                     debug_endline "bitms_empty";
@@ -293,12 +328,14 @@ module Make = functor (S:S_) -> struct
                     |> fun s -> 
                     assert(log P.gh);
                     s))
+            (*:ok:*)
             ~tm:(fun t ->
                 (* have we already processed k T ? *)
                 find_ktjs t s0 |> fun ktjs ->
                 assert(log P.hi);
                 ktjs 
                 |> (function 
+                    (*:ol:*)
                     | None -> (
                         (* process k T *)
                         debug_endline "ktjs None";
@@ -306,8 +343,9 @@ module Make = functor (S:S_) -> struct
                         let js = parse_tm ~tm:t ~input ~k ~input_length in
                         let ktjs = map_tm_ops.map_add t (Some js) s0.ktjs in
                         (js,{s0 with ktjs}))
+                    (*:om:*)
                     | Some js -> (debug_endline "ktjs Some"; (js,s0)))
-                |> fun (js,s0) -> 
+                |> fun (js,s0) ->                 
                 assert(log P.ij);
                 (* process blocked; there is only one item blocked at
                    this point *)
@@ -320,6 +358,7 @@ module Make = functor (S:S_) -> struct
                 s))
     ) (*  step_k *)
     in
+    (*:or:*)
 
 
     (* loop_k: loop at k -------------------------------------------- *)
@@ -328,6 +367,8 @@ module Make = functor (S:S_) -> struct
       | [] -> s0
       | _ -> loop_k (step_k s0)
     in
+
+    (*:pm:*)
 
 
     (* loop --------------------------------------------------------- *)
@@ -366,6 +407,8 @@ module Make = functor (S:S_) -> struct
         (* end loop *)
     in
 
+    (*:ps:*)
+
     (* staged: main entry point ------------------------------------- *)
     (* construct initial context, apply loop *)
     let result : state = 
@@ -384,7 +427,25 @@ module Make = functor (S:S_) -> struct
       loop s0
     in
 
+    (*:pu:*)
+
     result
   ) (* run_earley *)
 
 end (* Make *)
+
+
+(*:py:*)
+
+(*
+module Bitms_lt_k_ops = struct
+  type ('k,'v,'t) ltk_map_ops = {
+    ltk_add: 'k -> 'v -> 't -> 't;
+    ltk_find:'k -> 't -> 'v;
+    ltk_empty:int -> 't;  (* need to*)
+    ltk_remove:'k -> 't -> 't;
+  }
+end
+
+open Bitms_lt_k_ops
+*)

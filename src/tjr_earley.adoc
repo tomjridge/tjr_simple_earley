@@ -4,152 +4,623 @@ Author: Tom Ridge
 :sectnums:
 :stem: latexmath
 :source-highlighter: pygments
+:allow-uri-read:
+
+== Introduction
+
+This is a version of Earley's algorithm which was essentially derived
+from scratch, paying attention to correctness and performance issues.
+
+This code is the among the fastest implementations of Earley in a
+high-level language that I am aware of. For example, for the grammar
+
+`E -> E E E | "1" | eps`
 
 
-== Comment on datastructures required
+with an input "111..." of length 400, the parse takes about 3.5s on a
+single core on current commodity Intel hardware. By way of comparison,
+Haskell's Happy parser takes two minutes to process an input of size
+60, and cannot handle much longer lengths at all (and I doubt many
+other "general" parser implementations can either). 
 
-The `S_` functor has:
+The problem with these other implementations is that they seem to be
+buggy as far as performance goes, and these bugs tend to manifest when
+using "horrible" grammars like the above, and long inputs. This code
+is meant to be a reference implementation for Earley-like parsing.
 
+
+
+=== About this document
+
+The documentation is in the form of an asciidoc file, which is turned
+into an html file.
+
+We include source code in the documentation, and these are produced by
+extracting code between "special comments" in the source code
+file. The special comments are of the form :ab: i.e., two letters
+between two colons. The code snippet is then placed in a file
+snips/xxx/ab-bc (where :bc: is the label following the label :ab:, and
+xxx is the original filename). These snippets are then included in
+this documentation file.
+
+////     
+== Example code excerpt
+
+[source,ocaml]
 ----
-  type nt_item = {
-    nt: nt;
-    i: i_t;
-    as_: sym list;  (* NOTE in "reversed" order *)
-    k: k_t;
-    bs: sym list
-  }
+include::snips/tjr_earley.ml/ma-mm[]
+----
+////
+
+
+=== Quick introduction to this variant of Earley's algorithm
+
+Earley's algorithm is a general parsing algorithm for all context free
+grammars. We assume that the reader understands the words
+"nonterminal", "terminal" and "symbol". A grammar is a list of rules,
+where each rule is of the form latexmath:[X \rightarrow \alpha], where
+latexmath:[X] is a nonterminal and latexmath:[\alpha] is a list of
+symbols.
+
+Traditional Earley works with "items" of the form latexmath:[X
+\rightarrow \alpha . \beta,j]. The algorithm works in stages. At stage
+latexmath:[k] the algorithm is looking at the input string at position
+latexmath:[k]. The existence of an item at stage latexmath:[k] means
+that, starting from input position latexmath:[j], using rule
+latexmath:[X \rightarrow \alpha \beta], it was possible to parse the
+symbols latexmath:[\alpha] to match the input between position
+latexmath:[j] and latexmath:[k].
+
+From now on we will use verbatim rather than LaTeX math.
+
+Our version of the algorithm works with items of the form `X ->
+i,as,k,bs`. This means the same as above: starting from position `i`
+it was possible to parse the list of symbols `as` by consuming the
+input upto position `k`. Compared to the traditional presentation, we
+have placed `i` before `as`, and made `k` explicit and placed it after
+`as`. This emphasizes that `as` matched the input between `i` and `k`.
+
+We assume the reader is familiar with the functioning of Earley's
+original algorithm. 
+
+This version is similar. Compared to Earley, we have paid close
+attention to the datastructures and representations. We have also made
+a few optimizations that perhaps have not been noticed before. We
+operate in stages, with the current stage denoted `k`.
+
+=== Notational conventions
+
+We make use of notational conventions. Usually the following is true:
+
+* `i,j,k` are ints; `i` is the start position for an item; `k` is the current stage
+
+* `X,Y` are nonterminals
+
+* `T` is a terminal
+
+* `S` is a symbol
+
+
+== Code
+
+=== Preliminaries
+
+We define some basic library types and functions. Note that for sets
+and maps we use records rather than (stdlib) functors. This is to
+allow us to choose the implementation at runtime: if the input size is
+small we can use arrays; otherwise we can fall back to hashmaps or
+maps.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/ma-mm[]
 ----
 
-which could be 3 ints and 2 int lists. The int lists have max length
-the max length of any rhs, which is expected to be small. So roughly
-this is a list of int, of approx size `2*|rhs| + 3`.
+=== Input signature
+
+The code is parameterized over the signature `S_`, which defines all
+the types and operations we assume. We use a signature so that we can
+instantiate the generic code with various different
+implementations. For example, the test code uses integers to represent
+items.
 
 
-The `Make` functor has type `state_t`:
-
+[source,ocaml]
 ----
-  type state_t = {
-    k: int;
-    todo: nt_item list;  
-    (* per k *)
-
-    todo_done: nt_item_set; 
-    (* per k; todo_done at stage k *)
-
-    todo_gt_k: nt_item_set map_int; 
-    (* array (int/j) to nt_item_set? empty for large k' > k_current
-       and not needed for j<k *)
-
-    ixk_done: ixk_set;  (* i X k *)  
-    (* per k; array (int/i) with values a set of nt?; set of nt
-       implemented by binary upto 63/64 bits *)
-
-    ktjs: int list option map_tm;  (* k T j *)  
-    (* per k; array (tm) with values a list of int *)
-
-    bitms_lt_k: bitms_lt_k;  (* for all k; defined locally, see above *)
-
-    bitms_at_k: bitms_at_k;  (* per k; ditto *)
-
-    all_done: nt_item_set list;  
-    (* not really needed - just for returning results as a list *)
-  }
+include::snips/tjr_earley.ml/mm-mn[]
 ----
 
-Maps from int are typically indexed by `k`. Typically eg `todo_gt_k`
-would be sparse and, after the first few k, have no entries (since
-this gets filled when a terminal completes).
+First we declare the types for nonterminals, terminals and symbols.
 
-The main datastructure is a "set of nt items". One thing to note is
-that, for finite BNFs, there are a very small number of possible `as_`
-and `bs`, and that `as_` is determined by `bs`. The operation we have
-on `bs` is to take the head, and the tail, and these can be
-precomputed based on the grammar.
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/mn-mo[]
+----
 
-So an `nt_item` could be `nt*i_t*k_t*(bs)^` where `(bs)^` is the int
-repr. of `bs`. This is two small ints and two `length(input)` ints,
-one of which can typically be omitted (because known in some other
-way.. this is (always?) `k`). So we have `nt * i_t * (bs)^` which is 3
-ints (only one of which is expected to be large). 32 bits is enough to
-handle inputs of length 2^32 or approx 1GB. Then could use the
-remaining 32 (31) bits to record nt and `(bs)^`. This would give an
-efficient implementation of `nt_item_set` which is not scanned by the
-GC.
+The type for (nonterminal) items, together with associated
+operations. An item is like a record, of the form `{nt;i;as;k;bs}`,
+indicating that the sequence of symbols `as` could be parsed between
+`i` and `k`; this corresponds to an attempt to parse the production
+`nt -> as bs` starting at position `i`).
 
-Of interest is that OCaml GC does not scan float arrays (but does scan
-int arrays), see
-https://stackoverflow.com/questions/42976380/ocaml-int-array-and-garbage-collection . 
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/mo-mp[]
+----
 
-That post suggests that bigarrays can be used when gc is an issue.
+Next we have various types for 
 
+* sets of items
 
-== `step_k`
+* triples `(i,X,k)` of a symbol `X` and two integers `i,k`, which
+  corresponds to a parsed item of the form `X -> ...` between `i` and
+  `k` in the input
 
-This version processes all items at index latexmath:[k] (the current
-stage) before moving on to latexmath:[k+1] (the next stage).
+* maps from nonterminals, integers, and terminals
 
-
-`nitm.complete`, true::
-We have a complete item `(i,X,k)`.
-
-`already_done`, true:::
-
-If the item has already been processed, don't do anything.
-
-`already_done`, false:::
-
-Otherwise, add to `ixk_done` map.
-Then we need to process the complete item against the blocked items.
-
-`nitm.complete`, false::
-
-Otherwise, we have an item `(X -> i as k (S bs'))` blocked on `k,S`.
-
-`S` is a nonterminal `_Y`:::
-
-Then record the new blocked item.
-
-`bitms_empty`, false::::
-
-If we have already processed `k,Y` (ie, this is not the first time we
-have seen nonterminal `Y` at stage `k`) then we don't need to expand
-`Y`, but we may have to consider the interaction of `bitm` with the
-complete item `(k,Y,k)`: if the complete item has been found, we need
-to cut it against the blocked item.
-
-`bitms_empty`, true::::
-
-If we haven't processed nt `Y` yet expand `Y`, and add new items. Note
-that there cannot be any complete items `(k,Y,k)` because this is the
-first time we are processing `Y` at this stage.
-
-`S` is a terminal `T`:::
-
-We need to bind `js` to the indexes
-resulting from a terminal parse of `T` at this stage. 
-//-
-If we have not
-already dealt with `T` at the current stage we use the terminal parser
-to get a list of indexes `j`, and update the `ktjs` map.
-//-
-If we have already dealt with `T` at the current stage we use the
-results of the initial parse of `T`.
-//-
-Now we have `js`, corresponding to a set of complete items. We need to
-process these against the relevant blocked items. Note that we only
-parse a terminal once at stage `k`, and this occurs when we meet the
-first corresponding blocked item. Thus, there is only one blocked item
-at this point.
-
-// If we have expanded T previously, why do we need to process it against
-// blocked items at this point? Because every time we have a new blocked
-// item, we have to process it against all complete items.
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/mp-mq[]
+----
 
 
-== Loop at k
+We need to record the blocked items less than `k` (where `k` is the
+"current" position in the input). This is a map from an integer `i<k`,
+to a map from a nonterminal to a set of items, type `bitms_lt_k`.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/mq-mr[]
+----
 
 
-== Earley loop over all k
+
+We also need to record the items that we need to process at stage
+`k'>k`. This is a map from `k'>k` to a set of items.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/mr-ms[]
+----
 
 
-Initialize state, and run Earley loop.
+
+
+Finally we have the operation `cut`, which takes an item
+`{nt;i;as;k;bs}` where `bs` is of the form `X::bs'`, and an int `j`
+which indicates that symbol `X` could be parsed between `k` and `j`,
+and produces the new item `{nt;i;as';j;bs'}`, where `as'` is `as` with
+the parsed symbol `X` appended.
+
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/ms-nm[]
+----
+
+
+
+
+=== Functor declaration
+
+The code is parameterized by the signature `S_` and defined within a functor.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/nm-np[]
+----
+
+
+
+=== State type
+
+The algorithm executes in stages. At each stage `k`, the state of the
+algorithm is captured as a record.
+
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/np-nq[]
+----
+
+
+Maps from int are typically indexed by `k`. 
+
+NOTE Typically eg `todo_gt_k` would be sparse and, after the first few
+k, have no entries (since this gets filled when a terminal completes).
+
+
+
+
+
+
+
+=== Auxiliary functions: blocked items
+
+The `bitms` function retrieves the blocked items corresponding to an
+index `k` and a symbol `X`. The `add_bitm_at_k` function adds an item
+at the current stage.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/nq-nr[]
+----
+
+=== Auxiliary functions: todo items
+
+The `pop_todo` function pops an item off the list of items that are "todo" at this stage. 
+//
+The `add_todo` function adds an item either at the current stage, or at a later stage, depending on the item.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/nr-ns[]
+----
+
+
+=== Auxiliary functions: `(i,X,k)` items
+
+Similarly, we have `add` and `mem` functions for `(i,X,k)` items.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/ns-nt[]
+----
+
+
+=== Auxiliary functions: `find_ktjs`
+
+Finally we have a function to find the set of `j`s corresponding to a
+parsed terminal item `(k,T,j)`.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/nt-nu[]
+----
+
+
+=== Main code, `run_earley` and `step_k`
+
+The main code is parameterized by various set and map operations,
+`cut`, `new_items` (which provides new items according to the
+grammar), `input` (the input itself), `parse_tm` (which details how to
+parse terminals), `input_length` (the length of the input; the input
+is not necessarily a string, but can be arbitrary), `init_nt` (the
+initial nonterminal to start the parse).
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/nu-oc[]
+----
+
+
+We then have some trivial code:
+
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/oc-od[]
+----
+
+
+Finally, we can start the algorithm proper.
+
+We start by popping `bitm` off the todo items at the current stage
+`k`. We check whether the item is complete (i.e., `bs = []`).
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/od-oe[]
+----
+
+=== Complete items
+
+If it is complete, we have a complete item `(i,X,k)` which we may have
+seen before or not. We check whether it is `already_done`.
+
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/oe-of[]
+----
+
+If it is already done, we do nothing:
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/of-og[]
+----
+
+Otherwise we have to record `(i,X,k)` in the set of done items for the
+current stage. Additionally, we have to process (cut!) all blocked
+items `(Y -> i',as,i,X bs)` against this complete item to produce new
+items of the form `(Y -> i',as X,k,bs)` which we add to the set of
+todo items at the current stage.
+
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/og-og[]
+----
+
+This concludes the handling of complete items.
+
+
+=== Incomplete items
+
+If the item is incomplete, then we have a new blocked item of the form
+`X -> i,as,k,(S bs')` at stage `k`. The symbol `S` may be a terminal
+or nonterminal. We case split on which it is.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/og-oh[]
+----
+
+=== Incomplete nonterminal items
+
+
+If the symbol is a nonterminal `Y`, then we have an item blocked on
+`k,Y`. We lookup all blocked items `bitms` at `k,Y`. If we have not
+processed this item, then `bitms` will be empty. If we have processed
+any item blocked on `k,Y`, then `bitms` will be nonempty, and we do
+not need to expand `Y`.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/oh-oi[]
+----
+
+If `bitms` is not empty, then we have already expanded `Y` at stage
+`k`. However, we may have new complete items `(k,Y,j)` (where, in
+fact, `j=k` because we are still at stage k). If we have a complete
+item `(k,Y,k)` we cut it against the blocked item `X -> i,as,k,(Y
+bs')` to get a new item `X -> i,as Y,k,bs'`.
+
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/oi-oj[]
+----
+
+
+
+If `bitms` is empty, we need to expand the symbol `Y` to get new items.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/oj-ok[]
+----
+
+This completes the handling of incomplete nonterminal items.
+
+
+=== Incomplete terminal items
+
+If the symbol is a terminal `T`, we check whether we have any complete
+items `(k,T,j)`. If we have not yet processed `T` at stage `k`, then
+`ktjs` will be `None`:
+
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/ok-ol[]
+----
+
+In which case, we process `k,T` by calling the auxiliary `parse_tm`
+with the terminal, the input, the input length, and the current
+position `k`. We record the `js` corresponding to successful parses
+`(k,T,j)`.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/ol-om[]
+----
+
+If we have already processed `k,T`, then we just retrieve the `js`
+from previously. In either case, we have the list `js` of `j`s that we
+need to process against items blocked on `k,T`. In fact, we only need
+to worry about the current blocked item (FIXME what was the reason?),
+which we cut against each of the `j`s to get new todo items.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/om-or[]
+----
+
+This concludes the exposition of the `step_k` function.
+
+
+
+
+=== Main code: `loop_k`
+
+At stage `k`, if there are todo items we process them, otherwise we stop.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/or-pm[]
+----
+
+=== Main code: `loop`
+
+The main loop repeatedly processes items at `k` before moving on to `k+1`.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/pm-ps[]
+----
+
+
+=== Main code: `result`
+
+Finally, we construct the result by calling `loop`, starting from `k=0`.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/ps-pu[]
+----
+
+And that is the end of the code.
+
+[source,ocaml]
+----
+include::snips/tjr_earley.ml/pu-py[]
+----
+
+
+
+
+
+
+
+// == OLD MERGE WITH ABOVE
+// 
+// 
+// === Comment on datastructures required
+// 
+// The `S_` functor has:
+// 
+// ----
+//   type nt_item = {
+//     nt: nt;
+//     i: i_t;
+//     as_: sym list;  (* NOTE in "reversed" order *)
+//     k: k_t;
+//     bs: sym list
+//   }
+// ----
+// 
+// which could be 3 ints and 2 int lists. The int lists have max length
+// the max length of any rhs, which is expected to be small. So roughly
+// this is a list of int, of approx size `2*|rhs| + 3`.
+// 
+// 
+// The `Make` functor has type `state_t`:
+// 
+// ----
+//   type state_t = {
+//     k: int;
+//     todo: nt_item list;  
+//     (* per k *)
+// 
+//     todo_done: nt_item_set; 
+//     (* per k; todo_done at stage k *)
+// 
+//     todo_gt_k: nt_item_set map_int; 
+//     (* array (int/j) to nt_item_set? empty for large k' > k_current
+//        and not needed for j<k *)
+// 
+//     ixk_done: ixk_set;  (* i X k *)  
+//     (* per k; array (int/i) with values a set of nt?; set of nt
+//        implemented by binary upto 63/64 bits *)
+// 
+//     ktjs: int list option map_tm;  (* k T j *)  
+//     (* per k; array (tm) with values a list of int *)
+// 
+//     bitms_lt_k: bitms_lt_k;  (* for all k; defined locally, see above *)
+// 
+//     bitms_at_k: bitms_at_k;  (* per k; ditto *)
+// 
+//     all_done: nt_item_set list;  
+//     (* not really needed - just for returning results as a list *)
+//   }
+// ----
+// 
+// Maps from int are typically indexed by `k`. Typically eg `todo_gt_k`
+// would be sparse and, after the first few k, have no entries (since
+// this gets filled when a terminal completes).
+// 
+// The main datastructure is a "set of nt items". One thing to note is
+// that, for finite BNFs, there are a very small number of possible `as_`
+// and `bs`, and that `as_` is determined by `bs`. The operation we have
+// on `bs` is to take the head, and the tail, and these can be
+// precomputed based on the grammar.
+// 
+// So an `nt_item` could be `nt*i_t*k_t*(bs)^` where `(bs)^` is the int
+// repr. of `bs`. This is two small ints and two `length(input)` ints,
+// one of which can typically be omitted (because known in some other
+// way.. this is (always?) `k`). So we have `nt * i_t * (bs)^` which is 3
+// ints (only one of which is expected to be large). 32 bits is enough to
+// handle inputs of length 2^32 or approx 1GB. Then could use the
+// remaining 32 (31) bits to record nt and `(bs)^`. This would give an
+// efficient implementation of `nt_item_set` which is not scanned by the
+// GC.
+// 
+// Of interest is that OCaml GC does not scan float arrays (but does scan
+// int arrays), see
+// https://stackoverflow.com/questions/42976380/ocaml-int-array-and-garbage-collection . 
+// 
+// That post suggests that bigarrays can be used when gc is an issue.
+// 
+// 
+// === `step_k`
+// 
+// This version processes all items at index latexmath:[k] (the current
+// stage) before moving on to latexmath:[k+1] (the next stage).
+// 
+// 
+// `nitm.complete`, true::
+// We have a complete item `(i,X,k)`.
+// 
+// `already_done`, true:::
+// 
+// If the item has already been processed, don't do anything.
+// 
+// `already_done`, false:::
+// 
+// Otherwise, add to `ixk_done` map.
+// Then we need to process the complete item against the blocked items.
+// 
+// `nitm.complete`, false::
+// 
+// Otherwise, we have an item `(X -> i as k (S bs'))` blocked on `k,S`.
+// 
+// `S` is a nonterminal `_Y`:::
+// 
+// Then record the new blocked item.
+// 
+// `bitms_empty`, false::::
+// 
+// If we have already processed `k,Y` (ie, this is not the first time we
+// have seen nonterminal `Y` at stage `k`) then we don't need to expand
+// `Y`, but we may have to consider the interaction of `bitm` with the
+// complete item `(k,Y,k)`: if the complete item has been found, we need
+// to cut it against the blocked item.
+// 
+// `bitms_empty`, true::::
+// 
+// If we haven't processed nt `Y` yet expand `Y`, and add new items. Note
+// that there cannot be any complete items `(k,Y,k)` because this is the
+// first time we are processing `Y` at this stage.
+// 
+// `S` is a terminal `T`:::
+// 
+// We need to bind `js` to the indexes
+// resulting from a terminal parse of `T` at this stage. 
+// //-
+// If we have not
+// already dealt with `T` at the current stage we use the terminal parser
+// to get a list of indexes `j`, and update the `ktjs` map.
+// //-
+// If we have already dealt with `T` at the current stage we use the
+// results of the initial parse of `T`.
+// //-
+// Now we have `js`, corresponding to a set of complete items. We need to
+// process these against the relevant blocked items. Note that we only
+// parse a terminal once at stage `k`, and this occurs when we meet the
+// first corresponding blocked item. Thus, there is only one blocked item
+// at this point.
+// 
+// // If we have expanded T previously, why do we need to process it against
+// // blocked items at this point? Because every time we have a new blocked
+// // item, we have to process it against all complete items.
+// 
+// 
+// === Loop at k
+// 
+// 
+// === Earley loop over all k
+// 
+// 
+// Initialize state, and run Earley loop.

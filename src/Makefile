@@ -8,7 +8,9 @@ all:
 	$(OPT) -linkpkg -o test.native $(MLS) # profile.cmx staged.cmx test.cmx 
 	echo Now try: time ./test.native 200
 
+# apt-install ruby-pygments
 doc:
+	/tmp/snip.native tjr_earley.ml
 	asciidoctor tjr_earley.adoc
 
 clean:
