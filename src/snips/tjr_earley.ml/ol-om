@@ -1,0 +1,7 @@
+                    | None -> (
+                        (* process k T *)
+                        debug_endline "ktjs None";
+                        debug_endline "processing k T";
+                        let js = parse_tm ~tm:t ~input ~k ~input_length in
+                        let ktjs = map_tm_ops.map_add t (Some js) s0.ktjs in
+                        (js,{s0 with ktjs}))

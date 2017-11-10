@@ -1,0 +1,3 @@
+
+  let find_ktjs t s0 : int list option =
+    map_tm_ops.map_find t s0.ktjs

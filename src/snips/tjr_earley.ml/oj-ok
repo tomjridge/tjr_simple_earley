@@ -1,0 +1,11 @@
+                | true -> (
+                    (* we have not processed k Y; expand sym Y *)
+                    debug_endline "bitms_empty";
+                    assert (mem_ixk_done (k,_Y) s0 = false);
+                    new_items ~nt:_Y ~input ~k 
+                    |> List_.with_each_elt 
+                      ~step:(fun ~state:s nitm -> add_todo nitm s) 
+                      ~init_state:s0
+                    |> fun s -> 
+                    assert(log P.gh);
+                    s))

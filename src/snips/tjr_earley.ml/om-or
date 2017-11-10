@@ -1,0 +1,14 @@
+                    | Some js -> (debug_endline "ktjs Some"; (js,s0)))
+                |> fun (js,s0) ->                 
+                assert(log P.ij);
+                (* process blocked; there is only one item blocked at
+                   this point *)
+                js 
+                |> List_.with_each_elt
+                  ~step:(fun ~state:s j -> add_todo (cut bitm j) s)
+                  ~init_state:s0 
+                |> fun s -> 
+                assert(log P.jk);
+                s))
+    ) (*  step_k *)
+    in

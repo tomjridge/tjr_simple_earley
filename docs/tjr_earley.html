@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 1.5.4">
+<meta name="author" content="Author: Tom Ridge">
+<title>An Earley-like parser built for performance and correctness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+<style>
+/* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
+/* Remove comment around @import statement below when using as a custom stylesheet */
+/*@import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700";*/
+article,aside,details,figcaption,figure,footer,header,hgroup,main,nav,section,summary{display:block}
+audio,canvas,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+[hidden],template{display:none}
+script{display:none!important}
+html{font-family:sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}
+body{margin:0}
+a{background:transparent}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+abbr[title]{border-bottom:1px dotted}
+b,strong{font-weight:bold}
+dfn{font-style:italic}
+hr{-moz-box-sizing:content-box;box-sizing:content-box;height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type="button"],input[type="reset"],input[type="submit"]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type="checkbox"],input[type="radio"]{box-sizing:border-box;padding:0}
+input[type="search"]{-webkit-appearance:textfield;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;box-sizing:content-box}
+input[type="search"]::-webkit-search-cancel-button,input[type="search"]::-webkit-search-decoration{-webkit-appearance:none}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,*:before,*:after{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;font-weight:400;font-style:normal;line-height:1;position:relative;cursor:auto}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+body{-webkit-font-smoothing:antialiased}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.center{margin-left:auto;margin-right:auto}
+.spread{width:100%}
+p.lead,.paragraph.lead>p,#preamble>.sectionbody>.paragraph:first-of-type p{font-size:1.21875em;line-height:1.6}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0;direction:ltr}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:none}
+p{font-family:inherit;font-weight:400;font-size:1em;line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #ddddd8;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em;height:0}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{font-size:1em;line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol,ul.no-bullet,ol.no-bullet{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0;font-size:1em}
+ul.square li ul,ul.circle li ul,ul.disc li ul{list-style:inherit}
+ul.square{list-style-type:square}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ul.no-bullet{list-style:none}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+abbr,acronym{text-transform:uppercase;font-size:90%;color:rgba(0,0,0,.8);border-bottom:1px dotted #ddd;cursor:help}
+abbr{text-transform:none}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote cite{display:block;font-size:.9375em;color:rgba(0,0,0,.6)}
+blockquote cite:before{content:"\2014 \0020"}
+blockquote cite a,blockquote cite a:visited{color:rgba(0,0,0,.6)}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media only screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:solid 1px #dedede}
+table thead,table tfoot{background:#f7f8f7;font-weight:bold}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt,table tr:nth-of-type(even){background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{display:table-cell;line-height:1.6}
+body{tab-size:4}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.clearfix:before,.clearfix:after,.float-group:before,.float-group:after{content:" ";display:table}
+.clearfix:after,.float-group:after{clear:both}
+*:not(pre)>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background-color:#f7f7f8;-webkit-border-radius:4px;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
+pre,pre>code{line-height:1.45;color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;text-rendering:optimizeSpeed}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background-color:#f7f7f7;border:1px solid #ccc;-webkit-border-radius:3px;border-radius:3px;-webkit-box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 .1em white inset;box-shadow:0 1px 0 rgba(0,0,0,.2),0 0 0 .1em #fff inset;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menu{color:rgba(0,0,0,.8)}
+b.button:before,b.button:after{position:relative;top:-1px;font-weight:400}
+b.button:before{content:"[";padding:0 3px 0 2px}
+b.button:after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin-left:auto;margin-right:auto;margin-top:0;margin-bottom:0;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header:before,#header:after,#content:before,#content:after,#footnotes:before,#footnotes:after,#footer:before,#footer:after{content:" ";display:table}
+#header:after,#content:after,#footnotes:after,#footer:after{clear:both}
+#content{margin-top:1.25em}
+#content:before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #ddddd8}
+#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #ddddd8;padding-bottom:8px}
+#header .details{border-bottom:1px solid #ddddd8;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:-ms-flexbox;display:-webkit-flex;display:flex;-ms-flex-flow:row wrap;-webkit-flex-flow:row wrap;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span:before{content:"\00a0\2013\00a0"}
+#header .details br+span.author:before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark:before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber:after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #ddddd8;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #efefed;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media only screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+#toc.toc2{margin-top:0!important;background-color:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #efefed;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #efefed;left:auto;right:0}}
+@media only screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border-style:solid;border-width:1px;border-color:#e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;-webkit-border-radius:4px;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:100%;background-color:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:rgba(255,255,255,.8);line-height:1.44}
+.sect1{padding-bottom:.625em}
+@media only screen and (min-width:768px){.sect1{padding-bottom:1.25em}}
+.sect1+.sect1{border-top:1px solid #efefed}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor:before,h2>a.anchor:before,h3>a.anchor:before,#toctitle>a.anchor:before,.sidebarblock>.content>.title>a.anchor:before,h4>a.anchor:before,h5>a.anchor:before,h6>a.anchor:before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock>caption.title{white-space:nowrap;overflow:visible;max-width:0}
+.paragraph.lead>p,#preamble>.sectionbody>.paragraph:first-of-type p{color:rgba(0,0,0,.85)}
+table.tableblock #preamble>.sectionbody>.paragraph:first-of-type p{font-size:inherit}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #ddddd8;color:rgba(0,0,0,.6)}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border-style:solid;border-width:1px;border-color:#e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;-webkit-border-radius:4px;border-radius:4px}
+.exampleblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child{margin-bottom:0}
+.sidebarblock{border-style:solid;border-width:1px;border-color:#e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;-webkit-border-radius:4px;border-radius:4px}
+.sidebarblock>:first-child{margin-top:0}
+.sidebarblock>:last-child{margin-bottom:0}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock pre:not(.highlight),.listingblock pre[class="highlight"],.listingblock pre[class^="highlight "],.listingblock pre.CodeRay,.listingblock pre.prettyprint{background:#f7f7f8}
+.sidebarblock .literalblock pre,.sidebarblock .listingblock pre:not(.highlight),.sidebarblock .listingblock pre[class="highlight"],.sidebarblock .listingblock pre[class^="highlight "],.sidebarblock .listingblock pre.CodeRay,.sidebarblock .listingblock pre.prettyprint{background:#f2f1f1}
+.literalblock pre,.literalblock pre[class],.listingblock pre,.listingblock pre[class]{-webkit-border-radius:4px;border-radius:4px;word-wrap:break-word;padding:1em;font-size:.8125em}
+.literalblock pre.nowrap,.literalblock pre[class].nowrap,.listingblock pre.nowrap,.listingblock pre[class].nowrap{overflow-x:auto;white-space:pre;word-wrap:normal}
+@media only screen and (min-width:768px){.literalblock pre,.literalblock pre[class],.listingblock pre,.listingblock pre[class]{font-size:.90625em}}
+@media only screen and (min-width:1280px){.literalblock pre,.literalblock pre[class],.listingblock pre,.listingblock pre[class]{font-size:1em}}
+.literalblock.output pre{color:#f7f7f8;background-color:rgba(0,0,0,.9)}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;-webkit-border-radius:4px;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.listingblock>.content{position:relative}
+.listingblock code[data-lang]:before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:#999}
+.listingblock:hover code[data-lang]:before{display:block}
+.listingblock.terminal pre .command:before{content:attr(data-prompt);padding-right:.5em;color:#999}
+.listingblock.terminal pre .command:not([data-prompt]):before{content:"$"}
+table.pyhltable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.pyhltable td{vertical-align:top;padding-top:0;padding-bottom:0;line-height:1.45}
+table.pyhltable td.code{padding-left:.75em;padding-right:0}
+pre.pygments .lineno,table.pyhltable td:not(.code){color:#999;padding-left:0;padding-right:.5em;border-right:1px solid #ddddd8}
+pre.pygments .lineno{display:inline-block;margin-right:.25em}
+table.pyhltable .linenodiv{background:none!important;padding-right:0!important}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock blockquote p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote:before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.5em;margin-right:.5ex;text-align:right}
+.quoteblock .quoteblock{margin-left:0;margin-right:0;padding:.5em 0;border-left:3px solid rgba(0,0,0,.6)}
+.quoteblock .quoteblock blockquote{padding:0 0 0 .75em}
+.quoteblock .quoteblock blockquote:before{display:none}
+.verseblock{margin:0 1em 1.25em 1em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract{margin:0 0 1.25em 0;display:block}
+.quoteblock.abstract blockquote,.quoteblock.abstract blockquote p{text-align:left;word-spacing:0}
+.quoteblock.abstract blockquote:before,.quoteblock.abstract blockquote p:first-of-type:before{display:none}
+table.tableblock{max-width:100%;border-collapse:separate}
+table.tableblock td>.paragraph:last-child p>p:last-child,table.tableblock th>p:last-child,table.tableblock td>p:last-child{margin-bottom:0}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all th.tableblock,table.grid-all td.tableblock{border-width:0 1px 1px 0}
+table.grid-all tfoot>tr>th.tableblock,table.grid-all tfoot>tr>td.tableblock{border-width:1px 1px 0 0}
+table.grid-cols th.tableblock,table.grid-cols td.tableblock{border-width:0 1px 0 0}
+table.grid-all *>tr>.tableblock:last-child,table.grid-cols *>tr>.tableblock:last-child{border-right-width:0}
+table.grid-rows th.tableblock,table.grid-rows td.tableblock{border-width:0 0 1px 0}
+table.grid-all tbody>tr:last-child>th.tableblock,table.grid-all tbody>tr:last-child>td.tableblock,table.grid-all thead:last-child>tr>th.tableblock,table.grid-rows tbody>tr:last-child>th.tableblock,table.grid-rows tbody>tr:last-child>td.tableblock,table.grid-rows thead:last-child>tr>th.tableblock{border-bottom-width:0}
+table.grid-rows tfoot>tr>th.tableblock,table.grid-rows tfoot>tr>td.tableblock{border-width:1px 0 0 0}
+table.frame-all{border-width:1px}
+table.frame-sides{border-width:0 1px}
+table.frame-topbot{border-width:1px 0}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{display:table-cell;line-height:1.6;background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+td>div.verse{white-space:pre}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+ol>li p,ul>li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.unstyled,ol.unnumbered,ul.checklist,ul.none{list-style-type:none}
+ul.unstyled,ol.unnumbered,ul.checklist{margin-left:.625em}
+ul.checklist li>p:first-child>.fa-square-o:first-child,ul.checklist li>p:first-child>.fa-check-square-o:first-child{width:1em;font-size:.85em}
+ul.checklist li>p:first-child>input[type="checkbox"]:first-child{width:1em;position:relative;top:1px}
+ul.inline{margin:0 auto .625em auto;margin-left:-1.375em;margin-right:0;padding:0;list-style:none;overflow:hidden}
+ul.inline>li{list-style:none;float:left;margin-left:1.375em;display:block}
+ul.inline>li>*{display:block}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist>table tr>td:first-of-type{padding:0 .75em;line-height:1}
+.colist>table tr>td:last-of-type{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:solid 4px #fff;-webkit-box-shadow:0 0 0 1px #ddd;box-shadow:0 0 0 1px #ddd}
+.imageblock.left,.imageblock[style*="float: left"]{margin:.25em .625em 1.25em 0}
+.imageblock.right,.imageblock[style*="float: right"]{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em 0;border-width:1px 0 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;text-indent:-1.05em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+.gist .file-data>table{border:0;background:#fff;width:100%;margin-bottom:0}
+.gist .file-data>table td.line-data{width:99%}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background-color:#00fafa}
+.black{color:#000}
+.black-background{background-color:#000}
+.blue{color:#0000bf}
+.blue-background{background-color:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background-color:#fa00fa}
+.gray{color:#606060}
+.gray-background{background-color:#7d7d7d}
+.green{color:#006000}
+.green-background{background-color:#007d00}
+.lime{color:#00bf00}
+.lime-background{background-color:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background-color:#7d0000}
+.navy{color:#000060}
+.navy-background{background-color:#00007d}
+.olive{color:#606000}
+.olive-background{background-color:#7d7d00}
+.purple{color:#600060}
+.purple-background{background-color:#7d007d}
+.red{color:#bf0000}
+.red-background{background-color:#fa0000}
+.silver{color:#909090}
+.silver-background{background-color:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background-color:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background-color:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background-color:#fafa00}
+span.icon>.fa{cursor:default}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note:before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip:before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning:before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution:before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important:before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background-color:rgba(0,0,0,.8);-webkit-border-radius:100px;border-radius:100px;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]:after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,span.alt{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background-color:#fffef7;border-color:#e0e0dc;-webkit-box-shadow:0 1px 4px #e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@media print{@page{margin:1.25cm .75cm}
+*{-webkit-box-shadow:none!important;box-shadow:none!important;text-shadow:none!important}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare):after,a[href^="https:"]:not(.bare):after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]:after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #ddddd8!important;padding-bottom:0!important}
+.sect1{padding-bottom:0!important}
+.sect1+.sect1{border:0!important}
+#header>h1:first-child{margin-top:1.25rem}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em 0}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span:before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]:before{display:block}
+#footer{background:none!important;padding:0 .9375em}
+#footer-text{color:rgba(0,0,0,.6)!important;font-size:.9em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+</style>
+<style>
+.listingblock .pygments .hll { background-color: #ffffcc }
+.listingblock .pygments  { background: #f8f8f8; }
+.listingblock .pygments .tok-c { color: #408080; font-style: italic } /* Comment */
+.listingblock .pygments .tok-err { border: 1px solid #FF0000 } /* Error */
+.listingblock .pygments .tok-k { color: #008000; font-weight: bold } /* Keyword */
+.listingblock .pygments .tok-o { color: #666666 } /* Operator */
+.listingblock .pygments .tok-ch { color: #408080; font-style: italic } /* Comment.Hashbang */
+.listingblock .pygments .tok-cm { color: #408080; font-style: italic } /* Comment.Multiline */
+.listingblock .pygments .tok-cp { color: #BC7A00 } /* Comment.Preproc */
+.listingblock .pygments .tok-cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */
+.listingblock .pygments .tok-c1 { color: #408080; font-style: italic } /* Comment.Single */
+.listingblock .pygments .tok-cs { color: #408080; font-style: italic } /* Comment.Special */
+.listingblock .pygments .tok-gd { color: #A00000 } /* Generic.Deleted */
+.listingblock .pygments .tok-ge { font-style: italic } /* Generic.Emph */
+.listingblock .pygments .tok-gr { color: #FF0000 } /* Generic.Error */
+.listingblock .pygments .tok-gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.listingblock .pygments .tok-gi { color: #00A000 } /* Generic.Inserted */
+.listingblock .pygments .tok-go { color: #888888 } /* Generic.Output */
+.listingblock .pygments .tok-gp { color: #000080; font-weight: bold } /* Generic.Prompt */
+.listingblock .pygments .tok-gs { font-weight: bold } /* Generic.Strong */
+.listingblock .pygments .tok-gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.listingblock .pygments .tok-gt { color: #0044DD } /* Generic.Traceback */
+.listingblock .pygments .tok-kc { color: #008000; font-weight: bold } /* Keyword.Constant */
+.listingblock .pygments .tok-kd { color: #008000; font-weight: bold } /* Keyword.Declaration */
+.listingblock .pygments .tok-kn { color: #008000; font-weight: bold } /* Keyword.Namespace */
+.listingblock .pygments .tok-kp { color: #008000 } /* Keyword.Pseudo */
+.listingblock .pygments .tok-kr { color: #008000; font-weight: bold } /* Keyword.Reserved */
+.listingblock .pygments .tok-kt { color: #B00040 } /* Keyword.Type */
+.listingblock .pygments .tok-m { color: #666666 } /* Literal.Number */
+.listingblock .pygments .tok-s { color: #BA2121 } /* Literal.String */
+.listingblock .pygments .tok-na { color: #7D9029 } /* Name.Attribute */
+.listingblock .pygments .tok-nb { color: #008000 } /* Name.Builtin */
+.listingblock .pygments .tok-nc { color: #0000FF; font-weight: bold } /* Name.Class */
+.listingblock .pygments .tok-no { color: #880000 } /* Name.Constant */
+.listingblock .pygments .tok-nd { color: #AA22FF } /* Name.Decorator */
+.listingblock .pygments .tok-ni { color: #999999; font-weight: bold } /* Name.Entity */
+.listingblock .pygments .tok-ne { color: #D2413A; font-weight: bold } /* Name.Exception */
+.listingblock .pygments .tok-nf { color: #0000FF } /* Name.Function */
+.listingblock .pygments .tok-nl { color: #A0A000 } /* Name.Label */
+.listingblock .pygments .tok-nn { color: #0000FF; font-weight: bold } /* Name.Namespace */
+.listingblock .pygments .tok-nt { color: #008000; font-weight: bold } /* Name.Tag */
+.listingblock .pygments .tok-nv { color: #19177C } /* Name.Variable */
+.listingblock .pygments .tok-ow { color: #AA22FF; font-weight: bold } /* Operator.Word */
+.listingblock .pygments .tok-w { color: #bbbbbb } /* Text.Whitespace */
+.listingblock .pygments .tok-mb { color: #666666 } /* Literal.Number.Bin */
+.listingblock .pygments .tok-mf { color: #666666 } /* Literal.Number.Float */
+.listingblock .pygments .tok-mh { color: #666666 } /* Literal.Number.Hex */
+.listingblock .pygments .tok-mi { color: #666666 } /* Literal.Number.Integer */
+.listingblock .pygments .tok-mo { color: #666666 } /* Literal.Number.Oct */
+.listingblock .pygments .tok-sb { color: #BA2121 } /* Literal.String.Backtick */
+.listingblock .pygments .tok-sc { color: #BA2121 } /* Literal.String.Char */
+.listingblock .pygments .tok-sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */
+.listingblock .pygments .tok-s2 { color: #BA2121 } /* Literal.String.Double */
+.listingblock .pygments .tok-se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */
+.listingblock .pygments .tok-sh { color: #BA2121 } /* Literal.String.Heredoc */
+.listingblock .pygments .tok-si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */
+.listingblock .pygments .tok-sx { color: #008000 } /* Literal.String.Other */
+.listingblock .pygments .tok-sr { color: #BB6688 } /* Literal.String.Regex */
+.listingblock .pygments .tok-s1 { color: #BA2121 } /* Literal.String.Single */
+.listingblock .pygments .tok-ss { color: #19177C } /* Literal.String.Symbol */
+.listingblock .pygments .tok-bp { color: #008000 } /* Name.Builtin.Pseudo */
+.listingblock .pygments .tok-vc { color: #19177C } /* Name.Variable.Class */
+.listingblock .pygments .tok-vg { color: #19177C } /* Name.Variable.Global */
+.listingblock .pygments .tok-vi { color: #19177C } /* Name.Variable.Instance */
+.listingblock .pygments .tok-il { color: #666666 } /* Literal.Number.Integer.Long */
+</style>
+</head>
+<body class="article">
+<div id="header">
+<h1>An Earley-like parser built for performance and correctness</h1>
+<div class="details">
+<span id="author" class="author">Author: Tom Ridge</span><br>
+</div>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_introduction">1. Introduction</a>
+<ul class="sectlevel2">
+<li><a href="#_about_this_document">1.1. About this document</a></li>
+<li><a href="#_quick_introduction_to_this_variant_of_earley_s_algorithm">1.2. Quick introduction to this variant of Earley&#8217;s algorithm</a></li>
+<li><a href="#_notational_conventions">1.3. Notational conventions</a></li>
+<li><a href="#__earley_items">1.4. (Earley) Items</a></li>
+<li><a href="#_the_essential_parsing_step">1.5. The essential parsing step</a></li>
+<li><a href="#_from_the_essential_step_to_earley_s_algorithm">1.6. From the "essential step" to Earley&#8217;s algorithm</a></li>
+</ul>
+</li>
+<li><a href="#_code">2. Code</a>
+<ul class="sectlevel2">
+<li><a href="#_preliminaries">2.1. Preliminaries</a></li>
+<li><a href="#_input_signature">2.2. Input signature</a></li>
+<li><a href="#_functor_declaration">2.3. Functor declaration</a></li>
+<li><a href="#_state_type">2.4. State type</a></li>
+<li><a href="#_auxiliary_functions_blocked_items">2.5. Auxiliary functions: blocked items</a></li>
+<li><a href="#_auxiliary_functions_todo_items">2.6. Auxiliary functions: todo items</a></li>
+<li><a href="#_auxiliary_functions_code_i_x_k_code_items">2.7. Auxiliary functions: <code>(i,X,k)</code> items</a></li>
+<li><a href="#_auxiliary_functions_code_find_ktjs_code">2.8. Auxiliary functions: <code>find_ktjs</code></a></li>
+<li><a href="#_main_code_code_run_earley_code_and_code_step_k_code">2.9. Main code, <code>run_earley</code> and <code>step_k</code></a></li>
+<li><a href="#_complete_items">2.10. Complete items</a></li>
+<li><a href="#_incomplete_items">2.11. Incomplete items</a>
+<ul class="sectlevel3">
+<li><a href="#_incomplete_nonterminal_items">2.11.1. Incomplete nonterminal items</a></li>
+<li><a href="#_incomplete_terminal_items">2.11.2. Incomplete terminal items</a></li>
+</ul>
+</li>
+<li><a href="#_main_code_code_loop_k_code">2.12. Main code: <code>loop_k</code></a></li>
+<li><a href="#_main_code_code_loop_code">2.13. Main code: <code>loop</code></a></li>
+<li><a href="#_main_code_code_result_code">2.14. Main code: <code>result</code></a></li>
+</ul>
+</li>
+<li><a href="#_using_the_library">3. Using the library</a></li>
+</ul>
+</div>
+</div>
+<div id="content">
+<div class="sect1">
+<h2 id="_introduction">1. Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is a version of Earley&#8217;s algorithm which was essentially derived
+from scratch, paying attention to correctness and performance issues.</p>
+</div>
+<div class="paragraph">
+<p>This code is the among the fastest implementations of Earley in a
+high-level language that I am aware of. For example, for the grammar</p>
+</div>
+<div class="paragraph">
+<p><code>E &#8594; E E E | "1" | eps</code></p>
+</div>
+<div class="paragraph">
+<p>with an input "111&#8230;&#8203;" of length 400, the parse takes about 3s on a
+single core on current commodity Intel hardware. By way of comparison,
+Haskell&#8217;s Happy parser takes two minutes to process an input of size
+60, and cannot handle much longer lengths at all (and I doubt many
+other "general" parser implementations can either).</p>
+</div>
+<div class="paragraph">
+<p>The problem with these other implementations is that they seem to be
+buggy as far as performance goes, and these bugs tend to manifest when
+using "horrible" grammars like the above, and long inputs.</p>
+</div>
+<div class="paragraph">
+<p>This code is meant to be a reference implementation for Earley-like
+parsing, thereby providing a base line against which to measure
+performance of other algorithms. It is also intended to guide
+implementations of Earley in other languages: just copy the code
+below.</p>
+</div>
+<div class="sect2">
+<h3 id="_about_this_document">1.1. About this document</h3>
+<div class="paragraph">
+<p>The documentation is in the form of an asciidoc file, which is turned
+into an html file.</p>
+</div>
+<div class="paragraph">
+<p>We include source code in the documentation, and these are produced by
+extracting code between "special comments" in the source code
+file. The special comments are of the form :ab: i.e., two letters
+between two colons. The code snippet is then placed in a file
+snips/xxx/ab-bc (where :bc: is the label following the label :ab:, and
+xxx is the original filename). These snippets are then included in
+this documentation file.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_quick_introduction_to_this_variant_of_earley_s_algorithm">1.2. Quick introduction to this variant of Earley&#8217;s algorithm</h3>
+<div class="paragraph">
+<p>Earley&#8217;s algorithm is a general parsing algorithm for all context free
+grammars. We assume that the reader understands the words
+"nonterminal", "terminal" and "symbol". A grammar is a list of rules,
+where each rule is of the form \(X \rightarrow \alpha\), where
+\(X\) is a nonterminal and \(\alpha\) is a list of
+symbols.</p>
+</div>
+<div class="paragraph">
+<p>Traditional Earley works with "items" of the form \(X
+\rightarrow \alpha . \beta,j\). The algorithm works in stages. At stage
+\(k\) the algorithm is looking at the input string at position
+\(k\). The existence of an item \(X
+\rightarrow \alpha . \beta,j\) at stage \(k\) means
+that, starting from input position \(j\), using rule
+\(X \rightarrow \alpha \beta\), it was possible to parse the
+symbols \(\alpha\) to match the input between position
+\(j\) and \(k\).</p>
+</div>
+<div class="paragraph">
+<p>From now on we will use verbatim rather than LaTeX math.</p>
+</div>
+<div class="paragraph">
+<p>Our version of the algorithm works with items of the form <code>X &#8594;
+i,as,k,bs</code>. This means the same as above: starting from position <code>i</code>
+it was possible to parse the list of symbols <code>as</code> by consuming the
+input upto position <code>k</code>. Compared to the traditional presentation, we
+have placed <code>i</code> before <code>as</code>, and made <code>k</code> explicit and placed it after
+<code>as</code>. This emphasizes that <code>as</code> matched the input between <code>i</code> and <code>k</code>.</p>
+</div>
+<div class="paragraph">
+<p>We assume the reader is familiar with the functioning of Earley&#8217;s
+original algorithm.</p>
+</div>
+<div class="paragraph">
+<p>This version is similar. Compared to Earley, we have paid close
+attention to the datastructures and representations. We have also made
+a few optimizations that perhaps have not been noticed before. We
+operate in stages, with the current stage denoted <code>k</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_notational_conventions">1.3. Notational conventions</h3>
+<div class="paragraph">
+<p>We make use of notational conventions. Usually the following is true:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>i,j,k</code> are ints; <code>i</code> is the start position for an item; <code>k</code> is the current stage</p>
+</li>
+<li>
+<p><code>X,Y</code> are nonterminals</p>
+</li>
+<li>
+<p><code>T</code> is a terminal</p>
+</li>
+<li>
+<p><code>S</code> is a symbol</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="__earley_items">1.4. (Earley) Items</h3>
+<div class="paragraph">
+<p>Traditional Earley works with a single notion of item. We extend this to the following:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>X &#8594; i,as,k,bs</code> - the "traditional" item; we refer to this as a
+"nonterminal" item, or just "item"</p>
+</li>
+<li>
+<p><code>i,X,k</code> - a complete (nonterminal) item; arises from nonterminal
+items of the form <code>X &#8594; i,as,k,[]</code>, by omitting the irrelevant <code>as</code>
+and <code>[]</code> components. The meaning is: the nonterminal <code>X</code> matches the
+input between <code>i</code> and <code>k</code>.</p>
+</li>
+<li>
+<p><code>k,T,j</code> - a complete (terminal) item; arises from matching a
+terminal against the input from position <code>k</code> to <code>j</code>.</p>
+</li>
+<li>
+<p><code>X &#8594; i,as,k,S bs</code> - a "traditional" item, but where the final
+component is not empty and starts with symbol <code>S</code>; we refer to this
+as a "blocked" item, because progress depends on parsing the symbol
+<code>S</code> against the input starting from position <code>k</code> (we sometimes say
+the item is blocked on <code>k,S</code>); if the parse of <code>S</code> is successful, we get a
+complete item <code>k,S,j</code> which we can cut against the original item to
+get a new item of the form <code>X &#8594; i,as S,j,bs</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_the_essential_parsing_step">1.5. The essential parsing step</h3>
+<div class="paragraph">
+<p>At the heart of all general parsing algorithms is the following step.</p>
+</div>
+<div class="paragraph">
+<p>Suppose we have an item <code>X &#8594; i,as,k,S bs</code> (here, S is a symbol). This
+means that the sequence <code>as</code> matched the input from position <code>i</code> to
+<code>k</code>. Suppose we also have an item <code>S &#8594; k,cs,j,[]</code> (i.e., the symbol
+<code>S</code> matched the input from position <code>k</code> to <code>j</code>). Then we are justified
+in concluding that <code>X &#8594; i,as S,j,bs</code> (i.e., the sequence <code>as S</code>
+matches the input from position <code>i</code> to <code>j</code>). This rule can be
+expressed as follows:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>X -&gt; i,as,k,S bs     S -&gt; k,...,j,[]
+------------------------------------ Cut
+X -&gt; i,as S,j,bs</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This should be read as: given the two things above the line, we can
+conclude with the thing below the line, and the reasoning step is
+called "Cut".</p>
+</div>
+<div class="paragraph">
+<p>In the terms of the last section, we take a "blocked" item <code>X &#8594;
+i,as,k,S bs</code> and a complete item <code>k,S,j</code> and cut them to give an item
+<code>X &#8594; i,as S,j,bs</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_from_the_essential_step_to_earley_s_algorithm">1.6. From the "essential step" to Earley&#8217;s algorithm</h3>
+<div class="paragraph">
+<p>Roughly the idea is as follows: from an initial nonterminal <code>X</code>, keep
+adding more and more items until you end up with a complete item
+<code>(0,X,l)</code>, where <code>l</code> is the length of the input. This is a
+straightforward "stupid" algorithm. With appropriate datastructures,
+this is \(O(n^3)\).</p>
+</div>
+<div class="paragraph">
+<p>Earley adds a single optimization: process the input character by
+character. At stage <code>k</code>, process all items of the form <code>X &#8594;
+i,as,k,bs</code> (and similar) before moving on to stage <code>k+1</code>. It seems
+plausible that in practice this will run faster than the "stupid"
+algorithm above.</p>
+</div>
+<div class="paragraph">
+<p>To arrive at the code below, I took these ideas and then examined the
+steps that were needed in minute detail, taking care to retain good
+performance and (hopefully) correctness.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_code">2. Code</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_preliminaries">2.1. Preliminaries</h3>
+<div class="paragraph">
+<p>We define some basic library types and functions. Note that for sets
+and maps we use records rather than (stdlib) functors. This is to
+allow us to choose the implementation at runtime: if the input size is
+small we can use arrays; otherwise we can fall back to hashmaps or
+maps.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">module</span> <span class="tok-nc">List_</span> <span class="tok-o">=</span> <span class="tok-k">struct</span>
+
+  <span class="tok-k">let</span> <span class="tok-n">fold_left_</span> <span class="tok-o">~</span><span class="tok-n">step</span> <span class="tok-o">~</span><span class="tok-n">init_state</span> <span class="tok-n">xs</span> <span class="tok-o">=</span>
+    <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">fold_left</span>
+      <span class="tok-o">(</span><span class="tok-k">fun</span> <span class="tok-n">a</span> <span class="tok-n">b</span> <span class="tok-o">-&gt;</span> <span class="tok-n">step</span> <span class="tok-o">~</span><span class="tok-n">state</span><span class="tok-o">:</span><span class="tok-n">a</span> <span class="tok-n">b</span><span class="tok-o">)</span>
+      <span class="tok-n">init_state</span>
+      <span class="tok-n">xs</span>
+
+  <span class="tok-k">let</span> <span class="tok-n">with_each_elt</span> <span class="tok-o">=</span> <span class="tok-n">fold_left_</span>
+<span class="tok-k">end</span>
+
+
+<span class="tok-k">module</span> <span class="tok-nc">Set_ops</span> <span class="tok-o">=</span> <span class="tok-k">struct</span>
+  <span class="tok-k">type</span> <span class="tok-o">(</span><span class="tok-k">&#39;</span><span class="tok-n">e</span><span class="tok-o">,</span><span class="tok-k">&#39;</span><span class="tok-n">t</span><span class="tok-o">)</span> <span class="tok-n">set_ops</span> <span class="tok-o">=</span> <span class="tok-o">{</span>
+    <span class="tok-n">add</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">e</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span><span class="tok-o">;</span>
+    <span class="tok-n">mem</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">e</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-kt">bool</span><span class="tok-o">;</span>
+    <span class="tok-n">empty</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span><span class="tok-o">;</span>
+    <span class="tok-n">is_empty</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-kt">bool</span><span class="tok-o">;</span>
+    <span class="tok-n">elements</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">e</span> <span class="tok-kt">list</span><span class="tok-o">;</span>
+  <span class="tok-o">}</span>
+<span class="tok-k">end</span>
+
+
+<span class="tok-k">module</span> <span class="tok-nc">Map_ops</span> <span class="tok-o">=</span> <span class="tok-k">struct</span>
+  <span class="tok-k">type</span> <span class="tok-o">(</span><span class="tok-k">&#39;</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-k">&#39;</span><span class="tok-n">v</span><span class="tok-o">,</span><span class="tok-k">&#39;</span><span class="tok-n">t</span><span class="tok-o">)</span> <span class="tok-n">map_ops</span> <span class="tok-o">=</span> <span class="tok-o">{</span>
+    <span class="tok-n">map_add</span><span class="tok-o">:</span> <span class="tok-k">&#39;</span><span class="tok-n">k</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">v</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span><span class="tok-o">;</span>
+    <span class="tok-n">map_find</span><span class="tok-o">:</span><span class="tok-k">&#39;</span><span class="tok-n">k</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">v</span><span class="tok-o">;</span>
+    <span class="tok-n">map_empty</span><span class="tok-o">:</span><span class="tok-k">&#39;</span><span class="tok-n">t</span><span class="tok-o">;</span>
+    <span class="tok-n">map_remove</span><span class="tok-o">:</span><span class="tok-k">&#39;</span><span class="tok-n">k</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">t</span><span class="tok-o">;</span>
+  <span class="tok-o">}</span>
+<span class="tok-k">end</span>
+
+
+<span class="tok-k">open</span> <span class="tok-nc">Set_ops</span>
+
+<span class="tok-k">open</span> <span class="tok-nc">Map_ops</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Note that the type <code>('e,'t) set_ops</code> involves a type of elements <code>'e</code>,
+and a type <code>'t</code> for the set itself. Similarly, the type <code>('k,'v,'t)
+map_ops</code> is a map from keys <code>'k</code> to values <code>'v</code>, implemented by type
+<code>'t</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_input_signature">2.2. Input signature</h3>
+<div class="paragraph">
+<p>The code is parameterized over the signature <code>S_</code>, which defines all
+the types and operations we assume. We use a signature so that we can
+instantiate the generic code with various different
+implementations. For example, the test code uses integers to represent
+items.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>First we declare the types for nonterminals, terminals and symbols.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">type</span> <span class="tok-n">k_t</span> <span class="tok-o">=</span> <span class="tok-kt">int</span>
+  <span class="tok-k">type</span> <span class="tok-n">j_t</span> <span class="tok-o">=</span> <span class="tok-kt">int</span>
+  <span class="tok-k">type</span> <span class="tok-n">nt</span>
+  <span class="tok-k">type</span> <span class="tok-n">tm</span>
+  <span class="tok-k">type</span> <span class="tok-n">sym</span>
+  <span class="tok-k">val</span> <span class="tok-n">sym_case</span><span class="tok-o">:</span> <span class="tok-n">nt</span><span class="tok-o">:(</span><span class="tok-n">nt</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span> <span class="tok-n">tm</span><span class="tok-o">:(</span><span class="tok-n">tm</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span> <span class="tok-n">sym</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span>
+  <span class="tok-k">val</span> <span class="tok-o">_</span><span class="tok-n">NT</span><span class="tok-o">:</span> <span class="tok-n">nt</span> <span class="tok-o">-&gt;</span> <span class="tok-n">sym</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next we give the type for (nonterminal) items, together with
+associated operations. An item is like a record, of the form
+<code>{nt;i;as;k;bs}</code>, indicating that the sequence of symbols <code>as</code> could
+be parsed between <code>i</code> and <code>k</code>; this corresponds to an attempt to parse
+the production <code>nt &#8594; as bs</code> starting at position <code>i</code>. Note that we
+keep the type abstract, and the record provides the usual record
+projection functions.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">type</span> <span class="tok-n">nt_item</span>
+  <span class="tok-k">type</span> <span class="tok-n">nt_item_ops</span> <span class="tok-o">=</span> <span class="tok-o">{</span>
+    <span class="tok-n">dot_nt</span><span class="tok-o">:</span> <span class="tok-n">nt_item</span> <span class="tok-o">-&gt;</span> <span class="tok-n">nt</span><span class="tok-o">;</span>
+    <span class="tok-n">dot_i</span><span class="tok-o">:</span> <span class="tok-n">nt_item</span> <span class="tok-o">-&gt;</span> <span class="tok-n">i_t</span><span class="tok-o">;</span>
+    <span class="tok-n">dot_k</span><span class="tok-o">:</span> <span class="tok-n">nt_item</span> <span class="tok-o">-&gt;</span> <span class="tok-n">k_t</span><span class="tok-o">;</span>
+    <span class="tok-n">dot_bs</span><span class="tok-o">:</span> <span class="tok-n">nt_item</span> <span class="tok-o">-&gt;</span> <span class="tok-n">sym</span> <span class="tok-kt">list</span><span class="tok-o">;</span>
+  <span class="tok-o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Next we have various types for</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>sets of items</p>
+</li>
+<li>
+<p>triples <code>(i,X,k)</code> of a nonterminal <code>X</code> and two integers <code>i,k</code>, which
+corresponds to a parsed item of the form <code>X &#8594; &#8230;&#8203;</code> between <code>i</code> and
+<code>k</code> in the input (a "complete" nonterminal item); note that because <code>k</code> is the "current stage", it suffices to record only <code>(i,X)</code> rather than <code>(i,X,k)</code>.</p>
+</li>
+<li>
+<p>maps from nonterminals, integers, and terminals</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">type</span> <span class="tok-n">nt_item_set</span>
+  <span class="tok-k">val</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">:</span> <span class="tok-o">(</span><span class="tok-n">nt_item</span><span class="tok-o">,</span><span class="tok-n">nt_item_set</span><span class="tok-o">)</span> <span class="tok-n">set_ops</span>
+  <span class="tok-k">val</span> <span class="tok-n">nt_item_set_with_each_elt</span><span class="tok-o">:</span>
+    <span class="tok-n">f</span><span class="tok-o">:(</span><span class="tok-n">state</span><span class="tok-o">:</span><span class="tok-k">&#39;</span><span class="tok-n">a</span> <span class="tok-o">-&gt;</span> <span class="tok-n">nt_item</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span> <span class="tok-n">init_state</span><span class="tok-o">:</span><span class="tok-k">&#39;</span><span class="tok-n">a</span> <span class="tok-o">-&gt;</span> <span class="tok-n">nt_item_set</span> <span class="tok-o">-&gt;</span> <span class="tok-k">&#39;</span><span class="tok-n">a</span>
+
+  <span class="tok-k">type</span> <span class="tok-n">ixk</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">i_t</span> <span class="tok-o">*</span> <span class="tok-n">nt</span><span class="tok-o">)</span>  <span class="tok-c">(* i X k *)</span>
+  <span class="tok-k">type</span> <span class="tok-n">ixk_set</span>
+  <span class="tok-k">val</span> <span class="tok-n">ixk_set_ops</span><span class="tok-o">:</span> <span class="tok-o">(</span><span class="tok-n">ixk</span><span class="tok-o">,</span><span class="tok-n">ixk_set</span><span class="tok-o">)</span> <span class="tok-n">set_ops</span>
+
+  <span class="tok-k">type</span> <span class="tok-n">map_nt</span>
+  <span class="tok-k">val</span> <span class="tok-n">map_nt_ops</span><span class="tok-o">:</span> <span class="tok-o">(</span><span class="tok-n">nt</span><span class="tok-o">,</span><span class="tok-n">nt_item_set</span><span class="tok-o">,</span><span class="tok-n">map_nt</span><span class="tok-o">)</span> <span class="tok-n">map_ops</span>
+
+  <span class="tok-k">type</span> <span class="tok-n">map_int</span>
+  <span class="tok-k">val</span> <span class="tok-n">map_int_ops</span> <span class="tok-o">:</span> <span class="tok-o">(</span><span class="tok-kt">int</span><span class="tok-o">,</span><span class="tok-n">nt_item_set</span><span class="tok-o">,</span><span class="tok-n">map_int</span><span class="tok-o">)</span> <span class="tok-n">map_ops</span>
+
+  <span class="tok-k">type</span> <span class="tok-n">map_tm</span>
+  <span class="tok-k">val</span> <span class="tok-n">map_tm_ops</span> <span class="tok-o">:</span> <span class="tok-o">(</span><span class="tok-n">tm</span><span class="tok-o">,</span><span class="tok-kt">int</span> <span class="tok-kt">list</span> <span class="tok-n">option</span><span class="tok-o">,</span><span class="tok-n">map_tm</span><span class="tok-o">)</span> <span class="tok-n">map_ops</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We need to record the blocked items less than <code>k</code> (where <code>k</code> is the
+"current" position in the input). This is a map from an integer <code>i&lt;k</code>,
+to a map from a nonterminal to a set of items, type <code>bitms_lt_k</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-c">(*</span>
+<span class="tok-c">  type bitms_at_k</span>
+<span class="tok-c">  val bitms_at_k_ops: (nt,nt_item_set,bitms_at_k) map_ops</span>
+<span class="tok-c">   *)</span>
+
+  <span class="tok-k">type</span> <span class="tok-n">bitms_lt_k</span>  <span class="tok-c">(* int -&gt; nt -&gt; nt_item_set; implement by array *)</span>
+  <span class="tok-k">type</span> <span class="tok-n">bitms_lt_k_ops</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-kt">int</span><span class="tok-o">,</span><span class="tok-n">map_nt</span><span class="tok-o">,</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">)</span> <span class="tok-n">map_ops</span>
+  <span class="tok-c">(* passed in dynamically val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) map_ops *)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We also need to record the items that we need to process at stage
+<code>k'&gt;k</code>. This is a map from <code>k'&gt;k</code> to a set of items.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">type</span> <span class="tok-n">todo_gt_k</span>
+  <span class="tok-k">val</span> <span class="tok-n">todo_gt_k_ops</span><span class="tok-o">:</span> <span class="tok-o">(</span><span class="tok-kt">int</span><span class="tok-o">,</span><span class="tok-n">nt_item_set</span><span class="tok-o">,</span><span class="tok-n">todo_gt_k</span><span class="tok-o">)</span> <span class="tok-n">map_ops</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Finally we have the operation <code>cut</code>, which takes an item
+<code>{nt;i;as;k;bs}</code> where <code>bs</code> is of the form <code>X::bs'</code>, and an int <code>j</code>
+which indicates that symbol <code>X</code> could be parsed between <code>k</code> and <code>j</code>,
+and produces the new item <code>{nt;i;as';j;bs'}</code>, where <code>as'</code> is <code>as</code> with
+the parsed symbol <code>X</code> appended.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">type</span> <span class="tok-n">cut</span> <span class="tok-o">=</span> <span class="tok-n">nt_item</span> <span class="tok-o">-&gt;</span> <span class="tok-n">j_t</span> <span class="tok-o">-&gt;</span> <span class="tok-n">nt_item</span>
+
+  <span class="tok-c">(* FIXME why are these here? *)</span>
+  <span class="tok-k">val</span> <span class="tok-n">debug_enabled</span> <span class="tok-o">:</span> <span class="tok-kt">bool</span>
+  <span class="tok-k">val</span> <span class="tok-n">debug_endline</span> <span class="tok-o">:</span> <span class="tok-kt">string</span> <span class="tok-o">-&gt;</span> <span class="tok-kt">unit</span>
+<span class="tok-k">end</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_functor_declaration">2.3. Functor declaration</h3>
+<div class="paragraph">
+<p>The code is parameterized by the signature <code>S_</code> and defined within a functor.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">module</span> <span class="tok-nc">Make</span> <span class="tok-o">=</span> <span class="tok-k">functor</span> <span class="tok-o">(</span><span class="tok-nc">S</span><span class="tok-o">:</span><span class="tok-nc">S_</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span> <span class="tok-k">struct</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_state_type">2.4. State type</h3>
+<div class="paragraph">
+<p>The algorithm executes in stages. At each stage <code>k</code>, the state of the
+algorithm is captured as a record.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">open</span> <span class="tok-nc">S</span>
+  <span class="tok-k">open</span> <span class="tok-nc">Profile</span>
+
+  <span class="tok-k">type</span> <span class="tok-n">bitms_at_k</span> <span class="tok-o">=</span> <span class="tok-n">map_nt</span>  <span class="tok-c">(* bitms blocked at k,X *)</span>
+  <span class="tok-k">let</span> <span class="tok-n">bitms_at_k_ops</span> <span class="tok-o">=</span> <span class="tok-n">map_nt_ops</span>
+
+  <span class="tok-c">(* state at k changes at k *)</span>
+  <span class="tok-c">(* at stage k, there are items that have not been processed (todo</span>
+<span class="tok-c">     items) and those that have already been processed (done items) *)</span>
+  <span class="tok-k">type</span> <span class="tok-n">state</span> <span class="tok-o">=</span> <span class="tok-o">{</span>
+    <span class="tok-n">k</span><span class="tok-o">:</span><span class="tok-n">k_t</span><span class="tok-o">;</span>  <span class="tok-c">(* current stage *)</span>
+    <span class="tok-n">todo</span><span class="tok-o">:</span><span class="tok-n">nt_item</span> <span class="tok-kt">list</span><span class="tok-o">;</span>  <span class="tok-c">(* todo items at stage k *)</span>
+
+    <span class="tok-n">todo_done</span><span class="tok-o">:</span><span class="tok-n">nt_item_set</span><span class="tok-o">;</span>
+    <span class="tok-c">(* todo and done items at stage k; per k *)</span>
+
+    <span class="tok-n">todo_gt_k</span><span class="tok-o">:</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span>
+    <span class="tok-c">(* todo items at later stages *)</span>
+    <span class="tok-c">(* impl: forall k&#39; &gt; k; empty for large k&#39; &gt; k_current and not</span>
+<span class="tok-c">       needed for j&lt;k *)</span>
+
+    <span class="tok-c">(* blocked items are items that are &quot;waiting&quot; for some other parse</span>
+<span class="tok-c">       to complete before they can continue; they are split into those at</span>
+<span class="tok-c">       the current stage, bitms_at_k, and those at earlier stages,</span>
+<span class="tok-c">       bitms_lt_k *)</span>
+    <span class="tok-n">bitms_lt_k</span><span class="tok-o">:</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">;</span>
+    <span class="tok-n">bitms_at_k</span><span class="tok-o">:</span><span class="tok-n">bitms_at_k</span><span class="tok-o">;</span>
+
+    <span class="tok-n">ixk_done</span><span class="tok-o">:</span><span class="tok-n">ixk_set</span><span class="tok-o">;</span>
+    <span class="tok-c">(* Completed items are of the form X -&gt; i,as,k,[]; we record only</span>
+<span class="tok-c">       i,X,k *)</span>
+    <span class="tok-c">(* impl: per k; array (int/i) with values a set of nt?; set of nt</span>
+<span class="tok-c">       implemented by binary upto 63/64 bits *)</span>
+
+    <span class="tok-n">ktjs</span><span class="tok-o">:</span><span class="tok-n">map_tm</span><span class="tok-o">;</span>
+    <span class="tok-c">(* Terminals T require parsing the input from k; a successful</span>
+<span class="tok-c">       terminal parse will match the input between position k and j; the</span>
+<span class="tok-c">       corresponding terminal item is (k,T,j). This map stores those</span>
+<span class="tok-c">       items (k,T,j) *)</span>
+    <span class="tok-c">(* impl: per k; array (tm) with values a list of int *)</span>
+  <span class="tok-o">}</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Maps from int are typically indexed by <code>k</code>.</p>
+</div>
+<div class="paragraph">
+<p>NOTE Typically eg <code>todo_gt_k</code> would be sparse and, after the first few
+k, have no entries (since this gets filled when a terminal completes).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_auxiliary_functions_blocked_items">2.5. Auxiliary functions: blocked items</h3>
+<div class="paragraph">
+<p>The <code>bitms</code> function retrieves the blocked items corresponding to an
+index <code>k</code> and a symbol <code>X</code>. The <code>add_bitm_at_k</code> function adds an item
+at the current stage.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">~</span><span class="tok-n">bitms_lt_k_ops</span> <span class="tok-n">s0</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-o">:</span> <span class="tok-n">nt_item_set</span> <span class="tok-o">=</span>
+    <span class="tok-k">match</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">=</span><span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-k">with</span>
+    <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_at_k</span> <span class="tok-o">|&gt;</span> <span class="tok-n">bitms_at_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">x</span><span class="tok-o">)</span>
+    <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_lt_k</span> <span class="tok-o">|&gt;</span> <span class="tok-n">bitms_lt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">k</span> <span class="tok-o">|&gt;</span> <span class="tok-n">map_nt_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">x</span><span class="tok-o">)</span>
+
+  <span class="tok-c">(* nt_item blocked on nt at k *)</span>
+  <span class="tok-k">let</span> <span class="tok-n">add_bitm_at_k</span> <span class="tok-n">nitm</span> <span class="tok-n">nt</span> <span class="tok-n">s0</span> <span class="tok-o">:</span> <span class="tok-n">state</span> <span class="tok-o">=</span>
+    <span class="tok-o">{</span> <span class="tok-n">s0</span> <span class="tok-k">with</span>
+      <span class="tok-n">bitms_at_k</span> <span class="tok-o">=</span>
+        <span class="tok-k">let</span> <span class="tok-n">m</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_at_k</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">s</span> <span class="tok-o">=</span> <span class="tok-n">map_nt_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">nt</span> <span class="tok-n">m</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">s&#39;</span> <span class="tok-o">=</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">add</span> <span class="tok-n">nitm</span> <span class="tok-n">s</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">m&#39;</span> <span class="tok-o">=</span> <span class="tok-n">map_nt_ops</span><span class="tok-o">.</span><span class="tok-n">map_add</span> <span class="tok-n">nt</span> <span class="tok-n">s&#39;</span> <span class="tok-n">m</span> <span class="tok-k">in</span>
+        <span class="tok-n">m&#39;</span> <span class="tok-o">}</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_auxiliary_functions_todo_items">2.6. Auxiliary functions: todo items</h3>
+<div class="paragraph">
+<p>The <code>pop_todo</code> function pops an item off the list of items that are "todo" at this stage.
+The <code>add_todo</code> function adds an item either at the current stage, or at a later stage, depending on the item.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">let</span> <span class="tok-n">pop_todo</span> <span class="tok-n">s0</span> <span class="tok-o">=</span>
+    <span class="tok-k">match</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo</span> <span class="tok-k">with</span>
+    <span class="tok-o">|</span> <span class="tok-n">x</span><span class="tok-o">::</span><span class="tok-n">xs</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">x</span><span class="tok-o">,{</span><span class="tok-n">s0</span> <span class="tok-k">with</span> <span class="tok-n">todo</span><span class="tok-o">=</span><span class="tok-n">xs</span><span class="tok-o">})</span>
+    <span class="tok-o">|</span> <span class="tok-o">_</span> <span class="tok-o">-&gt;</span> <span class="tok-n">failwith</span> <span class="tok-s2">&quot;pop_todo&quot;</span>
+
+  <span class="tok-c">(* k is the current stage *)</span>
+  <span class="tok-c">(* FIXME avoid cost of double lookup by using new ocaml sets with</span>
+<span class="tok-c">     boolean rv *)</span>
+  <span class="tok-k">let</span> <span class="tok-n">add_todo</span> <span class="tok-o">~</span><span class="tok-n">nt_item_ops</span> <span class="tok-n">nitm</span> <span class="tok-n">s0</span> <span class="tok-o">:</span> <span class="tok-n">state</span> <span class="tok-o">=</span>
+    <span class="tok-k">let</span> <span class="tok-n">k</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">nitm_k</span> <span class="tok-o">=</span> <span class="tok-n">nitm</span><span class="tok-o">|&gt;(</span><span class="tok-n">nt_item_ops</span><span class="tok-o">.</span><span class="tok-n">dot_k</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+    <span class="tok-k">match</span> <span class="tok-n">nitm_k</span> <span class="tok-o">&gt;</span> <span class="tok-n">k</span> <span class="tok-k">with</span>
+    <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span>
+      <span class="tok-k">let</span> <span class="tok-n">nitms</span> <span class="tok-o">=</span> <span class="tok-n">todo_gt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">nitm_k</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">nitms</span> <span class="tok-o">=</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">add</span> <span class="tok-n">nitm</span> <span class="tok-n">nitms</span> <span class="tok-k">in</span>
+      <span class="tok-o">{</span> <span class="tok-n">s0</span> <span class="tok-k">with</span> <span class="tok-n">todo_gt_k</span><span class="tok-o">=(</span><span class="tok-n">todo_gt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_add</span> <span class="tok-n">nitm_k</span> <span class="tok-n">nitms</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span><span class="tok-o">)}</span>
+    <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span>
+      <span class="tok-k">match</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">mem</span> <span class="tok-n">nitm</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_done</span> <span class="tok-k">with</span>
+      <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span>
+      <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span>
+        <span class="tok-o">{</span> <span class="tok-n">s0</span> <span class="tok-k">with</span> <span class="tok-n">todo</span><span class="tok-o">=(</span><span class="tok-n">nitm</span><span class="tok-o">::</span><span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo</span><span class="tok-o">);</span>
+                  <span class="tok-n">todo_done</span><span class="tok-o">=</span><span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">add</span> <span class="tok-n">nitm</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_done</span><span class="tok-o">}</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_auxiliary_functions_code_i_x_k_code_items">2.7. Auxiliary functions: <code>(i,X,k)</code> items</h3>
+<div class="paragraph">
+<p>Similarly, we have <code>add</code> and <code>mem</code> functions for <code>(i,X,k)</code> items.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">let</span> <span class="tok-n">add_ixk_done</span> <span class="tok-n">ix</span> <span class="tok-n">s0</span> <span class="tok-o">:</span> <span class="tok-n">state</span> <span class="tok-o">=</span>
+    <span class="tok-o">{</span> <span class="tok-n">s0</span> <span class="tok-k">with</span> <span class="tok-n">ixk_done</span><span class="tok-o">=(</span><span class="tok-n">ixk_set_ops</span><span class="tok-o">.</span><span class="tok-n">add</span> <span class="tok-n">ix</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">ixk_done</span><span class="tok-o">)}</span>
+
+  <span class="tok-k">let</span> <span class="tok-n">mem_ixk_done</span> <span class="tok-n">ix</span> <span class="tok-n">s0</span> <span class="tok-o">:</span> <span class="tok-kt">bool</span> <span class="tok-o">=</span>
+    <span class="tok-n">ixk_set_ops</span><span class="tok-o">.</span><span class="tok-n">mem</span> <span class="tok-n">ix</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">ixk_done</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_auxiliary_functions_code_find_ktjs_code">2.8. Auxiliary functions: <code>find_ktjs</code></h3>
+<div class="paragraph">
+<p>Finally we have a function to find the set of <code>j</code> s corresponding to a
+parsed terminal item <code>(k,T,j)</code>. At stage <code>k</code>, we maintain a map from
+<code>T</code> to a list of int (the <code>j</code> s). We use an option to distinguish the
+case where we have not attempted to parse <code>T</code> at position <code>k</code>, from
+the case where we have tried to parse, but there were no results.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">let</span> <span class="tok-n">find_ktjs</span> <span class="tok-n">t</span> <span class="tok-n">s0</span> <span class="tok-o">:</span> <span class="tok-kt">int</span> <span class="tok-kt">list</span> <span class="tok-n">option</span> <span class="tok-o">=</span>
+    <span class="tok-n">map_tm_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">t</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">ktjs</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_main_code_code_run_earley_code_and_code_step_k_code">2.9. Main code, <code>run_earley</code> and <code>step_k</code></h3>
+<div class="paragraph">
+<p>The main code is parameterized by various set and map operations,
+<code>cut</code>, <code>new_items</code> (which provides new items according to the
+grammar), <code>input</code> (the input itself), <code>parse_tm</code> (which details how to
+parse terminals), <code>input_length</code> (the length of the input; the input
+is not necessarily a string, but can be arbitrary), <code>init_nt</code> (the
+initial nonterminal to start the parse).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">let</span> <span class="tok-n">counter</span> <span class="tok-o">=</span> <span class="tok-n">ref</span> <span class="tok-mi">0</span>
+
+
+  <span class="tok-k">let</span> <span class="tok-n">run_earley</span> <span class="tok-o">~</span><span class="tok-n">nt_item_ops</span> <span class="tok-o">~</span><span class="tok-n">bitms_lt_k_ops</span> <span class="tok-o">~</span><span class="tok-n">cut</span> <span class="tok-o">~</span><span class="tok-n">new_items</span> <span class="tok-o">~</span><span class="tok-n">input</span> <span class="tok-o">~</span><span class="tok-n">parse_tm</span>
+      <span class="tok-o">~</span><span class="tok-n">input_length</span> <span class="tok-o">~</span><span class="tok-n">init_nt</span> <span class="tok-o">=</span> <span class="tok-o">(</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>We then have some trivial code:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-k">let</span> <span class="tok-o">{</span><span class="tok-n">dot_nt</span><span class="tok-o">;</span><span class="tok-n">dot_i</span><span class="tok-o">;</span><span class="tok-n">dot_k</span><span class="tok-o">;</span><span class="tok-n">dot_bs</span><span class="tok-o">}</span> <span class="tok-o">=</span> <span class="tok-n">nt_item_ops</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">add_todo</span> <span class="tok-o">=</span> <span class="tok-n">add_todo</span> <span class="tok-o">~</span><span class="tok-n">nt_item_ops</span> <span class="tok-k">in</span>
+    <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">bitms</span> <span class="tok-o">~</span><span class="tok-n">bitms_lt_k_ops</span> <span class="tok-k">in</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Finally, we can start the algorithm proper.</p>
+</div>
+<div class="paragraph">
+<p>We start by popping <code>bitm</code> off the todo items at the current stage
+<code>k</code>. We check whether the item is complete (i.e., <code>bs = []</code>).</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-c">(* step_k ------------------------------------------------------- *)</span>
+    <span class="tok-k">let</span> <span class="tok-n">step_k</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-o">(</span>
+      <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;XXXstep_k&quot;</span><span class="tok-o">;</span>
+      <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">ab</span><span class="tok-o">);</span>
+      <span class="tok-c">(*        let _ = (</span>
+<span class="tok-c">                counter:=1 + !counter;</span>
+<span class="tok-c">                if (!counter mod 1000 = 0) then Gc.full_major() else () )</span>
+<span class="tok-c">                in*)</span>
+      <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">ac</span><span class="tok-o">);</span>
+      <span class="tok-k">let</span> <span class="tok-n">k</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">bitms</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-n">pop_todo</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">nitm_complete</span> <span class="tok-o">=</span> <span class="tok-n">nitm</span><span class="tok-o">|&gt;</span><span class="tok-n">dot_bs</span> <span class="tok-o">=</span> <span class="tok-bp">[]</span> <span class="tok-k">in</span>
+      <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">bc</span><span class="tok-o">);</span>
+      <span class="tok-c">(* NOTE waypoints before each split and at end of branch *)</span>
+      <span class="tok-k">match</span> <span class="tok-n">nitm_complete</span> <span class="tok-k">with</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_complete_items">2.10. Complete items</h3>
+<div class="paragraph">
+<p>If <code>bitm</code> is complete, we have a complete item <code>(i,X,k)</code> which we may have
+seen before or not. We check whether it ha already been done or not.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">      <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+          <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">|&gt;</span><span class="tok-n">dot_i</span><span class="tok-o">,</span><span class="tok-n">nitm</span><span class="tok-o">|&gt;</span><span class="tok-n">dot_nt</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+          <span class="tok-c">(* possible NEW COMPLETE (i,X,k) *)</span>
+          <span class="tok-k">let</span> <span class="tok-n">already_done</span> <span class="tok-o">=</span> <span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+          <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">cd</span><span class="tok-o">);</span>
+          <span class="tok-n">already_done</span> <span class="tok-o">|&gt;</span> <span class="tok-k">function</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If it has already been done, we do nothing:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">          <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+              <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;already_done&quot;</span><span class="tok-o">;</span>
+              <span class="tok-n">s0</span><span class="tok-o">)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Otherwise we have to record <code>(i,X,k)</code> in the set of done items for the
+current stage. Additionally, we have to process (cut!) all blocked
+items <code>(Y &#8594; i',as,i,X bs)</code> against this complete item to produce new
+items of the form <code>(Y &#8594; i',as X,k,bs)</code> which we add to the set of
+todo items at the current stage.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">          <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+              <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;not already_done&quot;</span><span class="tok-o">;</span>
+              <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">add_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+              <span class="tok-c">(* FIXME possible optimization if we work with Y -&gt;</span>
+<span class="tok-c">                   {h} as i X bs *)</span>
+              <span class="tok-n">bitms</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span>
+              <span class="tok-o">|&gt;</span> <span class="tok-n">nt_item_set_with_each_elt</span>
+                <span class="tok-o">~</span><span class="tok-n">f</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-o">~</span><span class="tok-n">state</span><span class="tok-o">:</span><span class="tok-n">s</span> <span class="tok-n">bitm</span> <span class="tok-o">-&gt;</span> <span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-n">s</span><span class="tok-o">)</span>
+                <span class="tok-o">~</span><span class="tok-n">init_state</span><span class="tok-o">:</span><span class="tok-n">s0</span>
+              <span class="tok-o">|&gt;</span> <span class="tok-k">fun</span> <span class="tok-n">s</span> <span class="tok-o">-&gt;</span>
+              <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">de</span><span class="tok-o">);</span>
+              <span class="tok-n">s</span><span class="tok-o">))</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This concludes the handling of complete items.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_incomplete_items">2.11. Incomplete items</h3>
+<div class="paragraph">
+<p>If the item is incomplete, then we have a new blocked item of the form
+<code>X &#8594; i,as,k,(S bs')</code> at stage <code>k</code>. The symbol <code>S</code> may be a terminal
+or nonterminal. We case split on which it is.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">      <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-c">(* nitm_complete *)</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+          <span class="tok-c">(* NEW BLOCKED X -&gt; i as k (S bs&#39;) on k S; here S is _Y or t *)</span>
+          <span class="tok-k">let</span> <span class="tok-n">bitm</span> <span class="tok-o">=</span> <span class="tok-n">nitm</span> <span class="tok-k">in</span>
+          <span class="tok-k">let</span> <span class="tok-n">s</span> <span class="tok-o">=</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">hd</span> <span class="tok-o">(</span><span class="tok-n">bitm</span><span class="tok-o">|&gt;</span><span class="tok-n">dot_bs</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+          <span class="tok-n">s</span> <span class="tok-o">|&gt;</span> <span class="tok-n">sym_case</span></code></pre>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_incomplete_nonterminal_items">2.11.1. Incomplete nonterminal items</h4>
+<div class="paragraph">
+<p>If the symbol is a nonterminal <code>Y</code>, then we have an item blocked on
+<code>k,Y</code>. We lookup all blocked items <code>bitms</code> at <code>k,Y</code>. If we have not
+processed this item, then <code>bitms</code> will be empty. If we have processed
+any item blocked on <code>k,Y</code>, then <code>bitms</code> will be nonempty, and we do
+not need to expand <code>Y</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-o">~</span><span class="tok-n">nt</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-o">_</span><span class="tok-n">Y</span> <span class="tok-o">-&gt;</span>
+                <span class="tok-c">(* have we already processed k Y? *)</span>
+                <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">bitms</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,_</span><span class="tok-n">Y</span><span class="tok-o">)</span> <span class="tok-k">in</span>
+                <span class="tok-k">let</span> <span class="tok-n">bitms_empty</span> <span class="tok-o">=</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">is_empty</span> <span class="tok-n">bitms</span> <span class="tok-k">in</span>
+                <span class="tok-c">(* NOTE already_processed_kY = not bitms_empty *)</span>
+                <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">add_bitm_at_k</span> <span class="tok-n">bitm</span> <span class="tok-o">_</span><span class="tok-n">Y</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+                <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">fg</span><span class="tok-o">);</span>
+                <span class="tok-n">bitms_empty</span> <span class="tok-o">|&gt;</span> <span class="tok-k">function</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>bitms</code> is not empty, then we have already expanded <code>Y</code> at stage
+<code>k</code>. However, we may have new complete items <code>(k,Y,j)</code> (where, in
+fact, <code>j=k</code> because we are still at stage k). If we have a complete
+item <code>(k,Y,k)</code> we cut it against the blocked item <code>X &#8594; i,as,k,(Y
+bs')</code> to get a new item <code>X &#8594; i,as Y,k,bs'</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+                    <span class="tok-c">(* already processed k Y, so no need to expand; but</span>
+<span class="tok-c">                       may have complete item kYk *)</span>
+                    <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;not bitms_empty&quot;</span><span class="tok-o">;</span>
+                    <span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,_</span><span class="tok-n">Y</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-o">|&gt;</span> <span class="tok-k">function</span>
+                    <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-n">s0</span>
+                    <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span><span class="tok-o">)</span>  <span class="tok-c">(* FIXME waypoint? *)</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If <code>bitms</code> is empty, we need to expand the symbol <code>Y</code> to get new items.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+                    <span class="tok-c">(* we have not processed k Y; expand sym Y *)</span>
+                    <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;bitms_empty&quot;</span><span class="tok-o">;</span>
+                    <span class="tok-k">assert</span> <span class="tok-o">(</span><span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,_</span><span class="tok-n">Y</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-bp">false</span><span class="tok-o">);</span>
+                    <span class="tok-n">new_items</span> <span class="tok-o">~</span><span class="tok-n">nt</span><span class="tok-o">:_</span><span class="tok-n">Y</span> <span class="tok-o">~</span><span class="tok-n">input</span> <span class="tok-o">~</span><span class="tok-n">k</span>
+                    <span class="tok-o">|&gt;</span> <span class="tok-nn">List_</span><span class="tok-p">.</span><span class="tok-n">with_each_elt</span>
+                      <span class="tok-o">~</span><span class="tok-n">step</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-o">~</span><span class="tok-n">state</span><span class="tok-o">:</span><span class="tok-n">s</span> <span class="tok-n">nitm</span> <span class="tok-o">-&gt;</span> <span class="tok-n">add_todo</span> <span class="tok-n">nitm</span> <span class="tok-n">s</span><span class="tok-o">)</span>
+                      <span class="tok-o">~</span><span class="tok-n">init_state</span><span class="tok-o">:</span><span class="tok-n">s0</span>
+                    <span class="tok-o">|&gt;</span> <span class="tok-k">fun</span> <span class="tok-n">s</span> <span class="tok-o">-&gt;</span>
+                    <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">gh</span><span class="tok-o">);</span>
+                    <span class="tok-n">s</span><span class="tok-o">))</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This completes the handling of incomplete nonterminal items.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_incomplete_terminal_items">2.11.2. Incomplete terminal items</h4>
+<div class="paragraph">
+<p>If the symbol is a terminal <code>T</code>, we check whether we have any complete
+items <code>(k,T,j)</code>. If we have not yet processed <code>T</code> at stage <code>k</code>, then
+<code>ktjs</code> will be <code>None</code>:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-o">~</span><span class="tok-n">tm</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-n">t</span> <span class="tok-o">-&gt;</span>
+                <span class="tok-c">(* have we already processed k T ? *)</span>
+                <span class="tok-n">find_ktjs</span> <span class="tok-n">t</span> <span class="tok-n">s0</span> <span class="tok-o">|&gt;</span> <span class="tok-k">fun</span> <span class="tok-n">ktjs</span> <span class="tok-o">-&gt;</span>
+                <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">hi</span><span class="tok-o">);</span>
+                <span class="tok-n">ktjs</span>
+                <span class="tok-o">|&gt;</span> <span class="tok-o">(</span><span class="tok-k">function</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In which case, we process <code>k,T</code> by calling the auxiliary <code>parse_tm</code>
+with the terminal, the input, the input length, and the current
+position <code>k</code>. We record the <code>js</code> corresponding to successful parses
+<code>(k,T,j)</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                    <span class="tok-o">|</span> <span class="tok-nc">None</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+                        <span class="tok-c">(* process k T *)</span>
+                        <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;ktjs None&quot;</span><span class="tok-o">;</span>
+                        <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;processing k T&quot;</span><span class="tok-o">;</span>
+                        <span class="tok-k">let</span> <span class="tok-n">js</span> <span class="tok-o">=</span> <span class="tok-n">parse_tm</span> <span class="tok-o">~</span><span class="tok-n">tm</span><span class="tok-o">:</span><span class="tok-n">t</span> <span class="tok-o">~</span><span class="tok-n">input</span> <span class="tok-o">~</span><span class="tok-n">k</span> <span class="tok-o">~</span><span class="tok-n">input_length</span> <span class="tok-k">in</span>
+                        <span class="tok-k">let</span> <span class="tok-n">ktjs</span> <span class="tok-o">=</span> <span class="tok-n">map_tm_ops</span><span class="tok-o">.</span><span class="tok-n">map_add</span> <span class="tok-n">t</span> <span class="tok-o">(</span><span class="tok-nc">Some</span> <span class="tok-n">js</span><span class="tok-o">)</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">ktjs</span> <span class="tok-k">in</span>
+                        <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,{</span><span class="tok-n">s0</span> <span class="tok-k">with</span> <span class="tok-n">ktjs</span><span class="tok-o">}))</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>If we have already processed <code>k,T</code>, then we just retrieve the <code>js</code>
+from previously. In either case, we have the list <code>js</code> of <code>j</code> s that we
+need to process against items blocked on <code>k,T</code>.</p>
+</div>
+<div class="paragraph">
+<p>Recall that we are processing item <code>X &#8594; i,as,k,(T bs')</code>. Certainly we
+need to cut this against all the <code>(k,T,j)</code> items we have just
+found. Do we need to deal with any other items blocked on <code>k,T</code>?
+Suppose there was such an item; then it would have been processed at
+some earlier stage, and at that point it would have been cut against
+the items <code>(k,T,j)</code>. So in fact, we only need to worry about the
+current blocked item, which we cut against each of the <code>j</code> s to get
+new todo items.  FIXME this could be checked with an assert</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">                    <span class="tok-o">|</span> <span class="tok-nc">Some</span> <span class="tok-n">js</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;ktjs Some&quot;</span><span class="tok-o">;</span> <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">)))</span>
+                <span class="tok-o">|&gt;</span> <span class="tok-k">fun</span> <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span>
+                <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">ij</span><span class="tok-o">);</span>
+                <span class="tok-c">(* process blocked; there is only one item blocked at</span>
+<span class="tok-c">                   this point *)</span>
+                <span class="tok-n">js</span>
+                <span class="tok-o">|&gt;</span> <span class="tok-nn">List_</span><span class="tok-p">.</span><span class="tok-n">with_each_elt</span>
+                  <span class="tok-o">~</span><span class="tok-n">step</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-o">~</span><span class="tok-n">state</span><span class="tok-o">:</span><span class="tok-n">s</span> <span class="tok-n">j</span> <span class="tok-o">-&gt;</span> <span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">j</span><span class="tok-o">)</span> <span class="tok-n">s</span><span class="tok-o">)</span>
+                  <span class="tok-o">~</span><span class="tok-n">init_state</span><span class="tok-o">:</span><span class="tok-n">s0</span>
+                <span class="tok-o">|&gt;</span> <span class="tok-k">fun</span> <span class="tok-n">s</span> <span class="tok-o">-&gt;</span>
+                <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">jk</span><span class="tok-o">);</span>
+                <span class="tok-n">s</span><span class="tok-o">))</span>
+    <span class="tok-o">)</span> <span class="tok-c">(*  step_k *)</span>
+    <span class="tok-k">in</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This concludes the exposition of the <code>step_k</code> function.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_main_code_code_loop_k_code">2.12. Main code: <code>loop_k</code></h3>
+<div class="paragraph">
+<p>At stage <code>k</code>, if there are todo items we process them, otherwise we stop.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-c">(* loop_k: loop at k -------------------------------------------- *)</span>
+    <span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">loop_k</span> <span class="tok-n">s0</span> <span class="tok-o">=</span>
+      <span class="tok-k">match</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo</span> <span class="tok-k">with</span>
+      <span class="tok-o">|</span> <span class="tok-bp">[]</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span>
+      <span class="tok-o">|</span> <span class="tok-o">_</span> <span class="tok-o">-&gt;</span> <span class="tok-n">loop_k</span> <span class="tok-o">(</span><span class="tok-n">step_k</span> <span class="tok-n">s0</span><span class="tok-o">)</span>
+    <span class="tok-k">in</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_main_code_code_loop_code">2.13. Main code: <code>loop</code></h3>
+<div class="paragraph">
+<p>The main loop repeatedly processes items at <code>k</code> before moving on to <code>k+1</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-c">(* loop --------------------------------------------------------- *)</span>
+    <span class="tok-c">(* outer loop: repeatedly process items at stage k, then move to</span>
+<span class="tok-c">       stage k+1 *)</span>
+    <span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">loop</span> <span class="tok-n">s0</span> <span class="tok-o">=</span>
+      <span class="tok-k">match</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-o">&gt;=</span> <span class="tok-n">input_length</span> <span class="tok-k">with</span>  <span class="tok-c">(* correct? FIXME don&#39;t we have to go one further? *)</span>
+      <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span>
+      <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span>
+        <span class="tok-c">(* process items *)</span>
+        <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">loop_k</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">old_k</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">k</span> <span class="tok-o">=</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span><span class="tok-o">+</span><span class="tok-mi">1</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">todo</span> <span class="tok-o">=</span> <span class="tok-n">todo_gt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">k</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">todo_done</span> <span class="tok-o">=</span> <span class="tok-n">todo</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">todo</span> <span class="tok-o">=</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">elements</span> <span class="tok-n">todo</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">todo_gt_k</span> <span class="tok-o">=</span>
+          <span class="tok-c">(* keep debug into around *)</span>
+          <span class="tok-k">match</span> <span class="tok-n">debug_enabled</span> <span class="tok-k">with</span>
+          <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span>
+          <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-n">todo_gt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_remove</span> <span class="tok-n">k</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span>
+        <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">ixk_done</span> <span class="tok-o">=</span> <span class="tok-n">ixk_set_ops</span><span class="tok-o">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">ktjs</span> <span class="tok-o">=</span> <span class="tok-n">map_tm_ops</span><span class="tok-o">.</span><span class="tok-n">map_empty</span> <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">bitms_lt_k</span> <span class="tok-o">=</span>
+          <span class="tok-c">(* FIXME the following hints that bitms_lt_k should be a</span>
+<span class="tok-c">             map from k to a map from nt to ... since bitms_at_k is a</span>
+<span class="tok-c">             map from nt *)</span>
+          <span class="tok-n">bitms_lt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_add</span> <span class="tok-n">old_k</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_at_k</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_lt_k</span>
+        <span class="tok-k">in</span>
+        <span class="tok-k">let</span> <span class="tok-n">bitms_at_k</span> <span class="tok-o">=</span> <span class="tok-n">map_nt_ops</span><span class="tok-o">.</span><span class="tok-n">map_empty</span> <span class="tok-k">in</span>
+        <span class="tok-c">(* FIXME let all_done = s0.todo_done::s0.all_done in *)</span>
+        <span class="tok-k">let</span> <span class="tok-n">s1</span> <span class="tok-o">=</span>
+          <span class="tok-o">{</span><span class="tok-n">k</span><span class="tok-o">;</span><span class="tok-n">todo</span><span class="tok-o">;</span><span class="tok-n">todo_done</span><span class="tok-o">;</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span><span class="tok-n">ixk_done</span><span class="tok-o">;</span><span class="tok-n">ktjs</span><span class="tok-o">;</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">;</span><span class="tok-n">bitms_at_k</span><span class="tok-o">}</span> <span class="tok-k">in</span>
+        <span class="tok-n">loop</span> <span class="tok-n">s1</span>
+        <span class="tok-c">(* end loop *)</span>
+    <span class="tok-k">in</span></code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_main_code_code_result_code">2.14. Main code: <code>result</code></h3>
+<div class="paragraph">
+<p>Finally, we construct the result by calling <code>loop</code>, starting from <code>k=0</code>.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-c">(* staged: main entry point ------------------------------------- *)</span>
+    <span class="tok-c">(* construct initial context, apply loop *)</span>
+    <span class="tok-k">let</span> <span class="tok-n">result</span> <span class="tok-o">:</span> <span class="tok-n">state</span> <span class="tok-o">=</span>
+      <span class="tok-k">let</span> <span class="tok-n">k</span> <span class="tok-o">=</span> <span class="tok-mi">0</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">init_items</span> <span class="tok-o">=</span> <span class="tok-n">new_items</span> <span class="tok-o">~</span><span class="tok-n">nt</span><span class="tok-o">:</span><span class="tok-n">init_nt</span> <span class="tok-o">~</span><span class="tok-n">input</span> <span class="tok-o">~</span><span class="tok-n">k</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">todo</span> <span class="tok-o">=</span> <span class="tok-n">init_items</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">todo_done</span> <span class="tok-o">=</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">todo_gt_k</span> <span class="tok-o">=</span> <span class="tok-n">todo_gt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_empty</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">ixk_done</span> <span class="tok-o">=</span> <span class="tok-n">ixk_set_ops</span><span class="tok-o">.</span><span class="tok-n">empty</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">ktjs</span> <span class="tok-o">=</span> <span class="tok-n">map_tm_ops</span><span class="tok-o">.</span><span class="tok-n">map_empty</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">bitms_lt_k</span> <span class="tok-o">=</span> <span class="tok-n">bitms_lt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_empty</span> <span class="tok-k">in</span>
+      <span class="tok-k">let</span> <span class="tok-n">bitms_at_k</span> <span class="tok-o">=</span> <span class="tok-n">bitms_at_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_empty</span> <span class="tok-k">in</span>
+      <span class="tok-c">(* let all_done = [] in *)</span>
+      <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span>
+        <span class="tok-o">{</span><span class="tok-n">k</span><span class="tok-o">;</span><span class="tok-n">todo</span><span class="tok-o">;</span><span class="tok-n">todo_done</span><span class="tok-o">;</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span><span class="tok-n">ixk_done</span><span class="tok-o">;</span><span class="tok-n">ktjs</span><span class="tok-o">;</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">;</span><span class="tok-n">bitms_at_k</span><span class="tok-o">}</span> <span class="tok-k">in</span> <span class="tok-c">(* ;all_done *)</span>
+      <span class="tok-n">loop</span> <span class="tok-n">s0</span>
+    <span class="tok-k">in</span></code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>And that is the end of the code.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-n">result</span>
+  <span class="tok-o">)</span> <span class="tok-c">(* run_earley *)</span>
+
+<span class="tok-k">end</span> <span class="tok-c">(* Make *)</span></code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_using_the_library">3. Using the library</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>There is an example of how to use the library in the file
+<code>test.ml</code>. Note that this includes an optimization (represent items by
+ints) that introduces some complexity.</p>
+</div>
+<div class="paragraph">
+<p>A more straightforward implementation is in file
+<code>simple_test.ml</code>. This version takes about twice as long as the
+"optimized" version. However, this is the one to look at if you want
+to understand how to use this library for parsing.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2017-11-10 12:38:51 GMT
+</div>
+</div>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  messageStyle: "none",
+  tex2jax: {
+    inlineMath: [["\\(", "\\)"]],
+    displayMath: [["\\[", "\\]"]],
+    ignoreClass: "nostem|nolatexmath"
+  },
+  asciimath2jax: {
+    delimiters: [["\\$", "\\$"]],
+    ignoreClass: "nostem|noasciimath"
+  },
+  TeX: { equationNumbers: { autoNumber: "none" } }
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.6.0/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
+</body>
+</html>

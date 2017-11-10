@@ -1,0 +1,37 @@
+module List_ = struct
+
+  let fold_left_ ~step ~init_state xs = 
+    List.fold_left 
+      (fun a b -> step ~state:a b)
+      init_state
+      xs
+
+  let with_each_elt = fold_left_
+end
+
+
+module Set_ops = struct
+  type ('e,'t) set_ops = {
+    add: 'e -> 't -> 't;
+    mem: 'e -> 't -> bool;
+    empty: 't;
+    is_empty: 't -> bool;
+    elements: 't -> 'e list;
+  }
+end
+
+
+module Map_ops = struct
+  type ('k,'v,'t) map_ops = {
+    map_add: 'k -> 'v -> 't -> 't;
+    map_find:'k -> 't -> 'v;
+    map_empty:'t;
+    map_remove:'k -> 't -> 't;
+  }
+end
+
+
+open Set_ops
+
+open Map_ops
+

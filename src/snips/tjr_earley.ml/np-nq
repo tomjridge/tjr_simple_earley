@@ -1,0 +1,41 @@
+  open S
+  open Profile
+
+  type bitms_at_k = map_nt  (* bitms blocked at k,X *)
+  let bitms_at_k_ops = map_nt_ops 
+
+  (* state at k changes at k *)
+  (* at stage k, there are items that have not been processed (todo
+     items) and those that have already been processed (done items) *)
+  type state = {
+    k:k_t;  (* current stage *)
+    todo:nt_item list;  (* todo items at stage k *)
+
+    todo_done:nt_item_set;
+    (* todo and done items at stage k; per k *)
+
+    todo_gt_k:todo_gt_k;
+    (* todo items at later stages *)
+    (* impl: forall k' > k; empty for large k' > k_current and not
+       needed for j<k *)
+
+    (* blocked items are items that are "waiting" for some other parse
+       to complete before they can continue; they are split into those at
+       the current stage, bitms_at_k, and those at earlier stages,
+       bitms_lt_k *)
+    bitms_lt_k:bitms_lt_k;
+    bitms_at_k:bitms_at_k;
+
+    ixk_done:ixk_set;
+    (* Completed items are of the form X -> i,as,k,[]; we record only
+       i,X,k *)
+    (* impl: per k; array (int/i) with values a set of nt?; set of nt
+       implemented by binary upto 63/64 bits *)
+
+    ktjs:map_tm;
+    (* Terminals T require parsing the input from k; a successful
+       terminal parse will match the input between position k and j; the
+       corresponding terminal item is (k,T,j). This map stores those
+       items (k,T,j) *)
+    (* impl: per k; array (tm) with values a list of int *) 
+  }

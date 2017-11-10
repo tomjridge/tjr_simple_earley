@@ -1,0 +1,2 @@
+
+module Make = functor (S:S_) -> struct
