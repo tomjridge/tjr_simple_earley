@@ -270,34 +270,14 @@ let main () =
 
 let _ = main ()
 
-(* FIXME check this is actually giving the right results 
+(* 
 
-$ src $ time ./test3.native 400
+$ src $ time ./test.native 400
+Right hand side suffix count: 8
 400
 
-real	0m7.593s
-user	0m7.556s
-sys	0m0.032s
-
-
-2017-09-12 with ints
-
-$ src $ time ./test3_alt.native 200
-8
-200
-
-real	0m0.444s
-user	0m0.436s
+real	0m2.491s
+user	0m2.484s
 sys	0m0.004s
-
-
-$ src $ time ./test3_alt.native 400
-8
-400
-
-real	0m3.670s
-user	0m3.556s
-sys	0m0.008s
-
 
 *)

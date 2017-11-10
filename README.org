@@ -29,3 +29,28 @@ opam install -vvv --keep-build-dir tjr_earley
 
 Then you should be able to locate the executables ~test.native~ and
 ~simple_test.native~
+
+
+
+** Running
+
+There are two executables, ~test.native~ and ~simple_test.native~. To
+run the Earley parser with the grammar ~E -> E E E | "1" | esp~, with
+an input length of 400 say, in the src directory type:
+
+----
+test.native 400
+----
+
+The output should look like:
+
+----
+$ src $ time ./test.native 400
+Right hand side suffix count: 8
+400
+
+real	0m2.491s
+user	0m2.484s
+sys	0m0.004s
+----
+
