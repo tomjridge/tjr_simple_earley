@@ -1,0 +1,14 @@
+opam-version: "1.2"
+name: "tjr_earley"
+version: "0.0.1-2017-11-10"
+maintainer: "Tom Ridge <tom.j.ridge@googlemail.com>"
+authors: "Tom Ridge <tom.j.ridge@googlemail.com>"
+homepage: "https://github.com/tomjridge/tjr_earley"
+build: [
+  [make]
+]
+# don't install - just build; install: [make "install"]
+# remove: ["true"]
+depends: [
+  "ocamlfind" {build}
+]

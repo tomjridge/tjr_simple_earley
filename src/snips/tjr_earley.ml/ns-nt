@@ -1,0 +1,6 @@
+
+  let add_ixk_done ix s0 : state =
+    { s0 with ixk_done=(ixk_set_ops.add ix s0.ixk_done)}
+
+  let mem_ixk_done ix s0 : bool =
+    ixk_set_ops.mem ix s0.ixk_done 

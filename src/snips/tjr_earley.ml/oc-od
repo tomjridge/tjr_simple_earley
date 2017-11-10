@@ -1,0 +1,4 @@
+
+    let {dot_nt;dot_i;dot_k;dot_bs} = nt_item_ops in
+    let add_todo = add_todo ~nt_item_ops in
+    let bitms = bitms ~bitms_lt_k_ops in

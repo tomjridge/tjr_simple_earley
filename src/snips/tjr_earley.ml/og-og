@@ -1,0 +1,12 @@
+          | false -> (
+              debug_endline "not already_done";
+              let s0 = add_ixk_done (i,x) s0 in
+              (* FIXME possible optimization if we work with Y ->
+                   {h} as i X bs *)
+              bitms (i,x)
+              |> nt_item_set_with_each_elt
+                ~f:(fun ~state:s bitm -> add_todo (cut bitm k) s)
+                ~init_state:s0
+              |> fun s ->
+              assert(log P.de);
+              s))  

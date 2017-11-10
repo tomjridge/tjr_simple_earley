@@ -1,0 +1,6 @@
+
+  let counter = ref 0
+
+
+  let run_earley ~nt_item_ops ~bitms_lt_k_ops ~cut ~new_items ~input ~parse_tm 
+      ~input_length ~init_nt = (

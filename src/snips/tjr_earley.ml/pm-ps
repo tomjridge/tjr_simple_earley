@@ -1,0 +1,37 @@
+
+
+    (* loop --------------------------------------------------------- *)
+    (* outer loop: repeatedly process items at stage k, then move to
+       stage k+1 *)
+    let rec loop s0 = 
+      match s0.k >= input_length with  (* correct? FIXME don't we have to go one further? *)
+      | true -> s0
+      | false -> 
+        (* process items *)
+        let s0 = loop_k s0 in
+        let old_k = s0.k in
+        let k = s0.k+1 in
+        let todo = todo_gt_k_ops.map_find k s0.todo_gt_k in
+        let todo_done = todo in
+        let todo = nt_item_set_ops.elements todo in
+        let todo_gt_k = 
+          (* keep debug into around *)
+          match debug_enabled with 
+          | true -> s0.todo_gt_k 
+          | false -> todo_gt_k_ops.map_remove k s0.todo_gt_k
+        in
+        let ixk_done = ixk_set_ops.empty in
+        let ktjs = map_tm_ops.map_empty in
+        let bitms_lt_k = 
+          (* FIXME the following hints that bitms_lt_k should be a
+             map from k to a map from nt to ... since bitms_at_k is a
+             map from nt *)
+          bitms_lt_k_ops.map_add old_k s0.bitms_at_k s0.bitms_lt_k
+        in
+        let bitms_at_k = map_nt_ops.map_empty in
+        (* FIXME let all_done = s0.todo_done::s0.all_done in *)
+        let s1 = 
+          {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k} in
+        loop s1  
+        (* end loop *)
+    in

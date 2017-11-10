@@ -1,0 +1,7 @@
+  type k_t = int
+  type j_t = int
+  type nt
+  type tm
+  type sym
+  val sym_case: nt:(nt -> 'a) -> tm:(tm -> 'a) -> sym -> 'a
+  val _NT: nt -> sym

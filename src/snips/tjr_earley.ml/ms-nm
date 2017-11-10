@@ -1,0 +1,7 @@
+
+  type cut = nt_item -> j_t -> nt_item
+
+  (* FIXME why are these here? *)
+  val debug_enabled : bool
+  val debug_endline : string -> unit
+end

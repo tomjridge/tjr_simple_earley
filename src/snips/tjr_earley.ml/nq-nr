@@ -1,0 +1,15 @@
+
+  let bitms ~bitms_lt_k_ops s0 (k,x) : nt_item_set = 
+    match (k=s0.k) with
+    | true -> (s0.bitms_at_k |> bitms_at_k_ops.map_find x)
+    | false -> (s0.bitms_lt_k |> bitms_lt_k_ops.map_find k |> map_nt_ops.map_find x)
+
+  (* nt_item blocked on nt at k *)
+  let add_bitm_at_k nitm nt s0 : state = 
+    { s0 with
+      bitms_at_k =
+        let m = s0.bitms_at_k in
+        let s = map_nt_ops.map_find nt m in
+        let s' = nt_item_set_ops.add nitm s in
+        let m' = map_nt_ops.map_add nt s' m in
+        m' }

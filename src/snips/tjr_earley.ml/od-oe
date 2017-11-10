@@ -1,0 +1,17 @@
+
+    (* step_k ------------------------------------------------------- *)
+    let step_k s0 = (
+      debug_endline "XXXstep_k";
+      assert(log P.ab);
+      (*        let _ = (
+                counter:=1 + !counter; 
+                if (!counter mod 1000 = 0) then Gc.full_major() else () )
+                in*)
+      assert(log P.ac);
+      let k = s0.k in    
+      let bitms = bitms s0 in
+      let (nitm,s0) = pop_todo s0 in
+      let nitm_complete = nitm|>dot_bs = [] in
+      assert(log P.bc);  
+      (* NOTE waypoints before each split and at end of branch *)
+      match nitm_complete with

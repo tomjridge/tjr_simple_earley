@@ -1,0 +1,23 @@
+
+  let pop_todo s0 =
+    match s0.todo with
+    | x::xs -> (x,{s0 with todo=xs})
+    | _ -> failwith "pop_todo"
+
+  (* k is the current stage *)
+  (* FIXME avoid cost of double lookup by using new ocaml sets with
+     boolean rv *)
+  let add_todo ~nt_item_ops nitm s0 : state = 
+    let k = s0.k in
+    let nitm_k = nitm|>(nt_item_ops.dot_k) in
+    match nitm_k > k with
+    | true -> 
+      let nitms = todo_gt_k_ops.map_find nitm_k s0.todo_gt_k in
+      let nitms = nt_item_set_ops.add nitm nitms in
+      { s0 with todo_gt_k=(todo_gt_k_ops.map_add nitm_k nitms s0.todo_gt_k)}
+    | false -> 
+      match nt_item_set_ops.mem nitm s0.todo_done with
+      | true -> s0
+      | false -> 
+        { s0 with todo=(nitm::s0.todo);
+                  todo_done=nt_item_set_ops.add nitm s0.todo_done}

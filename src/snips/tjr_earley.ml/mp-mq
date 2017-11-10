@@ -1,0 +1,18 @@
+  
+  type nt_item_set
+  val nt_item_set_ops: (nt_item,nt_item_set) set_ops
+  val nt_item_set_with_each_elt: 
+    f:(state:'a -> nt_item -> 'a) -> init_state:'a -> nt_item_set -> 'a
+
+  type ixk = (i_t * nt)  (* i X k *)
+  type ixk_set
+  val ixk_set_ops: (ixk,ixk_set) set_ops
+
+  type map_nt
+  val map_nt_ops: (nt,nt_item_set,map_nt) map_ops
+
+  type map_int
+  val map_int_ops : (int,nt_item_set,map_int) map_ops
+
+  type map_tm
+  val map_tm_ops : (tm,int list option,map_tm) map_ops
