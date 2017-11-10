@@ -6,7 +6,10 @@ simplicity.
 
 ** Meta
 
-On github, to preview the documented code, try http://tomjridge.github.io/simple_earley/tjr_earley.html
+# assert(repo_name=tjr_simple_earley) and below
+
+On github, to preview the documented code, try 
+http://tomjridge.github.io/tjr_simple_earley
 
 
 
@@ -24,9 +27,13 @@ but nothing is installed - the code just gets built.
 
 To see the results of the build, invoke e.g.:
 
+
+# NOTE repo_name
+
 #+BEGIN_SRC
 opam install -vvv --keep-build-dir tjr_simple_earley 
 #+END_SRC
+
 
 Then you should be able to locate the executables ~test.native~ and
 ~simple_test.native~
@@ -40,7 +47,7 @@ run the Earley parser with the grammar ~E -> E E E | "1" | esp~, with
 an input length of 400 say, in the src directory type:
 
 #+BEGIN_SRC
-test.native 400
+time ./test.native 400
 #+END_SRC
 
 The output should look like:

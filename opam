@@ -1,3 +1,5 @@
+# assert(repo_name=tjr_simple_earley)
+
 opam-version: "1.2"
 name: "tjr_simple_earley"
 version: "0.0.1-2017-11-10"
@@ -11,4 +13,5 @@ build: [
 # remove: ["true"]
 depends: [
   "ocamlfind" {build}
+  "core"
 ]

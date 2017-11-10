@@ -11,6 +11,7 @@ all:
 
 
 # apt-install ruby-pygments
+# this requires snip.native, which is unreleased ATM
 doc:
 	/tmp/snip.native tjr_earley.ml
 	asciidoctor tjr_earley.adoc
