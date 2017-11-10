@@ -1,10 +1,11 @@
 * Simple Earley Parsing
+
 Author: Tom Ridge
 
 An implementation of an Earley-like algorithm, designed for
 simplicity.
 
-** Meta
+** Documentation
 
 # assert(repo_name=tjr_simple_earley) and below
 
@@ -13,20 +14,20 @@ http://tomjridge.github.io/tjr_simple_earley
 
 
 
-** Building
+** Building from source
 
 To build, type ~make~
 
 
-** Opam
+** Building via opam
 
-This is not really intended to be installed as a library. However, in
-order to advertise the existence of this code, there needs to be an
-entry in the opam packages list. So this package does exist in Opam,
-but nothing is installed - the code just gets built.
+This code is not really intended to be installed as a
+library. However, in order to advertise the existence of this code,
+there needs to be an entry in the opam packages list. So this package
+does exist in opam, but nothing is installed - the code just gets
+built.
 
 To see the results of the build, invoke e.g.:
-
 
 # NOTE repo_name
 
@@ -39,12 +40,23 @@ Then you should be able to locate the executables ~test.native~ and
 ~simple_test.native~
 
 
+** Developing with opam
+
+#+BEGIN_SRC
+opam pin add tjr_simple_earley . -n
+opam install tjr_simple_earley
+opam remove tjr_simple_earley
+opam pin remove tjr_simple_earley
+#+END_SRC
+
+
 
 ** Running
 
-There are two executables, ~test.native~ and ~simple_test.native~. To
-run the Earley parser with the grammar ~E -> E E E | "1" | esp~, with
-an input length of 400 say, in the src directory type:
+There are two executables, ~test.native~ and ~simple_test.native~
+(slower). To run the Earley parser with the grammar ~E -> E E E |
+"1" | esp~, with an input length of 400 say, in the src directory
+type:
 
 #+BEGIN_SRC
 time ./test.native 400
@@ -61,4 +73,5 @@ real	0m2.491s
 user	0m2.484s
 sys	0m0.004s
 #+END_SRC
+
 
