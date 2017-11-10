@@ -1,9 +1,5 @@
-(* test, represent nt_item as int *)
+(* test, represent nt_item as a simple record *)
 
-
-(* This test code represents items as ints. The representation is set
-   up so that the operation of "cutting" an item against another complete
-   item can be done by incrementing the int for the blocked item. *)
 
 open Tjr_earley
 open Set_ops
@@ -39,110 +35,17 @@ module S = struct
 
   let _NT: nt -> sym = fun x -> x
 
-  (* here we have a bound on sym which we can use for encoding a list;
-     we also have a bound on max length of list; alternatively just
-     number the possible rhs?
-
-     from an nt_item, we want to extract nt,i,k, and bs; easiest to
-     repn all possible bs by an int, and a lookup table to compute the
-     relevant sym list
-     
-     we also need to be able to take the tl of a list of bs
-  *)
-
-  (* all tails of a list, tails of tails etc *)
-  let rec tails = function
-    | [] -> [[]]
-    | _::xs' as xs -> xs::tails xs'
-
-  type rhs = sym list
-
-(* The idea is that for an item X -> i,as,k,bs we need to number all
-   the possible bs *)
-
-  (* construct a table for a bijection between suffixes of right hand
-     sides and ints *)
-  (* xs are right-hand sides; every suffix must be numbered *)
-  let mk_table xs : rhs array =
-    let count = ref 0 in
-    let arr = Array.make 100 [] in  (* array of sym_list *)  (* FIXME 100 *)
-    List.iter 
-      (fun x ->
-         (* x is a rhs, so take all suffixes *)
-         tails x |> List.iter (fun suff -> arr.(!count) <- suff; count:=!count+1))
-      xs
-    ;
-    Printf.printf "Right hand side suffix count: %d\n" !count;
-    arr
-
-  let _ = mk_table
-
-  (* scan array entries till property holds; return arr index; FIXME move to tjr_lib *)
-  let scan arr p = 
-    let rec f n = 
-      if n >= Array.length arr then None else
-        if p (arr.(n)) then Some n else f (n+1)
-    in
-    f 0
-
-  (* lookup a particular (suffix of) a rhs in the array; return the
-     index *)
-  let lookup arr rhs =
-    scan arr (fun x -> x=rhs)
-
-  (*
-  let _arr = mk_table [[1;1;1]]
-
-  let _tmp = lookup _arr [1]
-  *)
-
-  (* We want to represent items as ints; b is a "base" *)
-  (* nt,i,k,bs - repn as int, nt*b^3 + i*b^2 + k*b^1 + bs? *)
-  type nt_item = int
-
-  (* Here we choose b to be 1024; obviously this places a limit on the
-     number of grammar; for larger grammars we need larger b *)
-  let b1 = 1024 
-  let b2 = b1 * 1024 
-  let b3 = b2 * 1024 
-
-  (* Encode an item (omitting the "as" component) as an int *)
-  let to_int (nt,i,k,bs) = 
-    nt*b3 + i*b2 + k*b1 + bs
-
-  let mk_nt_item arr nt i k bs =
-    let bs' = lookup arr bs|>function Some x -> x | _ -> failwith __LOC__ in
-    assert(bs'<b1);      (* assume lookup ... < 1024 *)
-    to_int (nt,i,k,bs')
+  type nt_item = { nt:nt; i_:i_t; k_:k_t; bs:sym list }
 
   (* Implement the accessor functions by using simple arithmetic *)
-  let dot_nt nitm = nitm / b3
-  let dot_i nitm = (nitm / b2) mod b1
-  let dot_k nitm = (nitm / b1) mod b1
-  let dot_bs_as_int nitm = nitm mod b1
-  let dot_bs' (arr:sym list array) nitm = dot_bs_as_int nitm |> fun x -> arr.(x)  (* notice that we need the array to get the actual list *)
+  let dot_nt nitm = nitm.nt
+  let dot_i nitm = nitm.i_
+  let dot_k nitm = nitm.k_
+  let dot_bs nitm = nitm.bs
 
-  (* FIXME do we want to pass an aux data around for dot_bs and cut? no, better to pass operations at runtime *)
-
-(*
-  let _nitm = mk_nt_item _arr 3 4 5 [1]
-
-  let _nt = _nitm |> dot_nt
-  let _i,_k,_bs = (_nitm|>dot_i),(_nitm|>dot_k),(_nitm|>dot_bs' _arr)
-*)
-
-  (* NOTE following doesn't actually depend on arr *)
-  (* Implement the "cut" operation using arithmetic operations
-     only. *)
   let cut : nt_item -> j_t -> nt_item = 
-    let from_int nitm = (dot_nt nitm,dot_i nitm, dot_k nitm, dot_bs_as_int nitm) in
     fun bitm j0 -> 
-      (*        let as_ = (List.hd bitm.bs)::bitm.as_ in*)
-      let (nt,i,k,bs) = from_int bitm in
-      let bs = bs+1 in (* NOTE artefact of the numbering *)
-      let k = j0 in
-      let nitm =to_int (nt,i,k,bs) in
-      nitm 
+      { bitm with k_=j0; bs=(List.tl bitm.bs)}
   type cut = nt_item -> j_t -> nt_item
 
 
@@ -213,16 +116,12 @@ let _1 = 3
 (* Encode the grammar E -> E E E | "1" | eps *)
 let rhss = [ [_E;_E;_E]; [_1]; [eps] ]
 
-let arr : int list array = S.mk_table rhss
-
-(* let rhss = rhss |> List.map @@ S.lookup arr *)
-
 (* Provide a function that produces new items, given a nonterminal and
    an input position k *)
 let new_items ~nt ~input ~k = match () with
   | _ when nt = _E -> 
     rhss   (* E -> E E E | "1" | eps *)
-    |> List.map (fun bs -> let i = k in S.mk_nt_item arr nt i k bs)
+    |> List.map (fun bs -> { nt; i_=k; k_=k; bs})
   | _ -> failwith __LOC__
 
 (* Example input; use command line argument *)
@@ -242,9 +141,6 @@ let input_length = String.length input
 
 (* Initial nonterminal *)
 let init_nt = _E
-
-(* Construct (nonterminal) item operations *)
-let dot_bs = dot_bs' arr
 
 let nt_item_ops = {
   dot_nt;
@@ -270,34 +166,3 @@ let main () =
 
 let _ = main ()
 
-(* FIXME check this is actually giving the right results 
-
-$ src $ time ./test3.native 400
-400
-
-real	0m7.593s
-user	0m7.556s
-sys	0m0.032s
-
-
-2017-09-12 with ints
-
-$ src $ time ./test3_alt.native 200
-8
-200
-
-real	0m0.444s
-user	0m0.436s
-sys	0m0.004s
-
-
-$ src $ time ./test3_alt.native 400
-8
-400
-
-real	0m3.670s
-user	0m3.556s
-sys	0m0.008s
-
-
-*)

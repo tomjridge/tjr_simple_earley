@@ -1,7 +1,9 @@
-= Staged version of Earley
+= An Earley-like parser built for performance and correctness
 Author: Tom Ridge
 :toc:
+:toclevels: 3
 :sectnums:
+:sectnumlevels: 5
 :stem: latexmath
 :source-highlighter: pygments
 :allow-uri-read:
@@ -17,7 +19,7 @@ high-level language that I am aware of. For example, for the grammar
 `E -> E E E | "1" | eps`
 
 
-with an input "111..." of length 400, the parse takes about 3.5s on a
+with an input "111..." of length 400, the parse takes about 3s on a
 single core on current commodity Intel hardware. By way of comparison,
 Haskell's Happy parser takes two minutes to process an input of size
 60, and cannot handle much longer lengths at all (and I doubt many
@@ -109,7 +111,7 @@ We make use of notational conventions. Usually the following is true:
 * `S` is a symbol
 
 
-=== Items
+=== (Earley) Items
 
 Traditional Earley works with a single notion of item. We extend this to the following:
 
@@ -130,10 +132,10 @@ Traditional Earley works with a single notion of item. We extend this to the fol
   `S` against the input starting from position `k` (we sometimes say
   the item is blocked on `k,S`); if the parse of `S` is successful, we get a
   complete item `k,S,j` which we can cut against the original item to
-  get a new item of the form `X -> i,as S,k,bs`.
+  get a new item of the form `X -> i,as S,j,bs`.
 
 
-=== The essential step
+=== The essential parsing step
 
 At the heart of all general parsing algorithms is the following step.
 
@@ -357,7 +359,10 @@ include::snips/tjr_earley.ml/ns-nt[]
 === Auxiliary functions: `find_ktjs`
 
 Finally we have a function to find the set of `j` s corresponding to a
-parsed terminal item `(k,T,j)`.
+parsed terminal item `(k,T,j)`. At stage `k`, we maintain a map from
+`T` to a list of int (the `j` s). We use an option to distinguish the
+case where we have not attempted to parse `T` at position `k`, from
+the case where we have tried to parse, but there were no results.
 
 [source,ocaml]
 ----
@@ -443,7 +448,8 @@ or nonterminal. We case split on which it is.
 include::snips/tjr_earley.ml/og-oh[]
 ----
 
-=== Incomplete nonterminal items
+
+==== Incomplete nonterminal items
 
 
 If the symbol is a nonterminal `Y`, then we have an item blocked on
@@ -481,7 +487,7 @@ include::snips/tjr_earley.ml/oj-ok[]
 This completes the handling of incomplete nonterminal items.
 
 
-=== Incomplete terminal items
+==== Incomplete terminal items
 
 If the symbol is a terminal `T`, we check whether we have any complete
 items `(k,T,j)`. If we have not yet processed `T` at stage `k`, then
@@ -562,6 +568,16 @@ include::snips/tjr_earley.ml/pu-py[]
 ----
 
 
+== Using the library
+
+There is an example of how to use the library in the file
+`test.ml`. Note that this includes an optimization (represent items by
+ints) that introduces some complexity. 
+
+A more straightforward implementation is in file
+`simple_test.ml`. This version takes about twice as long as the
+"optimized" version. However, this is the one to look at if you want
+to understand how to use this library for parsing.
 
 
 
