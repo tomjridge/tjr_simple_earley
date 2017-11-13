@@ -2,12 +2,16 @@ SHELL:=bash
 BASH_ENV:=bash_env.sh
 export BASH_ENV
 
+# NOTE before anything, run ocaml <config.ml_
+
 all: 
-	echo "NOTE before anything, run ocaml <config.ml_"
-	$$ocamlopt -c $$mls
-	$$mk_cmxa -g -a -o $$libname.cmxa $$cmxs
+	$(MAKE) build
 	$(MAKE) install
 	$(MAKE) -C bin
+
+build:
+	$$ocamlopt -c $$mls
+	$$mk_cmxa -g -a -o $$libname.cmxa $$cmxs
 
 install:
 	-ocamlfind remove $$package_name

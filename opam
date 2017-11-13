@@ -2,16 +2,17 @@
 
 opam-version: "1.2"
 name: "tjr_simple_earley"
-version: "0.0.1-2017-11-10"
+version: "0.0.2"
 maintainer: "Tom Ridge <tom.j.ridge@googlemail.com>"
 authors: "Tom Ridge <tom.j.ridge@googlemail.com>"
 homepage: "https://github.com/tomjridge/tjr_simple_earley"
+bug-reports: "https://github.com/tomjridge/tjr_simple_earley/issues"
+dev-repo: "https://github.com/tomjridge/tjr_simple_earley/tree/dev"
 build: [
-  [make]
+  [make "build"]
 ]
-# don't install - just build; install: [make "install"]
-# remove: ["true"]
+install: [make "install"]
+remove: ["ocamlfind" "remove" "tjr_simple_earley"]
 depends: [
   "ocamlfind" {build}
-  "core"
 ]
