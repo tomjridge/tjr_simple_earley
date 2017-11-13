@@ -75,4 +75,9 @@ opam pin remove tjr_simple_earley
 #+END_SRC
 
 
+** Publishing on opam package repo
+
+opam-publish https://github.com/ocaml/opam-publish
+
+descr: A simple Earley-like parsing algorithm, engineered for performance and correctness.
 
