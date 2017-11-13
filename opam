@@ -8,7 +8,7 @@ maintainer: "Tom Ridge <tom.j.ridge@googlemail.com>"
 authors: "Tom Ridge <tom.j.ridge@googlemail.com>"
 homepage: "https://github.com/tomjridge/tjr_simple_earley"
 bug-reports: "https://github.com/tomjridge/tjr_simple_earley/issues"
-dev-repo: "https://github.com/tomjridge/tjr_simple_earley/tree/dev"
+dev-repo: "https://github.com/tomjridge/tjr_simple_earley.git"
 build: [
   [make "build"]
 ]
