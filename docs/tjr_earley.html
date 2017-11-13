@@ -528,6 +528,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </ul>
 </li>
 <li><a href="#_using_the_library">3. Using the library</a></li>
+<li><a href="#_informal_derivation">4. Informal derivation</a></li>
 </ul>
 </div>
 </div>
@@ -805,7 +806,7 @@ items.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="ocaml"></code></pre>
+<pre class="pygments highlight"><code data-lang="ocaml"><span class="tok-k">module</span> <span class="tok-k">type</span> <span class="tok-nc">S_</span> <span class="tok-o">=</span> <span class="tok-k">sig</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -813,7 +814,8 @@ items.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">type</span> <span class="tok-n">k_t</span> <span class="tok-o">=</span> <span class="tok-kt">int</span>
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">type</span> <span class="tok-n">i_t</span> <span class="tok-o">=</span> <span class="tok-kt">int</span>
+  <span class="tok-k">type</span> <span class="tok-n">k_t</span> <span class="tok-o">=</span> <span class="tok-kt">int</span>
   <span class="tok-k">type</span> <span class="tok-n">j_t</span> <span class="tok-o">=</span> <span class="tok-kt">int</span>
   <span class="tok-k">type</span> <span class="tok-n">nt</span>
   <span class="tok-k">type</span> <span class="tok-n">tm</span>
@@ -828,7 +830,7 @@ associated operations. An item is like a record, of the form
 <code>{nt;i;as;k;bs}</code>, indicating that the sequence of symbols <code>as</code> could
 be parsed between <code>i</code> and <code>k</code>; this corresponds to an attempt to parse
 the production <code>nt &#8594; as bs</code> starting at position <code>i</code>. Note that we
-keep the type abstract, and the record provides the usual record
+keep the type abstract, and values of type <code>nt_item_ops</code> provide the usual record
 projection functions.</p>
 </div>
 <div class="listingblock">
@@ -888,14 +890,9 @@ to a map from a nonterminal to a set of items, type <code>bitms_lt_k</code>.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-c">(*</span>
-<span class="tok-c">  type bitms_at_k</span>
-<span class="tok-c">  val bitms_at_k_ops: (nt,nt_item_set,bitms_at_k) map_ops</span>
-<span class="tok-c">   *)</span>
-
-  <span class="tok-k">type</span> <span class="tok-n">bitms_lt_k</span>  <span class="tok-c">(* int -&gt; nt -&gt; nt_item_set; implement by array *)</span>
+<pre class="pygments highlight"><code data-lang="ocaml">  <span class="tok-k">type</span> <span class="tok-n">bitms_lt_k</span>  <span class="tok-c">(* int -&gt; nt -&gt; nt_item_set; implement by array *)</span>
   <span class="tok-k">type</span> <span class="tok-n">bitms_lt_k_ops</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-kt">int</span><span class="tok-o">,</span><span class="tok-n">map_nt</span><span class="tok-o">,</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">)</span> <span class="tok-n">map_ops</span>
-  <span class="tok-c">(* passed in dynamically val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) map_ops *)</span></code></pre>
+  <span class="tok-c">(* passed in at run time val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) map_ops *)</span></code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -960,6 +957,11 @@ algorithm is captured as a record.</p>
 
     <span class="tok-n">todo_done</span><span class="tok-o">:</span><span class="tok-n">nt_item_set</span><span class="tok-o">;</span>
     <span class="tok-c">(* todo and done items at stage k; per k *)</span>
+    <span class="tok-c">(* FIXME FIXME FIXME this is not per-k apparently; also, not clear</span>
+<span class="tok-c">       we need a global set of these; FIXME isn&#39;t the name of this</span>
+<span class="tok-c">       chosen so that the items are initially todo, but may</span>
+<span class="tok-c">       subsequently become done... but the point is that we don&#39;t have</span>
+<span class="tok-c">       to consider them more than once *)</span>
 
     <span class="tok-n">todo_gt_k</span><span class="tok-o">:</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span>
     <span class="tok-c">(* todo items at later stages *)</span>
@@ -1000,7 +1002,7 @@ k, have no entries (since this gets filled when a terminal completes).</p>
 <h3 id="_auxiliary_functions_blocked_items">2.5. Auxiliary functions: blocked items</h3>
 <div class="paragraph">
 <p>The <code>bitms</code> function retrieves the blocked items corresponding to an
-index <code>k</code> and a symbol <code>X</code>. The <code>add_bitm_at_k</code> function adds an item
+index <code>k</code> and a nonterminal <code>X</code>. The <code>add_bitm_at_k</code> function adds an item
 at the current stage.</p>
 </div>
 <div class="listingblock">
@@ -1010,7 +1012,8 @@ at the current stage.</p>
     <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_at_k</span> <span class="tok-o">|&gt;</span> <span class="tok-n">bitms_at_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">x</span><span class="tok-o">)</span>
     <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">bitms_lt_k</span> <span class="tok-o">|&gt;</span> <span class="tok-n">bitms_lt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">k</span> <span class="tok-o">|&gt;</span> <span class="tok-n">map_nt_ops</span><span class="tok-o">.</span><span class="tok-n">map_find</span> <span class="tok-n">x</span><span class="tok-o">)</span>
 
-  <span class="tok-c">(* nt_item blocked on nt at k *)</span>
+  <span class="tok-c">(* nt_item blocked on nt at k FIXME nt is just the head of bs; FIXME</span>
+<span class="tok-c">     order of nitm and nt (nt is the key) *)</span>
   <span class="tok-k">let</span> <span class="tok-n">add_bitm_at_k</span> <span class="tok-n">nitm</span> <span class="tok-n">nt</span> <span class="tok-n">s0</span> <span class="tok-o">:</span> <span class="tok-n">state</span> <span class="tok-o">=</span>
     <span class="tok-o">{</span> <span class="tok-n">s0</span> <span class="tok-k">with</span>
       <span class="tok-n">bitms_at_k</span> <span class="tok-o">=</span>
@@ -1119,7 +1122,7 @@ initial nonterminal to start the parse).</p>
 <p>Finally, we can start the algorithm proper.</p>
 </div>
 <div class="paragraph">
-<p>We start by popping <code>bitm</code> off the todo items at the current stage
+<p>We start by popping <code>nitm</code> off the todo items at the current stage
 <code>k</code>. We check whether the item is complete (i.e., <code>bs = []</code>).</p>
 </div>
 <div class="listingblock">
@@ -1146,14 +1149,14 @@ initial nonterminal to start the parse).</p>
 <div class="sect2">
 <h3 id="_complete_items">2.10. Complete items</h3>
 <div class="paragraph">
-<p>If <code>bitm</code> is complete, we have a complete item <code>(i,X,k)</code> which we may have
-seen before or not. We check whether it ha already been done or not.</p>
+<p>In the complete case, we may or may not have seen the complete item
+<code>(i,X,k)</code> before. We check whether it has already been done or not.</p>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">      <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
           <span class="tok-k">let</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-o">=</span> <span class="tok-o">(</span><span class="tok-n">nitm</span><span class="tok-o">|&gt;</span><span class="tok-n">dot_i</span><span class="tok-o">,</span><span class="tok-n">nitm</span><span class="tok-o">|&gt;</span><span class="tok-n">dot_nt</span><span class="tok-o">)</span> <span class="tok-k">in</span>
-          <span class="tok-c">(* possible NEW COMPLETE (i,X,k) *)</span>
+          <span class="tok-c">(* possible new complete item (i,X,k) *)</span>
           <span class="tok-k">let</span> <span class="tok-n">already_done</span> <span class="tok-o">=</span> <span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
           <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">cd</span><span class="tok-o">);</span>
           <span class="tok-n">already_done</span> <span class="tok-o">|&gt;</span> <span class="tok-k">function</span></code></pre>
@@ -1165,6 +1168,7 @@ seen before or not. We check whether it ha already been done or not.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">          <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+              <span class="tok-c">(* the item iXk has already been processed *)</span>
               <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;already_done&quot;</span><span class="tok-o">;</span>
               <span class="tok-n">s0</span><span class="tok-o">)</span></code></pre>
 </div>
@@ -1179,10 +1183,11 @@ todo items at the current stage.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">          <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+              <span class="tok-c">(* a new complete item iXk *)</span>
               <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;not already_done&quot;</span><span class="tok-o">;</span>
               <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">add_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
-              <span class="tok-c">(* FIXME possible optimization if we work with Y -&gt;</span>
-<span class="tok-c">                   {h} as i X bs *)</span>
+              <span class="tok-c">(* FIXME possible optimization if we work with Y -&gt; {h}</span>
+<span class="tok-c">                   as i X bs *)</span>
               <span class="tok-n">bitms</span> <span class="tok-o">(</span><span class="tok-n">i</span><span class="tok-o">,</span><span class="tok-n">x</span><span class="tok-o">)</span>
               <span class="tok-o">|&gt;</span> <span class="tok-n">nt_item_set_with_each_elt</span>
                 <span class="tok-o">~</span><span class="tok-n">f</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-o">~</span><span class="tok-n">state</span><span class="tok-o">:</span><span class="tok-n">s</span> <span class="tok-n">bitm</span> <span class="tok-o">-&gt;</span> <span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-n">s</span><span class="tok-o">)</span>
@@ -1205,8 +1210,8 @@ or nonterminal. We case split on which it is.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="ocaml">      <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-c">(* nitm_complete *)</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
-          <span class="tok-c">(* NEW BLOCKED X -&gt; i as k (S bs&#39;) on k S; here S is _Y or t *)</span>
+<pre class="pygments highlight"><code data-lang="ocaml">      <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-c">(* = nitm_complete *)</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
+          <span class="tok-c">(* NEW BLOCKED item X -&gt; i,as,k,S bs&#39; on k S *)</span>
           <span class="tok-k">let</span> <span class="tok-n">bitm</span> <span class="tok-o">=</span> <span class="tok-n">nitm</span> <span class="tok-k">in</span>
           <span class="tok-k">let</span> <span class="tok-n">s</span> <span class="tok-o">=</span> <span class="tok-nn">List</span><span class="tok-p">.</span><span class="tok-n">hd</span> <span class="tok-o">(</span><span class="tok-n">bitm</span><span class="tok-o">|&gt;</span><span class="tok-n">dot_bs</span><span class="tok-o">)</span> <span class="tok-k">in</span>
           <span class="tok-n">s</span> <span class="tok-o">|&gt;</span> <span class="tok-n">sym_case</span></code></pre>
@@ -1224,10 +1229,12 @@ not need to expand <code>Y</code>.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-o">~</span><span class="tok-n">nt</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-o">_</span><span class="tok-n">Y</span> <span class="tok-o">-&gt;</span>
-                <span class="tok-c">(* have we already processed k Y? *)</span>
+                <span class="tok-c">(* X -&gt; i,as,k,Y bs&#39;; check if kY is already done *)</span>
                 <span class="tok-k">let</span> <span class="tok-n">bitms</span> <span class="tok-o">=</span> <span class="tok-n">bitms</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,_</span><span class="tok-n">Y</span><span class="tok-o">)</span> <span class="tok-k">in</span>
                 <span class="tok-k">let</span> <span class="tok-n">bitms_empty</span> <span class="tok-o">=</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">is_empty</span> <span class="tok-n">bitms</span> <span class="tok-k">in</span>
                 <span class="tok-c">(* NOTE already_processed_kY = not bitms_empty *)</span>
+                <span class="tok-c">(* NOTE the following line serves to record that we</span>
+<span class="tok-c">                   are processing kY *)</span>
                 <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-n">add_bitm_at_k</span> <span class="tok-n">bitm</span> <span class="tok-o">_</span><span class="tok-n">Y</span> <span class="tok-n">s0</span> <span class="tok-k">in</span>
                 <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">fg</span><span class="tok-o">);</span>
                 <span class="tok-n">bitms_empty</span> <span class="tok-o">|&gt;</span> <span class="tok-k">function</span></code></pre>
@@ -1243,8 +1250,8 @@ bs')</code> to get a new item <code>X &#8594; i,as Y,k,bs'</code>.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">                <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
-                    <span class="tok-c">(* already processed k Y, so no need to expand; but</span>
-<span class="tok-c">                       may have complete item kYk *)</span>
+                    <span class="tok-c">(* kY has already been done, no need to expand;</span>
+<span class="tok-c">                       but there may be a complete item kYk *)</span>
                     <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;not bitms_empty&quot;</span><span class="tok-o">;</span>
                     <span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,_</span><span class="tok-n">Y</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-o">|&gt;</span> <span class="tok-k">function</span>
                     <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">k</span><span class="tok-o">)</span> <span class="tok-n">s0</span>
@@ -1257,7 +1264,9 @@ bs')</code> to get a new item <code>X &#8594; i,as Y,k,bs'</code>.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">                <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
-                    <span class="tok-c">(* we have not processed k Y; expand sym Y *)</span>
+                    <span class="tok-c">(* we need to expand Y at k; NOTE that there can</span>
+<span class="tok-c">                       be no complete items kYk, because this is the</span>
+<span class="tok-c">                       first time we have met kY *)</span>
                     <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;bitms_empty&quot;</span><span class="tok-o">;</span>
                     <span class="tok-k">assert</span> <span class="tok-o">(</span><span class="tok-n">mem_ixk_done</span> <span class="tok-o">(</span><span class="tok-n">k</span><span class="tok-o">,_</span><span class="tok-n">Y</span><span class="tok-o">)</span> <span class="tok-n">s0</span> <span class="tok-o">=</span> <span class="tok-bp">false</span><span class="tok-o">);</span>
                     <span class="tok-n">new_items</span> <span class="tok-o">~</span><span class="tok-n">nt</span><span class="tok-o">:_</span><span class="tok-n">Y</span> <span class="tok-o">~</span><span class="tok-n">input</span> <span class="tok-o">~</span><span class="tok-n">k</span>
@@ -1283,7 +1292,7 @@ items <code>(k,T,j)</code>. If we have not yet processed <code>T</code> at stage
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">            <span class="tok-o">~</span><span class="tok-n">tm</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-n">t</span> <span class="tok-o">-&gt;</span>
-                <span class="tok-c">(* have we already processed k T ? *)</span>
+                <span class="tok-c">(* have we already processed kT ? *)</span>
                 <span class="tok-n">find_ktjs</span> <span class="tok-n">t</span> <span class="tok-n">s0</span> <span class="tok-o">|&gt;</span> <span class="tok-k">fun</span> <span class="tok-n">ktjs</span> <span class="tok-o">-&gt;</span>
                 <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">hi</span><span class="tok-o">);</span>
                 <span class="tok-n">ktjs</span>
@@ -1299,7 +1308,7 @@ position <code>k</code>. We record the <code>js</code> corresponding to successf
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">                    <span class="tok-o">|</span> <span class="tok-nc">None</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span>
-                        <span class="tok-c">(* process k T *)</span>
+                        <span class="tok-c">(* we need to process kT *)</span>
                         <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;ktjs None&quot;</span><span class="tok-o">;</span>
                         <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;processing k T&quot;</span><span class="tok-o">;</span>
                         <span class="tok-k">let</span> <span class="tok-n">js</span> <span class="tok-o">=</span> <span class="tok-n">parse_tm</span> <span class="tok-o">~</span><span class="tok-n">tm</span><span class="tok-o">:</span><span class="tok-n">t</span> <span class="tok-o">~</span><span class="tok-n">input</span> <span class="tok-o">~</span><span class="tok-n">k</span> <span class="tok-o">~</span><span class="tok-n">input_length</span> <span class="tok-k">in</span>
@@ -1324,11 +1333,15 @@ new todo items.  FIXME this could be checked with an assert</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="ocaml">                    <span class="tok-o">|</span> <span class="tok-nc">Some</span> <span class="tok-n">js</span> <span class="tok-o">-&gt;</span> <span class="tok-o">(</span><span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;ktjs Some&quot;</span><span class="tok-o">;</span> <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">)))</span>
+<pre class="pygments highlight"><code data-lang="ocaml">                    <span class="tok-o">|</span> <span class="tok-nc">Some</span> <span class="tok-n">js</span> <span class="tok-o">-&gt;</span>
+                      <span class="tok-c">(* we have already processed kT *)</span>
+                      <span class="tok-n">debug_endline</span> <span class="tok-s2">&quot;ktjs Some&quot;</span><span class="tok-o">;</span>
+                      <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">))</span>
                 <span class="tok-o">|&gt;</span> <span class="tok-k">fun</span> <span class="tok-o">(</span><span class="tok-n">js</span><span class="tok-o">,</span><span class="tok-n">s0</span><span class="tok-o">)</span> <span class="tok-o">-&gt;</span>
                 <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">ij</span><span class="tok-o">);</span>
-                <span class="tok-c">(* process blocked; there is only one item blocked at</span>
-<span class="tok-c">                   this point *)</span>
+                <span class="tok-c">(* cut (k,T,j) against the current item NOTE each item</span>
+<span class="tok-c">                   that gets blocked on kT is immediately processed</span>
+<span class="tok-c">                   against items kTj *)</span>
                 <span class="tok-n">js</span>
                 <span class="tok-o">|&gt;</span> <span class="tok-nn">List_</span><span class="tok-p">.</span><span class="tok-n">with_each_elt</span>
                   <span class="tok-o">~</span><span class="tok-n">step</span><span class="tok-o">:(</span><span class="tok-k">fun</span> <span class="tok-o">~</span><span class="tok-n">state</span><span class="tok-o">:</span><span class="tok-n">s</span> <span class="tok-n">j</span> <span class="tok-o">-&gt;</span> <span class="tok-n">add_todo</span> <span class="tok-o">(</span><span class="tok-n">cut</span> <span class="tok-n">bitm</span> <span class="tok-n">j</span><span class="tok-o">)</span> <span class="tok-n">s</span><span class="tok-o">)</span>
@@ -1336,7 +1349,7 @@ new todo items.  FIXME this could be checked with an assert</p>
                 <span class="tok-o">|&gt;</span> <span class="tok-k">fun</span> <span class="tok-n">s</span> <span class="tok-o">-&gt;</span>
                 <span class="tok-k">assert</span><span class="tok-o">(</span><span class="tok-n">log</span> <span class="tok-nn">P</span><span class="tok-p">.</span><span class="tok-n">jk</span><span class="tok-o">);</span>
                 <span class="tok-n">s</span><span class="tok-o">))</span>
-    <span class="tok-o">)</span> <span class="tok-c">(*  step_k *)</span>
+    <span class="tok-o">)</span> <span class="tok-c">(* step_k *)</span>
     <span class="tok-k">in</span></code></pre>
 </div>
 </div>
@@ -1353,6 +1366,7 @@ new todo items.  FIXME this could be checked with an assert</p>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-c">(* loop_k: loop at k -------------------------------------------- *)</span>
+
     <span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">loop_k</span> <span class="tok-n">s0</span> <span class="tok-o">=</span>
       <span class="tok-k">match</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo</span> <span class="tok-k">with</span>
       <span class="tok-o">|</span> <span class="tok-bp">[]</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span>
@@ -1462,10 +1476,71 @@ to understand how to use this library for parsing.</p>
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_informal_derivation">4. Informal derivation</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>From the cut rule, it is clearly important to keep track of items that
+are blocked on <code>i,X</code>. Let&#8217;s call these <code>B(i,X)</code>; <code>B(i,X)</code> is a map
+from <code>(i,X)</code> to a set of nonterminal items. <em>In the implementation we
+distinguish whether the items are blocked at the current stage
+<code>B(k,X)</code> or some previous stage <code>B(k'&lt;k,X)</code>.</em></p>
+</div>
+<div class="paragraph">
+<p>We also need to keep track of complete items, which are either
+<code>C(i,X,k)</code> or <code>C(k,T,j)</code>. <em>In the implementation <code>C(k,T,j)</code> is a map
+from <code>T</code> to an optional list of <code>j</code>, so that we can check whether we
+have already attempted to parse <code>T</code> at stage k.</em></p>
+</div>
+<div class="paragraph">
+<p>At each stage <code>k</code> we have a list of <code>todo(k)</code> items which we need to
+process. Processing these items can result in further items being put
+on the <code>todo(k)</code> list (or on the lists for <code>k'&gt;k</code>). <em>In the
+implementation we keep track of all items that are either <code>todo</code> or
+<code>done</code>, in order to avoid adding an item more than once to <code>todo</code>.</em>
+FIXME why track done?</p>
+</div>
+<div class="paragraph">
+<p>Then, for each item in the <code>todo(k)</code> list of the form <code>X &#8594;
+i,as,k,bs</code>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If item of the form <code>X &#8594; i,as,k,[]</code> then process complete item
+<code>(i,X,k)</code>, by cutting it against all items blocked on <code>(i,X)</code>. <em>In
+the implementation we keep track of the set of complete items
+<code>(i,X,k)</code> and only process each once.</em></p>
+</li>
+<li>
+<p>If item of the form <code>X &#8594; i,as,k,Y bs</code> then process <code>Y</code> at stage
+<code>k</code>, by expanding it using the grammar rules. We also have to add
+the item to the blocked items <code>B(k,Y)</code>. ADDITIONALLY check whether a
+complete item <code>(k,Y,k)</code> has been found, and if so cut it with the
+item <code>X &#8594; &#8230;&#8203;</code> to get a new todo <code>X &#8594; i,as Y,k,bs</code>. <em>In the
+implementation we only expand <code>Y</code> once at stage <code>k</code>.</em></p>
+</li>
+<li>
+<p>If item of the form <code>X &#8594; i,as,k,T bs</code> then process <code>T</code> by parsing
+the input at position <code>k</code> to get a set of terminal items of the form
+<code>(k,T,j)</code>. We then add further todo items <code>X &#8594; i,as T,j,bs</code>. NOTE
+we do not record items blocked on terminals - we process these
+immediately then they are encountered. <em>In the implementation, we
+implement <code>C(k,T,j)</code> as a map from <code>T</code> to an OPTIONAL list of <code>j</code> so
+that we only parse <code>T</code> once.</em></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>It is fairly easy (!) to convince yourself that this indeed captures
+all the possible cases that can arise.</p>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2017-11-10 12:38:51 GMT
+Last updated 2017-11-13 12:02:07 GMT
 </div>
 </div>
 <script type="text/x-mathjax-config">

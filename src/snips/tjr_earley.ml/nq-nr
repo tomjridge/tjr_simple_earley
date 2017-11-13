@@ -4,7 +4,8 @@
     | true -> (s0.bitms_at_k |> bitms_at_k_ops.map_find x)
     | false -> (s0.bitms_lt_k |> bitms_lt_k_ops.map_find k |> map_nt_ops.map_find x)
 
-  (* nt_item blocked on nt at k *)
+  (* nt_item blocked on nt at k FIXME nt is just the head of bs; FIXME
+     order of nitm and nt (nt is the key) *)
   let add_bitm_at_k nitm nt s0 : state = 
     { s0 with
       bitms_at_k =

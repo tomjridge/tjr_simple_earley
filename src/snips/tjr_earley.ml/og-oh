@@ -1,5 +1,5 @@
-      | false (* nitm_complete *) -> (
-          (* NEW BLOCKED X -> i as k (S bs') on k S; here S is _Y or t *)
+      | false (* = nitm_complete *) -> (
+          (* NEW BLOCKED item X -> i,as,k,S bs' on k S *)
           let bitm = nitm in
           let s = List.hd (bitm|>dot_bs) in
           s |> sym_case

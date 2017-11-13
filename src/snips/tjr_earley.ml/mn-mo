@@ -1,3 +1,4 @@
+  type i_t = int  
   type k_t = int
   type j_t = int
   type nt

@@ -1,8 +1,12 @@
-                    | Some js -> (debug_endline "ktjs Some"; (js,s0)))
+                    | Some js -> 
+                      (* we have already processed kT *)
+                      debug_endline "ktjs Some"; 
+                      (js,s0))                  
                 |> fun (js,s0) ->                 
                 assert(log P.ij);
-                (* process blocked; there is only one item blocked at
-                   this point *)
+                (* cut (k,T,j) against the current item NOTE each item
+                   that gets blocked on kT is immediately processed
+                   against items kTj *)
                 js 
                 |> List_.with_each_elt
                   ~step:(fun ~state:s j -> add_todo (cut bitm j) s)
@@ -10,5 +14,5 @@
                 |> fun s -> 
                 assert(log P.jk);
                 s))
-    ) (*  step_k *)
+    ) (* step_k *)
     in

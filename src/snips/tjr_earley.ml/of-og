@@ -1,3 +1,4 @@
           | true -> (
+              (* the item iXk has already been processed *)
               debug_endline "already_done"; 
               s0)

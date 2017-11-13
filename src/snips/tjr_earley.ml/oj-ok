@@ -1,5 +1,7 @@
                 | true -> (
-                    (* we have not processed k Y; expand sym Y *)
+                    (* we need to expand Y at k; NOTE that there can
+                       be no complete items kYk, because this is the
+                       first time we have met kY *)
                     debug_endline "bitms_empty";
                     assert (mem_ixk_done (k,_Y) s0 = false);
                     new_items ~nt:_Y ~input ~k 

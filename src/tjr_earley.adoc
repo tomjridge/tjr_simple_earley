@@ -228,7 +228,7 @@ associated operations. An item is like a record, of the form
 `{nt;i;as;k;bs}`, indicating that the sequence of symbols `as` could
 be parsed between `i` and `k`; this corresponds to an attempt to parse
 the production `nt -> as bs` starting at position `i`. Note that we
-keep the type abstract, and the record provides the usual record
+keep the type abstract, and values of type `nt_item_ops` provide the usual record
 projection functions.
 
 [source,ocaml]
@@ -326,7 +326,7 @@ k, have no entries (since this gets filled when a terminal completes).
 === Auxiliary functions: blocked items
 
 The `bitms` function retrieves the blocked items corresponding to an
-index `k` and a symbol `X`. The `add_bitm_at_k` function adds an item
+index `k` and a nonterminal `X`. The `add_bitm_at_k` function adds an item
 at the current stage.
 
 [source,ocaml]
@@ -396,7 +396,7 @@ include::snips/tjr_earley.ml/oc-od[]
 
 Finally, we can start the algorithm proper.
 
-We start by popping `bitm` off the todo items at the current stage
+We start by popping `nitm` off the todo items at the current stage
 `k`. We check whether the item is complete (i.e., `bs = []`).
 
 [source,ocaml]
@@ -406,8 +406,8 @@ include::snips/tjr_earley.ml/od-oe[]
 
 === Complete items
 
-If `bitm` is complete, we have a complete item `(i,X,k)` which we may have
-seen before or not. We check whether it ha already been done or not.
+In the complete case, we may or may not have seen the complete item
+`(i,X,k)` before. We check whether it has already been done or not.
 
 
 [source,ocaml]
@@ -580,6 +580,52 @@ A more straightforward implementation is in file
 to understand how to use this library for parsing.
 
 
+
+== Informal derivation
+
+From the cut rule, it is clearly important to keep track of items that
+are blocked on `i,X`. Let's call these `B(i,X)`; `B(i,X)` is a map
+from `(i,X)` to a set of nonterminal items. _In the implementation we
+distinguish whether the items are blocked at the current stage
+`B(k,X)` or some previous stage `B(k'<k,X)`._
+
+We also need to keep track of complete items, which are either
+`C(i,X,k)` or `C(k,T,j)`. _In the implementation `C(k,T,j)` is a map
+from `T` to an optional list of `j`, so that we can check whether we
+have already attempted to parse `T` at stage k._
+
+At each stage `k` we have a list of `todo(k)` items which we need to
+process. Processing these items can result in further items being put
+on the `todo(k)` list (or on the lists for `k'>k`). _In the
+implementation we keep track of all items that are either `todo` or
+`done`, in order to avoid adding an item more than once to `todo`._
+FIXME why track done?
+
+Then, for each item in the `todo(k)` list of the form `X ->
+i,as,k,bs`:
+
+* If item of the form `X -> i,as,k,[]` then process complete item
+  `(i,X,k)`, by cutting it against all items blocked on `(i,X)`. _In
+  the implementation we keep track of the set of complete items
+  `(i,X,k)` and only process each once._
+
+* If item of the form `X -> i,as,k,Y bs` then process `Y` at stage
+  `k`, by expanding it using the grammar rules. We also have to add
+  the item to the blocked items `B(k,Y)`. ADDITIONALLY check whether a
+  complete item `(k,Y,k)` has been found, and if so cut it with the
+  item `X -> ...` to get a new todo `X -> i,as Y,k,bs`. _In the
+  implementation we only expand `Y` once at stage `k`._
+
+* If item of the form `X -> i,as,k,T bs` then process `T` by parsing
+  the input at position `k` to get a set of terminal items of the form
+  `(k,T,j)`. We then add further todo items `X -> i,as T,j,bs`. NOTE
+  we do not record items blocked on terminals - we process these
+  immediately then they are encountered. _In the implementation, we
+  implement `C(k,T,j)` as a map from `T` to an OPTIONAL list of `j` so
+  that we only parse `T` once._
+
+It is fairly easy (!) to convince yourself that this indeed captures
+all the possible cases that can arise.
 
 
 

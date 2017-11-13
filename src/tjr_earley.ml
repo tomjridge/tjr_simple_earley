@@ -69,9 +69,10 @@ open Set_ops
 
 open Map_ops
 
-
-module type S_ = sig  (*:mm:*)
-  type i_t = int  (*:mn:*)
+(*:mm:*)
+module type S_ = sig  
+  (*:mn:*)
+  type i_t = int  
   type k_t = int
   type j_t = int
   type nt
@@ -112,14 +113,9 @@ module type S_ = sig  (*:mm:*)
 
   (*:mq:*)
 
-  (*
-  type bitms_at_k
-  val bitms_at_k_ops: (nt,nt_item_set,bitms_at_k) map_ops
-   *)
-
   type bitms_lt_k  (* int -> nt -> nt_item_set; implement by array *)
   type bitms_lt_k_ops = (int,map_nt,bitms_lt_k) map_ops
-  (* passed in dynamically val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) map_ops *)
+  (* passed in at run time val bitms_lt_k_ops: (int,map_nt,bitms_lt_k) map_ops *)
 
   (*:mr:*)
 
@@ -154,6 +150,11 @@ module Make = functor (S:S_) -> struct
 
     todo_done:nt_item_set;
     (* todo and done items at stage k; per k *)
+    (* FIXME FIXME FIXME this is not per-k apparently; also, not clear
+       we need a global set of these; FIXME isn't the name of this
+       chosen so that the items are initially todo, but may
+       subsequently become done... but the point is that we don't have
+       to consider them more than once *)
 
     todo_gt_k:todo_gt_k;
     (* todo items at later stages *)
@@ -188,7 +189,8 @@ module Make = functor (S:S_) -> struct
     | true -> (s0.bitms_at_k |> bitms_at_k_ops.map_find x)
     | false -> (s0.bitms_lt_k |> bitms_lt_k_ops.map_find k |> map_nt_ops.map_find x)
 
-  (* nt_item blocked on nt at k *)
+  (* nt_item blocked on nt at k FIXME nt is just the head of bs; FIXME
+     order of nitm and nt (nt is the key) *)
   let add_bitm_at_k nitm nt s0 : state = 
     { s0 with
       bitms_at_k =
@@ -271,20 +273,22 @@ module Make = functor (S:S_) -> struct
       (*:oe:*)
       | true -> (
           let (i,x) = (nitm|>dot_i,nitm|>dot_nt) in
-          (* possible NEW COMPLETE (i,X,k) *)
+          (* possible new complete item (i,X,k) *)
           let already_done = mem_ixk_done (i,x) s0 in
           assert(log P.cd);          
           already_done |> function
             (*:of:*)
           | true -> (
+              (* the item iXk has already been processed *)
               debug_endline "already_done"; 
               s0)
           (*:og:*)
           | false -> (
+              (* a new complete item iXk *)
               debug_endline "not already_done";
               let s0 = add_ixk_done (i,x) s0 in
-              (* FIXME possible optimization if we work with Y ->
-                   {h} as i X bs *)
+              (* FIXME possible optimization if we work with Y -> {h}
+                   as i X bs *)
               bitms (i,x)
               |> nt_item_set_with_each_elt
                 ~f:(fun ~state:s bitm -> add_todo (cut bitm k) s)
@@ -293,31 +297,35 @@ module Make = functor (S:S_) -> struct
               assert(log P.de);
               s))  
       (*:og:*)
-      | false (* nitm_complete *) -> (
-          (* NEW BLOCKED X -> i as k (S bs') on k S; here S is _Y or t *)
+      | false (* = nitm_complete *) -> (
+          (* NEW BLOCKED item X -> i,as,k,S bs' on k S *)
           let bitm = nitm in
           let s = List.hd (bitm|>dot_bs) in
           s |> sym_case
             (*:oh:*)
             ~nt:(fun _Y -> 
-                (* have we already processed k Y? *)
+                (* X -> i,as,k,Y bs'; check if kY is already done *)
                 let bitms = bitms (k,_Y) in
                 let bitms_empty = nt_item_set_ops.is_empty bitms in
                 (* NOTE already_processed_kY = not bitms_empty *)
+                (* NOTE the following line serves to record that we
+                   are processing kY *)
                 let s0 = add_bitm_at_k bitm _Y s0 in
                 assert(log P.fg);
                 bitms_empty |> function
                   (*:oi:*)
                 | false -> (
-                    (* already processed k Y, so no need to expand; but
-                       may have complete item kYk *)
+                    (* kY has already been done, no need to expand;
+                       but there may be a complete item kYk *)
                     debug_endline "not bitms_empty";
                     mem_ixk_done (k,_Y) s0 |> function
                     | true -> add_todo (cut bitm k) s0
                     | false -> s0)  (* FIXME waypoint? *)
                 (*:oj:*)
                 | true -> (
-                    (* we have not processed k Y; expand sym Y *)
+                    (* we need to expand Y at k; NOTE that there can
+                       be no complete items kYk, because this is the
+                       first time we have met kY *)
                     debug_endline "bitms_empty";
                     assert (mem_ixk_done (k,_Y) s0 = false);
                     new_items ~nt:_Y ~input ~k 
@@ -329,25 +337,29 @@ module Make = functor (S:S_) -> struct
                     s))
             (*:ok:*)
             ~tm:(fun t ->
-                (* have we already processed k T ? *)
+                (* have we already processed kT ? *)
                 find_ktjs t s0 |> fun ktjs ->
                 assert(log P.hi);
                 ktjs 
                 |> (function 
                     (*:ol:*)
                     | None -> (
-                        (* process k T *)
+                        (* we need to process kT *)
                         debug_endline "ktjs None";
                         debug_endline "processing k T";
                         let js = parse_tm ~tm:t ~input ~k ~input_length in
                         let ktjs = map_tm_ops.map_add t (Some js) s0.ktjs in
                         (js,{s0 with ktjs}))
                     (*:om:*)
-                    | Some js -> (debug_endline "ktjs Some"; (js,s0)))
+                    | Some js -> 
+                      (* we have already processed kT *)
+                      debug_endline "ktjs Some"; 
+                      (js,s0))                  
                 |> fun (js,s0) ->                 
                 assert(log P.ij);
-                (* process blocked; there is only one item blocked at
-                   this point *)
+                (* cut (k,T,j) against the current item NOTE each item
+                   that gets blocked on kT is immediately processed
+                   against items kTj *)
                 js 
                 |> List_.with_each_elt
                   ~step:(fun ~state:s j -> add_todo (cut bitm j) s)
@@ -355,12 +367,13 @@ module Make = functor (S:S_) -> struct
                 |> fun s -> 
                 assert(log P.jk);
                 s))
-    ) (*  step_k *)
+    ) (* step_k *)
     in
+
     (*:or:*)
 
-
     (* loop_k: loop at k -------------------------------------------- *)
+
     let rec loop_k s0 = 
       match s0.todo with
       | [] -> s0

@@ -1,5 +1,5 @@
             ~tm:(fun t ->
-                (* have we already processed k T ? *)
+                (* have we already processed kT ? *)
                 find_ktjs t s0 |> fun ktjs ->
                 assert(log P.hi);
                 ktjs 

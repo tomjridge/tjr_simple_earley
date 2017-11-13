@@ -1,5 +1,5 @@
                     | None -> (
-                        (* process k T *)
+                        (* we need to process kT *)
                         debug_endline "ktjs None";
                         debug_endline "processing k T";
                         let js = parse_tm ~tm:t ~input ~k ~input_length in

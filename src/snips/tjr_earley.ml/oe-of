@@ -1,6 +1,6 @@
       | true -> (
           let (i,x) = (nitm|>dot_i,nitm|>dot_nt) in
-          (* possible NEW COMPLETE (i,X,k) *)
+          (* possible new complete item (i,X,k) *)
           let already_done = mem_ixk_done (i,x) s0 in
           assert(log P.cd);          
           already_done |> function

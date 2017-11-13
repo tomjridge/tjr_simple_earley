@@ -1,8 +1,10 @@
             ~nt:(fun _Y -> 
-                (* have we already processed k Y? *)
+                (* X -> i,as,k,Y bs'; check if kY is already done *)
                 let bitms = bitms (k,_Y) in
                 let bitms_empty = nt_item_set_ops.is_empty bitms in
                 (* NOTE already_processed_kY = not bitms_empty *)
+                (* NOTE the following line serves to record that we
+                   are processing kY *)
                 let s0 = add_bitm_at_k bitm _Y s0 in
                 assert(log P.fg);
                 bitms_empty |> function
