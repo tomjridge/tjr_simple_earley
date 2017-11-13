@@ -16,6 +16,7 @@
       let nitms = nt_item_set_ops.add nitm nitms in
       { s0 with todo_gt_k=(todo_gt_k_ops.map_add nitm_k nitms s0.todo_gt_k)}
     | false -> 
+      (* NOTE this is todo_done at the current stage *)
       match nt_item_set_ops.mem nitm s0.todo_done with
       | true -> s0
       | false -> 

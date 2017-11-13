@@ -1,5 +1,6 @@
 
     (* staged: main entry point ------------------------------------- *)
+
     (* construct initial context, apply loop *)
     let result : state = 
       let k = 0 in
@@ -13,6 +14,6 @@
       let bitms_at_k = bitms_at_k_ops.map_empty in
       (* let all_done = [] in *)
       let s0 = 
-        {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k} in (* ;all_done *)
+        {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k} in 
       loop s0
     in

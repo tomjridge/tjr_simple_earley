@@ -956,12 +956,8 @@ algorithm is captured as a record.</p>
     <span class="tok-n">todo</span><span class="tok-o">:</span><span class="tok-n">nt_item</span> <span class="tok-kt">list</span><span class="tok-o">;</span>  <span class="tok-c">(* todo items at stage k *)</span>
 
     <span class="tok-n">todo_done</span><span class="tok-o">:</span><span class="tok-n">nt_item_set</span><span class="tok-o">;</span>
-    <span class="tok-c">(* todo and done items at stage k; per k *)</span>
-    <span class="tok-c">(* FIXME FIXME FIXME this is not per-k apparently; also, not clear</span>
-<span class="tok-c">       we need a global set of these; FIXME isn&#39;t the name of this</span>
-<span class="tok-c">       chosen so that the items are initially todo, but may</span>
-<span class="tok-c">       subsequently become done... but the point is that we don&#39;t have</span>
-<span class="tok-c">       to consider them more than once *)</span>
+    <span class="tok-c">(* todo and done items at stage k; per k; used by add_todo to</span>
+<span class="tok-c">       avoid adding an item more than once *)</span>
 
     <span class="tok-n">todo_gt_k</span><span class="tok-o">:</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span>
     <span class="tok-c">(* todo items at later stages *)</span>
@@ -1050,6 +1046,7 @@ The <code>add_todo</code> function adds an item either at the current stage, or 
       <span class="tok-k">let</span> <span class="tok-n">nitms</span> <span class="tok-o">=</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">add</span> <span class="tok-n">nitm</span> <span class="tok-n">nitms</span> <span class="tok-k">in</span>
       <span class="tok-o">{</span> <span class="tok-n">s0</span> <span class="tok-k">with</span> <span class="tok-n">todo_gt_k</span><span class="tok-o">=(</span><span class="tok-n">todo_gt_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_add</span> <span class="tok-n">nitm_k</span> <span class="tok-n">nitms</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_gt_k</span><span class="tok-o">)}</span>
     <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span>
+      <span class="tok-c">(* NOTE this is todo_done at the current stage *)</span>
       <span class="tok-k">match</span> <span class="tok-n">nt_item_set_ops</span><span class="tok-o">.</span><span class="tok-n">mem</span> <span class="tok-n">nitm</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">todo_done</span> <span class="tok-k">with</span>
       <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span>
       <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span>
@@ -1383,10 +1380,12 @@ new todo items.  FIXME this could be checked with an assert</p>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-c">(* loop --------------------------------------------------------- *)</span>
+
     <span class="tok-c">(* outer loop: repeatedly process items at stage k, then move to</span>
 <span class="tok-c">       stage k+1 *)</span>
     <span class="tok-k">let</span> <span class="tok-k">rec</span> <span class="tok-n">loop</span> <span class="tok-n">s0</span> <span class="tok-o">=</span>
-      <span class="tok-k">match</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-o">&gt;=</span> <span class="tok-n">input_length</span> <span class="tok-k">with</span>  <span class="tok-c">(* correct? FIXME don&#39;t we have to go one further? *)</span>
+      <span class="tok-k">match</span> <span class="tok-n">s0</span><span class="tok-o">.</span><span class="tok-n">k</span> <span class="tok-o">&gt;=</span> <span class="tok-n">input_length</span> <span class="tok-k">with</span>
+      <span class="tok-c">(* correct? FIXME don&#39;t we have to go one further? *)</span>
       <span class="tok-o">|</span> <span class="tok-bp">true</span> <span class="tok-o">-&gt;</span> <span class="tok-n">s0</span>
       <span class="tok-o">|</span> <span class="tok-bp">false</span> <span class="tok-o">-&gt;</span>
         <span class="tok-c">(* process items *)</span>
@@ -1428,6 +1427,7 @@ new todo items.  FIXME this could be checked with an assert</p>
 <div class="listingblock">
 <div class="content">
 <pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-c">(* staged: main entry point ------------------------------------- *)</span>
+
     <span class="tok-c">(* construct initial context, apply loop *)</span>
     <span class="tok-k">let</span> <span class="tok-n">result</span> <span class="tok-o">:</span> <span class="tok-n">state</span> <span class="tok-o">=</span>
       <span class="tok-k">let</span> <span class="tok-n">k</span> <span class="tok-o">=</span> <span class="tok-mi">0</span> <span class="tok-k">in</span>
@@ -1441,7 +1441,7 @@ new todo items.  FIXME this could be checked with an assert</p>
       <span class="tok-k">let</span> <span class="tok-n">bitms_at_k</span> <span class="tok-o">=</span> <span class="tok-n">bitms_at_k_ops</span><span class="tok-o">.</span><span class="tok-n">map_empty</span> <span class="tok-k">in</span>
       <span class="tok-c">(* let all_done = [] in *)</span>
       <span class="tok-k">let</span> <span class="tok-n">s0</span> <span class="tok-o">=</span>
-        <span class="tok-o">{</span><span class="tok-n">k</span><span class="tok-o">;</span><span class="tok-n">todo</span><span class="tok-o">;</span><span class="tok-n">todo_done</span><span class="tok-o">;</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span><span class="tok-n">ixk_done</span><span class="tok-o">;</span><span class="tok-n">ktjs</span><span class="tok-o">;</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">;</span><span class="tok-n">bitms_at_k</span><span class="tok-o">}</span> <span class="tok-k">in</span> <span class="tok-c">(* ;all_done *)</span>
+        <span class="tok-o">{</span><span class="tok-n">k</span><span class="tok-o">;</span><span class="tok-n">todo</span><span class="tok-o">;</span><span class="tok-n">todo_done</span><span class="tok-o">;</span><span class="tok-n">todo_gt_k</span><span class="tok-o">;</span><span class="tok-n">ixk_done</span><span class="tok-o">;</span><span class="tok-n">ktjs</span><span class="tok-o">;</span><span class="tok-n">bitms_lt_k</span><span class="tok-o">;</span><span class="tok-n">bitms_at_k</span><span class="tok-o">}</span> <span class="tok-k">in</span>
       <span class="tok-n">loop</span> <span class="tok-n">s0</span>
     <span class="tok-k">in</span></code></pre>
 </div>
@@ -1451,7 +1451,17 @@ new todo items.  FIXME this could be checked with an assert</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-n">result</span>
+<pre class="pygments highlight"><code data-lang="ocaml">    <span class="tok-c">(* NOTE the result contains the todo_done items at stage</span>
+<span class="tok-c">       l=|input|, including any complete items; if we have a complete</span>
+<span class="tok-c">       item X -&gt; i,as S,j,[] then we know it arose from a blocked item</span>
+<span class="tok-c">       X -&gt; i,as,k,S and a complete item (k,S,j); FIXME so when</span>
+<span class="tok-c">       cutting items we at least need to record a map from (S,j) -&gt;</span>
+<span class="tok-c">       k</span>
+
+<span class="tok-c">       We could also just retain the todo_done(k) sets, since these</span>
+<span class="tok-c">       detail all (complete) items, but then we would have to process</span>
+<span class="tok-c">       these sets which might be expensive. *)</span>
+    <span class="tok-n">result</span>
   <span class="tok-o">)</span> <span class="tok-c">(* run_earley *)</span>
 
 <span class="tok-k">end</span> <span class="tok-c">(* Make *)</span></code></pre>

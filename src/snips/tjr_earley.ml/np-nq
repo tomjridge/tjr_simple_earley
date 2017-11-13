@@ -12,12 +12,8 @@
     todo:nt_item list;  (* todo items at stage k *)
 
     todo_done:nt_item_set;
-    (* todo and done items at stage k; per k *)
-    (* FIXME FIXME FIXME this is not per-k apparently; also, not clear
-       we need a global set of these; FIXME isn't the name of this
-       chosen so that the items are initially todo, but may
-       subsequently become done... but the point is that we don't have
-       to consider them more than once *)
+    (* todo and done items at stage k; per k; used by add_todo to
+       avoid adding an item more than once *)
 
     todo_gt_k:todo_gt_k;
     (* todo items at later stages *)

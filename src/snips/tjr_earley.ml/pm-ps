@@ -1,10 +1,10 @@
-
-
     (* loop --------------------------------------------------------- *)
+
     (* outer loop: repeatedly process items at stage k, then move to
        stage k+1 *)
     let rec loop s0 = 
-      match s0.k >= input_length with  (* correct? FIXME don't we have to go one further? *)
+      match s0.k >= input_length with  
+      (* correct? FIXME don't we have to go one further? *)
       | true -> s0
       | false -> 
         (* process items *)

@@ -1,6 +1,15 @@
 
+    (* NOTE the result contains the todo_done items at stage
+       l=|input|, including any complete items; if we have a complete
+       item X -> i,as S,j,[] then we know it arose from a blocked item
+       X -> i,as,k,S and a complete item (k,S,j); FIXME so when
+       cutting items we at least need to record a map from (S,j) ->
+       k 
+
+       We could also just retain the todo_done(k) sets, since these
+       detail all (complete) items, but then we would have to process
+       these sets which might be expensive. *)
     result
   ) (* run_earley *)
 
 end (* Make *)
-

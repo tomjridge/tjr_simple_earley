@@ -92,7 +92,7 @@ module type S_ = sig
   }
 
   (*:mp:*)
-  
+
   type nt_item_set
   val nt_item_set_ops: (nt_item,nt_item_set) set_ops
   val nt_item_set_with_each_elt: 
@@ -132,7 +132,6 @@ module type S_ = sig
 end
 
 (*:nm:*)
-
 module Make = functor (S:S_) -> struct
   (*:np:*)
   open S
@@ -149,12 +148,8 @@ module Make = functor (S:S_) -> struct
     todo:nt_item list;  (* todo items at stage k *)
 
     todo_done:nt_item_set;
-    (* todo and done items at stage k; per k *)
-    (* FIXME FIXME FIXME this is not per-k apparently; also, not clear
-       we need a global set of these; FIXME isn't the name of this
-       chosen so that the items are initially todo, but may
-       subsequently become done... but the point is that we don't have
-       to consider them more than once *)
+    (* todo and done items at stage k; per k; used by add_todo to
+       avoid adding an item more than once *)
 
     todo_gt_k:todo_gt_k;
     (* todo items at later stages *)
@@ -219,6 +214,7 @@ module Make = functor (S:S_) -> struct
       let nitms = nt_item_set_ops.add nitm nitms in
       { s0 with todo_gt_k=(todo_gt_k_ops.map_add nitm_k nitms s0.todo_gt_k)}
     | false -> 
+      (* NOTE this is todo_done at the current stage *)
       match nt_item_set_ops.mem nitm s0.todo_done with
       | true -> s0
       | false -> 
@@ -371,7 +367,6 @@ module Make = functor (S:S_) -> struct
     in
 
     (*:or:*)
-
     (* loop_k: loop at k -------------------------------------------- *)
 
     let rec loop_k s0 = 
@@ -381,13 +376,13 @@ module Make = functor (S:S_) -> struct
     in
 
     (*:pm:*)
-
-
     (* loop --------------------------------------------------------- *)
+
     (* outer loop: repeatedly process items at stage k, then move to
        stage k+1 *)
     let rec loop s0 = 
-      match s0.k >= input_length with  (* correct? FIXME don't we have to go one further? *)
+      match s0.k >= input_length with  
+      (* correct? FIXME don't we have to go one further? *)
       | true -> s0
       | false -> 
         (* process items *)
@@ -422,6 +417,7 @@ module Make = functor (S:S_) -> struct
     (*:ps:*)
 
     (* staged: main entry point ------------------------------------- *)
+
     (* construct initial context, apply loop *)
     let result : state = 
       let k = 0 in
@@ -435,29 +431,24 @@ module Make = functor (S:S_) -> struct
       let bitms_at_k = bitms_at_k_ops.map_empty in
       (* let all_done = [] in *)
       let s0 = 
-        {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k} in (* ;all_done *)
+        {k;todo;todo_done;todo_gt_k;ixk_done;ktjs;bitms_lt_k;bitms_at_k} in 
       loop s0
     in
 
     (*:pu:*)
 
+    (* NOTE the result contains the todo_done items at stage
+       l=|input|, including any complete items; if we have a complete
+       item X -> i,as S,j,[] then we know it arose from a blocked item
+       X -> i,as,k,S and a complete item (k,S,j); FIXME so when
+       cutting items we at least need to record a map from (S,j) ->
+       k 
+
+       We could also just retain the todo_done(k) sets, since these
+       detail all (complete) items, but then we would have to process
+       these sets which might be expensive. *)
     result
   ) (* run_earley *)
 
 end (* Make *)
-
-
 (*:py:*)
-
-(*
-module Bitms_lt_k_ops = struct
-  type ('k,'v,'t) ltk_map_ops = {
-    ltk_add: 'k -> 'v -> 't -> 't;
-    ltk_find:'k -> 't -> 'v;
-    ltk_empty:int -> 't;  (* need to*)
-    ltk_remove:'k -> 't -> 't;
-  }
-end
-
-open Bitms_lt_k_ops
-*)
