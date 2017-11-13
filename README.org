@@ -40,16 +40,6 @@ Then you should be able to locate the executables ~test.native~ and
 ~simple_test.native~
 
 
-** Developing with opam
-
-#+BEGIN_SRC
-opam pin add tjr_simple_earley . -n
-opam install tjr_simple_earley
-opam remove tjr_simple_earley
-opam pin remove tjr_simple_earley
-#+END_SRC
-
-
 
 ** Running
 
@@ -73,5 +63,16 @@ real	0m2.491s
 user	0m2.484s
 sys	0m0.004s
 #+END_SRC
+
+
+** Developing with opam
+
+#+BEGIN_SRC
+opam pin add tjr_simple_earley . -n
+opam install tjr_simple_earley
+opam remove tjr_simple_earley
+opam pin remove tjr_simple_earley
+#+END_SRC
+
 
 

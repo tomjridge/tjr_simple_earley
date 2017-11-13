@@ -1,13 +1,17 @@
 SHELL:=bash
-ASS:=-noassert
-MLS:=profile.ml tjr_earley.ml # $(shell ocamldep -one-line -sort *.ml)
-OPT:=ocamlfind ocamlopt $(ASS) -thread -package core -g
+BASH_ENV:=bash_env.sh
+export BASH_ENV
 
 all: 
-#	$(OPT) -c $(MLS)
-	$(OPT) -linkpkg -o test.native $(MLS) test.ml
-	$(OPT) -linkpkg -o simple_test.native $(MLS) simple_test.ml
-	echo Now try: time ./test.native 200
+	echo "NOTE before anything, run ocaml <config.ml_"
+	$$ocamlopt -c $$mls
+	$$mk_cmxa -g -a -o $$libname.cmxa $$cmxs
+	$(MAKE) install
+	$(MAKE) -C bin
+
+install:
+	-ocamlfind remove $$package_name
+	ocamlfind install $$package_name META *.cmi *.o *.a *.cmxa *.cmx 
 
 
 # apt-install ruby-pygments
@@ -18,4 +22,6 @@ doc:
 	cp tjr_earley.html ../docs
 
 clean:
-	rm -f *.{cmi,cmo,cmx,o,cmt} a.out *.cma *.cmxa *.a *.byte *.native
+	clean
+
+FORCE:

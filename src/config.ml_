@@ -1,0 +1,153 @@
+(* -*- tuareg -*- *)
+
+(* run with: ocaml <config.ml_ *)
+
+#use "top_find";;
+#thread;;
+#require "bos";;
+#require "tjr_lib";;
+
+(* aux -------------------------------------------------------------- *)
+
+(* need tjr_lib and bos *)
+open Bos
+
+let mk_cmd' xs = Cmd.(of_list xs)
+
+let mk_cmd s = s |> Tjr_string.split_on_char ' ' |> mk_cmd'
+
+let run_and_gather_stdout s = 
+  mk_cmd s |> fun c ->
+  OS.Cmd.(
+    run_out c |> out_string |> success |> function 
+    | (Ok x) -> x 
+    | _ -> failwith __LOC__)
+
+let run = run_and_gather_stdout
+
+
+(* config ----------------------------------------------------------- *)
+
+let with_core=Tjr_file.exists "with_core"
+
+let libname="tjr_simple_earley"
+
+let branch=run "git symbolic-ref --short HEAD"
+
+let v=run "date +'%F'"
+
+let package_name=
+  if branch="master" 
+  then libname
+  else libname^"_"^branch
+
+let description=
+  "An implementation of an Earley-like algorithm, designed for simplicity."
+
+let required_packages=if with_core then "core" else ""
+
+
+
+let meta = 
+  {|
+name="$package_name"
+description="$description"
+version="$v"
+requires="$required_packages"
+archive(byte)="$libname.cma"
+archive(native)="$libname.cmxa"
+|} 
+  |> Tjr_string.replace_list
+    ~subs:[
+      "$package_name",package_name;
+      "$description",description;
+      "$v",v;
+      "$required_packages",required_packages;
+      "$libname",libname]
+
+let mls=
+  Tjr_file.readdir () |> Tjr_string.concat_strings ~sep:" " 
+  |>  fun mls -> run ("ocamldep -sort -one-line "^mls)
+
+let cmos=mls |> Tjr_string.replace_all ~sub:".ml" ~rep:".cmo"
+let cmxs=mls |> Tjr_string.replace_all ~sub:".ml" ~rep:".cmx"
+
+(* # 8~"pattern-matching is not exhaustive"; 
+# 11~"this match case is unused";
+# 26~"unused variable s2" *)
+let warn="-w @f@p@u@s@40-8-11-26"
+
+let pkgs=
+  if required_packages="" 
+  then ""
+  else 
+    "-package $pkgs" 
+  |> Tjr_string.replace_first ~sub:"$pkgs" ~rep:required_packages
+
+let ocamlc' =   
+  "ocamlfind $ocamlc -g $warn $pkgs $thread" 
+  |> Tjr_string.replace_list 
+       ~subs:[
+        "$warn",warn;
+        "$pkgs",pkgs;
+        "$thread",if with_core then "+thread" else ""
+      ]
+
+let ocamlc=ocamlc'|>Tjr_string.replace_first ~sub:"$ocamlc" ~rep:"ocamlc"
+let ocamlopt=ocamlc'|>Tjr_string.replace_first ~sub:"$ocamlc" ~rep:"ocamlopt"
+
+let function_clean={|
+function clean() {
+  rm -f *.cmi *.cmo *..cmx *.o *.x *.a *.cma *.cmxa
+	find . -xtype l -exec rm -f \{\} \;
+}
+|}
+
+
+;;
+
+
+(* bash_env.sh ------------------------------------------------------ *)
+
+let _ = 
+  {|
+set -a # export all vars
+
+libname="$libname"
+package_name="$package_name"
+
+ocamlc="$ocamlc"
+ocamlopt="$ocamlopt"
+
+mls="$mls"
+cmos="$cmos"
+cmxs="$cmxs"
+
+mk_cmxa="$ocamlopt"
+
+$function_clean
+
+|}    
+|> Tjr_string.replace_list
+     ~subs:[
+      "$libname",libname;
+      "$package_name",package_name;
+      "$ocamlc",ocamlc;
+      "$ocamlopt",ocamlopt;
+      "$mls",mls;
+      "$cmos",cmos;
+      "$cmxs",cmxs;
+      "$function_clean",function_clean;
+    ]
+|> Tjr_file.write_string_to_file ~fn:"bash_env.sh"
+
+
+(* meta and link profile ----------------------------------------- *)
+
+let _ = meta |> Tjr_file.write_string_to_file ~fn:"META"
+
+let _ = 
+  if with_core 
+  then run "ln -sf profile_core/profile.ml ."
+  else run "ln -sf profile_nocore/profile.ml ."
+;;

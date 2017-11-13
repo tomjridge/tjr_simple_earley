@@ -1,0 +1,2 @@
+We want high resolution timers for dev. However, we want to avoid
+dependencies on Core for release.
