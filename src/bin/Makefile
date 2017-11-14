@@ -7,3 +7,7 @@ all:
 	$$ocamlopt -linkpkg -package tjr_simple_earley -o simple_test.native simple_test.ml
 	echo Now try: time ./test.native 200
 
+
+clean:
+	rm -f *.cmi *.cmo *.cmx *.o *.x *.a *.cma *.cmxa *.native
+

@@ -5,6 +5,9 @@ Author: Tom Ridge
 An implementation of an Earley-like algorithm, designed for
 simplicity.
 
+NOTE by default, installing via opam only installs the library. To run
+the examples, check the code out from github, cd to src/bin, and make.
+
 ** Documentation
 
 # assert(repo_name=tjr_simple_earley) and below
@@ -45,7 +48,7 @@ Then you should be able to locate the executables ~test.native~ and
 
 There are two executables, ~test.native~ and ~simple_test.native~
 (slower). To run the Earley parser with the grammar ~E -> E E E |
-"1" | esp~, with an input length of 400 say, in the src directory
+"1" | eps~, with an input length of 400 say, in the src directory
 type:
 
 #+BEGIN_SRC
@@ -64,20 +67,4 @@ user	0m2.484s
 sys	0m0.004s
 #+END_SRC
 
-
-** Developing with opam
-
-#+BEGIN_SRC
-opam pin add tjr_simple_earley . -n
-opam install tjr_simple_earley
-opam remove tjr_simple_earley
-opam pin remove tjr_simple_earley
-#+END_SRC
-
-
-** Publishing on opam package repo
-
-opam-publish https://github.com/ocaml/opam-publish
-
-descr: A simple Earley-like parsing algorithm, engineered for performance and correctness.
 
