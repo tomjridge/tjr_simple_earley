@@ -26,6 +26,8 @@ doc:
 	cp tjr_earley.html ../docs
 
 clean:
-	clean
+	rm -f *.cmi *.cmo *.cmx *.o *.x *.a *.cma *.cmxa
+	find . -xtype l -exec rm -f \{\} \;
+
 
 FORCE:

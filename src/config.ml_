@@ -35,6 +35,8 @@ let libname="tjr_simple_earley"
 let branch=run "git symbolic-ref --short HEAD"
 
 let v=run "date +'%F'"
+let version=v  (* or add a suffix eg 2017-12-12b *)
+let version="2017-11-14"
 
 let package_name=
   if branch="master" 
@@ -47,23 +49,11 @@ let description=
 let required_packages=if with_core then "core" else ""
 
 
+;;
 
-let meta = 
-  {|
-name="$package_name"
-description="$description"
-version="$v"
-requires="$required_packages"
-archive(byte)="$libname.cma"
-archive(native)="$libname.cmxa"
-|} 
-  |> Tjr_string.replace_list
-    ~subs:[
-      "$package_name",package_name;
-      "$description",description;
-      "$v",v;
-      "$required_packages",required_packages;
-      "$libname",libname]
+
+(* bash_env.sh ------------------------------------------------------ *)
+
 
 let mls=
   Tjr_file.readdir () |> Tjr_string.concat_strings ~sep:" " 
@@ -76,6 +66,7 @@ let cmxs=mls |> Tjr_string.replace_all ~sub:".ml" ~rep:".cmx"
 # 11~"this match case is unused";
 # 26~"unused variable s2" *)
 let warn="-w @f@p@u@s@40-8-11-26"
+let warn=""
 
 let pkgs=
   if required_packages="" 
@@ -96,18 +87,6 @@ let ocamlc' =
 let ocamlc=ocamlc'|>Tjr_string.replace_first ~sub:"$ocamlc" ~rep:"ocamlc"
 let ocamlopt=ocamlc'|>Tjr_string.replace_first ~sub:"$ocamlc" ~rep:"ocamlopt"
 
-let function_clean={|
-function clean() {
-  rm -f *.cmi *.cmo *..cmx *.o *.x *.a *.cma *.cmxa
-	find . -xtype l -exec rm -f \{\} \;
-}
-|}
-
-
-;;
-
-
-(* bash_env.sh ------------------------------------------------------ *)
 
 let _ = 
   {|
@@ -125,8 +104,6 @@ cmxs="$cmxs"
 
 mk_cmxa="$ocamlopt"
 
-$function_clean
-
 |}    
 |> Tjr_string.replace_list
      ~subs:[
@@ -137,12 +114,30 @@ $function_clean
       "$mls",mls;
       "$cmos",cmos;
       "$cmxs",cmxs;
-      "$function_clean",function_clean;
     ]
 |> Tjr_file.write_string_to_file ~fn:"bash_env.sh"
 
+;;
 
 (* meta and link profile ----------------------------------------- *)
+
+let meta = 
+  {|
+name="$package_name"
+description="$description"
+version="$version"
+requires="$required_packages"
+archive(byte)="$libname.cma"
+archive(native)="$libname.cmxa"
+|} 
+  |> Tjr_string.replace_list
+    ~subs:[
+      "$package_name",package_name;
+      "$description",description;
+      "$version",version;
+      "$required_packages",required_packages;
+      "$libname",libname]
+
 
 let _ = meta |> Tjr_file.write_string_to_file ~fn:"META"
 
@@ -150,4 +145,5 @@ let _ =
   if with_core 
   then run "ln -sf profile_core/profile.ml ."
   else run "ln -sf profile_nocore/profile.ml ."
+
 ;;
