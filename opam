@@ -4,8 +4,8 @@
 opam-version: "1.2"
 name: "tjr_simple_earley"
 
-# intentionally removed - add by hand when using opam-publish 
-# version: "2017-11-14"
+# this should match the github tag and src/config.ml_/version
+version: "2017-11-14c"
 
 maintainer: "Tom Ridge <tom.j.ridge@googlemail.com>"
 authors: "Tom Ridge <tom.j.ridge@googlemail.com>"
