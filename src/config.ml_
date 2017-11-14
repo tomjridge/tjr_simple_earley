@@ -36,7 +36,7 @@ let branch=run "git symbolic-ref --short HEAD"
 
 let v=run "date +'%F'"
 let version=v  (* or add a suffix eg 2017-12-12b *)
-let version="2017-11-14"
+let version="2017-11-14b"
 
 let package_name=
   if branch="master" 
