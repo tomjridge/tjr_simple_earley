@@ -2,9 +2,9 @@
 \author(Tom Ridge)
 \date(2017-11-24)
 
-\toc // FIXME or pass through to raw latex?
+// FIXME \toc // FIXME or pass through to raw latex?
 
-\section(Introduction) --------------------------------------------------
+\section(Introduction) // --------------------------------------------------
 
 This is a version of Earley's algorithm which was essentially derived
 from scratch, paying attention to correctness and performance issues.
@@ -32,7 +32,7 @@ below.
 
 
 
-\subsection(About this document) ----------------------------------------
+\subsection(About this document) // ----------------------------------------
 
 The documentation is in the form of an asciidoc file, which is turned
 into an html file.
@@ -49,7 +49,7 @@ this documentation file.
 
 
 
-\section(Quick introduction to this variant of Earley's algorithm) ------
+\section(Quick introduction to this variant of Earley's algorithm) // ------
 
 Earley's algorithm is a general parsing algorithm for all context free
 grammars. We assume that the reader understands the words
@@ -85,11 +85,12 @@ a few optimizations that perhaps have not been noticed before. We
 operate in stages, with the current stage denoted `k`.
 
 
-\subsection(Notational conventions) -------------------------------------
+\subsection(Notational conventions) // -------------------------------------
 
 We make use of notational conventions. Usually the following is true:
 
-* `i,j,k` are ints; `i` is the start position for an item; `k` is the current stage
+* `i,j,k` are ints; `i` is the start position for an item; `k` is the
+  current stage
 
 * `X,Y` are nonterminals
 
@@ -98,9 +99,10 @@ We make use of notational conventions. Usually the following is true:
 * `S` is a symbol
 
 
-\subsection(Earley items) -----------------------------------------------
+\subsection(Earley items) // -----------------------------------------------
 
-Traditional Earley works with a single notion of item. We extend this to the following:
+Traditional Earley works with a single notion of item. We extend this
+to the following:
 
 * `X -> i,as,k,bs` - the "traditional" item; we refer to this as a
   "nonterminal" item, or just "item"
@@ -122,7 +124,7 @@ Traditional Earley works with a single notion of item. We extend this to the fol
   get a new item of the form `X -> i,as S,j,bs`.
 
 
-\subsection(The essential parsing step) ---------------------------------
+\subsection(The essential parsing step) // ---------------------------------
 
 At the heart of all general parsing algorithms is the following step.
 
@@ -134,11 +136,13 @@ in concluding that `X -> i,as S,j,bs` (i.e., the sequence `as S`
 matches the input from position `i` to `j`). This rule can be
 expressed as follows:
 
-(verbatim
-X -> i,as,k,S bs     S -> k,...,j,[]
------------------------------------- Cut
-X -> i,as S,j,bs
-)
+
+// FIXME
+// \verbatim(
+// X -> i,as,k,S bs     S -> k,...,j,[]
+// ------------------------------------ Cut
+// X -> i,as S,j,bs
+// )
 
 This should be read as: given the two things above the line, we can
 conclude with the thing below the line, and the reasoning step is
@@ -168,9 +172,9 @@ steps that were needed in minute detail, taking care to retain good
 performance and (hopefully) correctness.
 
 
-\section(Code) ----------------------------------------------------------
+\section(Code) // ----------------------------------------------------------
 
-\subsection(Preliminaries) ----------------------------------------------
+\subsection(Preliminaries) // ----------------------------------------------
 
 We define some basic library types and functions. Note that for sets
 and maps we use records rather than (stdlib) functors. This is to
@@ -179,7 +183,7 @@ small we can use arrays; otherwise we can fall back to hashmaps or
 maps.
 
 
-(ocaml_include snips/tjr_earley.ml/ma-mm)
+\ocaml_include(snips/tjr_earley.ml/ma-mm)
 
 
 Note that the type `('e,'t) set_ops` involves a type of elements `'e`,
@@ -188,7 +192,7 @@ map_ops` is a map from keys `'k` to values `'v`, implemented by type
 `'t`.
 
 
-\subsection(Input signature) --------------------------------------------
+\subsection(Input signature) // --------------------------------------------
 
 The code is parameterized over the signature `S_`, which defines all
 the types and operations we assume. We use a signature so that we can
@@ -197,13 +201,13 @@ implementations. For example, the test code uses integers to represent
 items.
 
 
-(ocaml_include snips/tjr_earley.ml/mm-mn)
+\ocaml_include(snips/tjr_earley.ml/mm-mn)
 
 
 First we declare the types for nonterminals, terminals and symbols.
 
 
-(ocaml_include snips/tjr_earley.ml/mn-mo)
+\ocaml_include(snips/tjr_earley.ml/mn-mo)
 
 
 Next we give the type for (nonterminal) items, together with
@@ -215,7 +219,7 @@ keep the type abstract, and values of type `nt_item_ops` provide the usual recor
 projection functions.
 
 
-(ocaml_include snips/tjr_earley.ml/mo-mp)
+\ocaml_include(snips/tjr_earley.ml/mo-mp)
 
 
 Next we have various types for 
@@ -229,7 +233,7 @@ Next we have various types for
 * maps from nonterminals, integers, and terminals
 
 
-(ocaml_include snips/tjr_earley.ml/mp-mq)
+\ocaml_include(snips/tjr_earley.ml/mp-mq)
 
 
 We need to record the blocked items less than `k` (where `k` is the
@@ -237,14 +241,14 @@ We need to record the blocked items less than `k` (where `k` is the
 to a map from a nonterminal to a set of items, type `bitms_lt_k`.
 
 
-(ocaml_include snips/tjr_earley.ml/mq-mr)
+\ocaml_include(snips/tjr_earley.ml/mq-mr)
 
 
 
 We also need to record the items that we need to process at stage
 `k'>k`. This is a map from `k'>k` to a set of items.
 
-(ocaml_include snips/tjr_earley.ml/mr-ms)
+\ocaml_include(snips/tjr_earley.ml/mr-ms)
 
 
 Finally we have the operation `cut`, which takes an item
@@ -254,27 +258,27 @@ and produces the new item `{nt;i;as';j;bs'}`, where `as'` is `as` with
 the parsed symbol `X` appended.
 
 
-(ocaml_include snips/tjr_earley.ml/ms-nm)
+\ocaml_include(snips/tjr_earley.ml/ms-nm)
 
 
 
 
-\subsection(Functor declaration) ----------------------------------------
+\subsection(Functor declaration) // ----------------------------------------
 
 The code is parameterized by the signature `S_` and defined within a functor.
 
-(ocaml_include snips/tjr_earley.ml/nm-np)
+\ocaml_include(snips/tjr_earley.ml/nm-np)
 
 
 
 
-\subsection(State type) -------------------------------------------------
+\subsection(State type) // -------------------------------------------------
 
 The algorithm executes in stages. At each stage `k`, the state of the
 algorithm is captured as a record.
 
 
-(ocaml_include snips/tjr_earley.ml/np-nq)
+\ocaml_include(snips/tjr_earley.ml/np-nq)
 
 
 Maps from int are typically indexed by `k`. 
@@ -288,33 +292,33 @@ k, have no entries (since this gets filled when a terminal completes).
 
 
 
-\subsection(Auxiliary functions: blocked items) -------------------------
+\subsection(Auxiliary functions: blocked items) // -------------------------
 
 The `bitms` function retrieves the blocked items corresponding to an
 index `k` and a nonterminal `X`. The `add_bitm_at_k` function adds an item
 at the current stage.
 
-(ocaml_include snips/tjr_earley.ml/nq-nr)
+\ocaml_include(snips/tjr_earley.ml/nq-nr)
 
 
-\subsection(Auxiliary functions: todo items) ----------------------------
+\subsection(Auxiliary functions: todo items) // ----------------------------
 
 The `pop_todo` function pops an item off the list of items that are "todo" at this stage. 
 //
 The `add_todo` function adds an item either at the current stage, or at a later stage, depending on the item.
 
-(ocaml_include snips/tjr_earley.ml/nr-ns)
+\ocaml_include(snips/tjr_earley.ml/nr-ns)
 
 
 
-\subsection(Auxiliary functions: `(i,X,k)` items) -----------------------
+\subsection(Auxiliary functions: \texttt{(i,X,k)} items) // -----------------------
 
 Similarly, we have `add` and `mem` functions for `(i,X,k)` items.
 
-(ocaml_include snips/tjr_earley.ml/ns-nt)
+\ocaml_include(snips/tjr_earley.ml/ns-nt)
 
 
-\subsection(Auxiliary functions: `find_ktjs`) ---------------------------
+\subsection(Auxiliary functions: \texttt{find\_ktjs}) // ---------------------------
 
 Finally we have a function to find the set of `j` s corresponding to a
 parsed terminal item `(k,T,j)`. At stage `k`, we maintain a map from
@@ -322,11 +326,11 @@ parsed terminal item `(k,T,j)`. At stage `k`, we maintain a map from
 case where we have not attempted to parse `T` at position `k`, from
 the case where we have tried to parse, but there were no results.
 
-(ocaml_include snips/tjr_earley.ml/nt-nu)
+\ocaml_include(snips/tjr_earley.ml/nt-nu)
 
 
 
-\subsection(Main code, `run_earley` and `step_k`) -----------------------
+\subsection(Main code, \texttt{run\_earley} and \texttt{step\_k}) // ------------
 
 The main code is parameterized by various set and map operations,
 `cut`, `new_items` (which provides new items according to the
@@ -335,13 +339,13 @@ parse terminals), `input_length` (the length of the input; the input
 is not necessarily a string, but can be arbitrary), `init_nt` (the
 initial nonterminal to start the parse).
 
-(ocaml_include snips/tjr_earley.ml/nu-oc
+\ocaml_include(snips/tjr_earley.ml/nu-oc)
 
 
 We then have some trivial code:
 
 
-(ocaml_include snips/tjr_earley.ml/oc-od)
+\ocaml_include(snips/tjr_earley.ml/oc-od)
 
 
 Finally, we can start the algorithm proper.
@@ -349,21 +353,21 @@ Finally, we can start the algorithm proper.
 We start by popping `nitm` off the todo items at the current stage
 `k`. We check whether the item is complete (i.e., `bs = []`).
 
-(ocaml_include snips/tjr_earley.ml/od-oe)
+\ocaml_include(snips/tjr_earley.ml/od-oe)
 
 
-\subsection(Complete items) ---------------------------------------------
+\subsection(Complete items) // ---------------------------------------------
 
 In the complete case, we may or may not have seen the complete item
 `(i,X,k)` before. We check whether it has already been done or not.
 
 
-(ocaml_include snips/tjr_earley.ml/oe-of)
+\ocaml_include(snips/tjr_earley.ml/oe-of)
 
 
 If it has already been done, we do nothing:
 
-(ocaml_include snips/tjr_earley.ml/of-og)
+\ocaml_include(snips/tjr_earley.ml/of-og)
 
 
 Otherwise we have to record `(i,X,k)` in the set of done items for the
@@ -373,23 +377,23 @@ items of the form `(Y -> i',as X,k,bs)` which we add to the set of
 todo items at the current stage.
 
 
-(ocaml_include snips/tjr_earley.ml/og-og)
+\ocaml_include(snips/tjr_earley.ml/og-og)
 
 
 This concludes the handling of complete items.
 
 
-\subsection(Incomplete items) -------------------------------------------
+\subsection(Incomplete items) // -------------------------------------------
 
 If the item is incomplete, then we have a new blocked item of the form
 `X -> i,as,k,(S bs')` at stage `k`. The symbol `S` may be a terminal
 or nonterminal. We case split on which it is.
 
-(ocaml_include snips/tjr_earley.ml/og-oh)
+\ocaml_include(snips/tjr_earley.ml/og-oh)
 
 
 
-\subsubsection(Incomplete nonterminal items) ----------------------------
+\subsubsection(Incomplete nonterminal items) // ----------------------------
 
 
 If the symbol is a nonterminal `Y`, then we have an item blocked on
@@ -398,7 +402,7 @@ processed this item, then `bitms` will be empty. If we have processed
 any item blocked on `k,Y`, then `bitms` will be nonempty, and we do
 not need to expand `Y`.
 
-(ocaml_include snips/tjr_earley.ml/oh-oi)
+\ocaml_include(snips/tjr_earley.ml/oh-oi)
 
 
 If `bitms` is not empty, then we have already expanded `Y` at stage
@@ -408,26 +412,26 @@ item `(k,Y,k)` we cut it against the blocked item `X -> i,as,k,(Y
 bs')` to get a new item `X -> i,as Y,k,bs'`.
 
 
-(ocaml_include snips/tjr_earley.ml/oi-oj)
+\ocaml_include(snips/tjr_earley.ml/oi-oj)
 
 
 
 If `bitms` is empty, we need to expand the symbol `Y` to get new items.
 
-(ocaml_include snips/tjr_earley.ml/oj-ok)
+\ocaml_include(snips/tjr_earley.ml/oj-ok)
 
 
 This completes the handling of incomplete nonterminal items.
 
 
-\subsubsection(Incomplete terminal items) -------------------------------
+\subsubsection(Incomplete terminal items) // -------------------------------
 
 If the symbol is a terminal `T`, we check whether we have any complete
 items `(k,T,j)`. If we have not yet processed `T` at stage `k`, then
 `ktjs` will be `None`:
 
 
-(ocaml_include snips/tjr_earley.ml/ok-ol)
+\ocaml_include(snips/tjr_earley.ml/ok-ol)
 
 
 In which case, we process `k,T` by calling the auxiliary `parse_tm`
@@ -436,7 +440,7 @@ position `k`. We record the `js` corresponding to successful parses
 `(k,T,j)`.
 
 
-(ocaml_include snips/tjr_earley.ml/ol-om)
+\ocaml_include(snips/tjr_earley.ml/ol-om)
 
 
 If we have already processed `k,T`, then we just retrieve the `js`
@@ -453,7 +457,7 @@ current blocked item, which we cut against each of the `j` s to get
 new todo items.  FIXME this could be checked with an assert
 
 
-(ocaml_include snips/tjr_earley.ml/om-or)
+\ocaml_include(snips/tjr_earley.ml/om-or)
 
 
 This concludes the exposition of the `step_k` function.
@@ -461,37 +465,37 @@ This concludes the exposition of the `step_k` function.
 
 
 
-\subsection(Main code: `loop_k`) ----------------------------------------
+\subsection(Main code: \texttt{loop\_k}) // ----------------------------------------
 
 At stage `k`, if there are todo items we process them, otherwise we stop.
 
 
-(ocaml_include snips/tjr_earley.ml/or-pm)
+\ocaml_include(snips/tjr_earley.ml/or-pm)
 
 
-\subsection(Main code: `loop`) ------------------------------------------
+\subsection(Main code: \texttt{loop}) // ------------------------------------------
 
 The main loop repeatedly processes items at `k` before moving on to `k+1`.
 
 
-(ocaml_include snips/tjr_earley.ml/pm-ps)
+\ocaml_include(snips/tjr_earley.ml/pm-ps)
 
 
 
-\subsection(Main code: `result`) ---------------------------------------
+\subsection(Main code: \texttt{result}) // ---------------------------------------
 
 Finally, we construct the result by calling `loop`, starting from `k=0`.
 
-(ocaml_include snips/tjr_earley.ml/ps-pu)
+\ocaml_include(snips/tjr_earley.ml/ps-pu)
 
 
 And that is the end of the code.
 
-(ocaml_include snips/tjr_earley.ml/pu-py)
+\ocaml_include(snips/tjr_earley.ml/pu-py)
 
 
 
-\section(Using the library) ---------------------------------------------
+\section(Using the library) // ---------------------------------------------
 
 There is an example of how to use the library in the file
 `test.ml`. Note that this includes an optimization (represent items by
@@ -504,7 +508,7 @@ to understand how to use this library for parsing.
 
 
 
-\section(Informal derivation) -------------------------------------------
+\section(Informal derivation) // -------------------------------------------
 
 From the cut rule, it is clearly important to keep track of items that
 are blocked on `i,X`. Let's call these `B(i,X)`; `B(i,X)` is a map
