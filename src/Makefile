@@ -23,10 +23,8 @@ update_config:
 
 # apt-install ruby-pygments
 # this requires snip.native, which is unreleased ATM
-doc:
+snips: FORCE
 	/tmp/l/bin/snip.native tjr_earley.ml
-	asciidoctor tjr_earley.adoc
-	cp tjr_earley.html ../docs
 
 clean:
 	rm -f *.cmi *.cmo *.cmx *.o *.x *.a *.cma *.cmxa
