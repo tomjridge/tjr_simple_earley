@@ -54,15 +54,15 @@ this documentation file.
 Earley's algorithm is a general parsing algorithm for all context free
 grammars. We assume that the reader understands the words
 "nonterminal", "terminal" and "symbol". A grammar is a list of rules,
-where each rule is of the form $X -> \alpha$, where
+where each rule is of the form $(X -> \alpha)$, where
 $X$ is a nonterminal and $\alpha$ is a list of
 symbols.
 
-Traditional Earley works with "items" of the form $X -> \alpha
-. \beta,j$. The algorithm works in stages. At stage $k$ the algorithm
+Traditional Earley works with "items" of the form $(X -> \alpha
+. \beta,j)$. The algorithm works in stages. At stage $k$ the algorithm
 is looking at the input string at position $k$. The existence of an
-item $X -> \alpha . \beta,j$ at stage $k$ means that, starting from
-input position $j$, using rule $X -> \alpha \beta$, it was possible to
+item $(X -> \alpha . \beta,j)$ at stage $k$ means that, starting from
+input position $j$, using rule $(X -> \alpha \beta)$, it was possible to
 parse the symbols $\alpha$ to match the input between position
 $j$ and $k$.
 
@@ -137,12 +137,11 @@ matches the input from position `i` to `j`). This rule can be
 expressed as follows:
 
 
-// FIXME
-// \verbatim(
-// X -> i,as,k,S bs     S -> k,...,j,[]
-// ------------------------------------ Cut
-// X -> i,as S,j,bs
-// )
+\verbatim(
+X -> i,as,k,S bs     S -> k,...,j,[]
+------------------------------------ Cut
+X -> i,as S,j,bs
+)
 
 This should be read as: given the two things above the line, we can
 conclude with the thing below the line, and the reasoning step is
@@ -153,7 +152,7 @@ i,as,k,S bs` and a complete item `k,S,j` and cut them to give an item
 `X -> i,as S,j,bs`.
 
 
-\subsection(From the "essential step" to Earley's algorithm) ------------
+\subsection(From the "essential step" to Earley's algorithm) // ---------
 
 Roughly the idea is as follows: from an initial nonterminal `X`, keep
 adding more and more items until you end up with a complete item
@@ -393,7 +392,7 @@ or nonterminal. We case split on which it is.
 
 
 
-\subsubsection(Incomplete nonterminal items) // ----------------------------
+\subsubsection(Incomplete items, blocked on nonterminal) // --------------------
 
 
 If the symbol is a nonterminal `Y`, then we have an item blocked on
@@ -424,7 +423,7 @@ If `bitms` is empty, we need to expand the symbol `Y` to get new items.
 This completes the handling of incomplete nonterminal items.
 
 
-\subsubsection(Incomplete terminal items) // -------------------------------
+\subsubsection(Incomplete items, blocked on a terminal) // -----------------
 
 If the symbol is a terminal `T`, we check whether we have any complete
 items `(k,T,j)`. If we have not yet processed `T` at stage `k`, then
@@ -517,13 +516,13 @@ distinguish whether the items are blocked at the current stage
 `B(k,X)` or some previous stage `B(k'<k,X)`.
 
 We also need to keep track of complete items, which are either
-`C(i,X,k)` or `C(k,T,j)`. _In the implementation `C(k,T,j)` is a map
+`C(i,X,k)` or `C(k,T,j)`. In the implementation `C(k,T,j)` is a map
 from `T` to an optional list of `j`, so that we can check whether we
 have already attempted to parse `T` at stage k.
 
 At each stage `k` we have a list of `todo(k)` items which we need to
 process. Processing these items can result in further items being put
-on the `todo(k)` list (or on the lists for `k'>k`). _In the
+on the `todo(k)` list (or on the lists for `k'>k`). In the
 implementation we keep track of all items that are either `todo` or
 `done`, in order to avoid adding an item more than once to `todo`.
 FIXME why track done?
@@ -532,7 +531,7 @@ Then, for each item in the `todo(k)` list of the form `X ->
 i,as,k,bs`:
 
 * If item of the form `X -> i,as,k,[]` then process complete item
-  `(i,X,k)`, by cutting it against all items blocked on `(i,X)`. _In
+  `(i,X,k)`, by cutting it against all items blocked on `(i,X)`. In
   the implementation we keep track of the set of complete items
   `(i,X,k)` and only process each once.
 
@@ -540,16 +539,72 @@ i,as,k,bs`:
   `k`, by expanding it using the grammar rules. We also have to add
   the item to the blocked items `B(k,Y)`. ADDITIONALLY check whether a
   complete item `(k,Y,k)` has been found, and if so cut it with the
-  item `X -> ...` to get a new todo `X -> i,as Y,k,bs`. _In the
+  item `X -> ...` to get a new todo `X -> i,as Y,k,bs`. In the
   implementation we only expand `Y` once at stage `k`.
 
 * If item of the form `X -> i,as,k,T bs` then process `T` by parsing
   the input at position `k` to get a set of terminal items of the form
   `(k,T,j)`. We then add further todo items `X -> i,as T,j,bs`. NOTE
   we do not record items blocked on terminals - we process these
-  immediately then they are encountered. _In the implementation, we
+  immediately then they are encountered. In the implementation, we
   implement `C(k,T,j)` as a map from `T` to an OPTIONAL list of `j` so
   that we only parse `T` once.
 
 It is fairly easy (!) to convince yourself that this indeed captures
 all the possible cases that can arise.
+
+
+\section(Slightly more formal derivation) // ---------------------------
+
+The aim of this section is to attempt to describe the derivation of
+the implementation from first principles.
+
+We start by restating the "Cut" rule.
+
+
+\verbatim(
+X -> i,as,k,S bs     S -> k,...,j,[]
+------------------------------------ Cut
+X -> i,as S,j,bs
+)
+
+Now we consider the different types of item at stage $k$:
+
+* Complete items of the form $(i,X,k)$ or $(k,T,j)$.
+* Incomplete items of the form $(X -> i,\alpha,k,\beta)$.
+
+Complete items: Items $(X -> i,\alpha,k,\beta)$ may be of the form $(X
+-> i,\alpha,k,[])$, giving a complete item $(i,X,k)$.
+
+* We need to record whether we have processed an item $(i,X,k)$ at
+  stage $k$. This can be done using, at each $k$, a set $iXs$ of
+  $(i,X)$.
+* If we haven't processed the item, we need to process it and record
+  that we have done so in $iXs$. To process it we need to cut it against all
+  items blocked on $(i,X)$. So we need a map $blocked(i,X)$. 
+* It may be best to consider the case $i=k$ separately from $i<k$.
+  
+Incomplete items: Alternatively, we may have an item $(X ->
+i,\alpha,k,S\ \beta)$.
+
+Case $S$ is a terminal $T$: Items $(k,T,j)$ arise from incomplete
+items of the form $(X -> i,\alpha,k,T \beta)$. When we process such an
+item, we immediately attempt to parse $T$ at position $k$, and
+remember the result.
+
+* At stage $k$ we need to record, for each terminal $T$, whether we
+  have parsed $T$ from position $k$, and if so, what were the
+  results. This is best done using, at each $k$, a map $Tjs$ of type
+  $(Term -> J\ set\ option)$, which is initially everywhere `None`.
+
+Case $S$ is a nonterminal $Y$. This involves recording that the item
+is blocked, and expanding $Y$ according to the rules of the grammar.
+
+* At stage $k$, we need to record those items that are blocked on a
+  nonterminal $Y$, using a map $blocked_k(Y)$ from a nonterminal to a
+  set of items. After we finish stage $k$ we need to remember this
+  blocked map as $blocked(k,Y)$ when we process later stages.
+* We need to record, for each $k$, whether we have expanded $Y$ at
+  stage $k$ (so maintain, at each stage, a set $Ys$ of those
+  nonterminal we have expanded). If we have not, we expand $Y$
+  according to the rules of the grammar.

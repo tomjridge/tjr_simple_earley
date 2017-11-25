@@ -210,19 +210,21 @@ $endfor$
 
 \usepackage{multicol}
 
-% https://tex.stackexchange.com/questions/120633/change-typeface-of-verbatim-environment
-\makeatletter
-\newcommand{\verbatimfont}[1]{\def\verbatim@font{#1}}%
-\makeatother
-\verbatimfont{\small}
+% % https://tex.stackexchange.com/questions/120633/change-typeface-of-verbatim-environment
+% \makeatletter
+% \newcommand{\verbatimfont}[1]{\def\verbatim@font{#1}}%
+% \makeatother
+% \verbatimfont{\small}
 
 % \usepackage{fullpage}
 
-\renewcommand{\familydefault}{\sfdefault}
-
 \usepackage{fontspec}
 % \setmainfont{Ubuntu Mono}
-\setmonofont{Ubuntu Mono}%[Scale = 0.7]
+\setmonofont{Ubuntu Mono}[Scale = 0.7]
+
+% \renewcommand{\rmdefault}{\sfdefault}
+\renewcommand{\familydefault}{\sfdefault}
+
 % end tjr --------------------------------------------------------------
 
 $if(title)$

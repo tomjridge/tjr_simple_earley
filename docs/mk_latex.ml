@@ -1,3 +1,4 @@
+(*
 #!/usr/bin/env ocaml
 
 let () =
@@ -7,6 +8,7 @@ let () =
 #use "topfind";;
 #thread;;
 #require "omacro";;
+*)
 
 (* latex ------------------------------------------------------------ *)
 
@@ -83,6 +85,14 @@ let ocaml_include =
         Tjr_file.read_file s |> fun s ->
         "\\begin{verbatim}\n" ^ s ^ "\n\\end{verbatim}")
 
+let verbatim = 
+  simple_macro
+    ~name:"verbatim"
+    ~action:(fun s -> 
+        "\\begin{verbatim}\n" ^ s ^ "\n\\end{verbatim}")
+
+
+
 (* drop from // to the end of the line *)
 let comment = 
   {
@@ -91,6 +101,8 @@ let comment =
         Tjr_string.index y '\n' |> fun i ->
         (x,Tjr_string.drop i y))
   }
+
+
 
 
 let title = 
@@ -109,13 +121,34 @@ let date =
     ~action:(fun s -> date:=Some s; "")
 
 
+let tweak_latex_math = 
+  let action s = 
+    Tjr_string.replace_all ~sub:"->" ~rep:"\\rightarrow{}" s
+  in
+  let name = "$(" in
+  {
+    name="$(";
+    action=(fun x -> 
+        x |> drop name |> fun (x,y) ->
+        scan_to_closing_bracket y 0 |> fun i ->
+        Tjr_string.split_at y i |> fun (yarg,yrest) ->
+        (* drop last char which is the close of the bracket *)
+        let yarg = String.sub yarg 0 (i-1) in
+        let yrest = String.sub yrest 1 (String.length yrest -1) in
+        (x^"$"^(action yarg)^"$",yrest))
+  }
+        
+
+
 let macros = [
   section;
   subsection;
   subsubsection;
   ocaml_include;
+  verbatim;
   comment;
-  title; author;date
+  title; author;date;
+  tweak_latex_math
 ]
 
 
