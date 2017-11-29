@@ -1,4 +1,5 @@
 all:
+
 	asciidoctor tjr_earley.adoc
 
 # NOTE --latex-engine will soon become --pdf-engine
@@ -12,7 +13,7 @@ tmp.pdf: mk_latex.native tjr_earley.md FORCE
     --metadata=date:'2017-11-24' \
     --number-sections \
 	  --standalone tmp.md_with_latex > tmp.tex
-	lualatex tmp.tex
+	time xelatex tmp.tex  # NOTE lualatex takes much longer for some reason
 
 mk_latex.native: mk_latex.ml
 	ocamlfind ocamlopt -package omacro -linkpkg -thread -o mk_latex.native mk_latex.ml

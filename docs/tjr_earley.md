@@ -573,15 +573,36 @@ Now we consider the different types of item at stage $k$:
 * Complete items of the form $(i,X,k)$ or $(k,T,j)$.
 * Incomplete items of the form $(X -> i,\alpha,k,\beta)$.
 
+We also consider the following "work items". Work items serve to label
+pieces of work which we ideally execute only once (this is the
+"dynamic programming" aspect of Earley's algorithm).
+
+(1) $Cut/complete_{i,X,k}$: Cut complete ${}(i,X,k)$ with items blocked on ${}(i,X)$.
+
+(2) $Cut/complete_{k,T,j}$: Cut (set of) complete $(k,T,j)$ with item (not items) blocked on $(k,T)$.
+
+(3) $Cut/blocked_{k,X}$: Cut blocked $(i,X)$ with complete $(i,X,k)$; in general new
+blocked items are blocked on $(k,X)$, so these need only be cut
+against ${}(k,X,k)$ complete items.
+
+(4) $Expand_{k,T}$: Terminal expand: for item blocked on $(k,T)$, expand to get set of $(k,T,j)$ (and then cut as (2) $Cut/complete{k,T,j}$ above).
+
+(5) $Expand_{k,X}$: Non-terminal expand: for item blocked on $(k,X)$, expand $X$
+according to the rules of the grammar.
+
+
+Returning to the different types of item at stage $k$:
+
 Complete items: Items $(X -> i,\alpha,k,\beta)$ may be of the form $(X
 -> i,\alpha,k,[])$, giving a complete item $(i,X,k)$.
 
-* We need to record whether we have processed an item $(i,X,k)$ at
-  stage $k$. This can be done using, at each $k$, a set $iXs$ of
-  $(i,X)$.
+* We need to record whether we have processed an item ${}(i,X,k)$ at
+  stage $k$. This can be done using, at each $k$, a set $C_{NT}$
+  (complete non-terminal) of ${}(i,X)$.
 * If we haven't processed the item, we need to process it and record
-  that we have done so in $iXs$. To process it we need to cut it against all
-  items blocked on $(i,X)$. So we need a map $blocked(i,X)$. 
+  that we have done so in $C_{NT}$. This is work item
+  $Cut/complete_{i,X,k}$. To process it we need to cut it against all
+  items blocked on $(i,X)$. So we need a map $blocked(i,X)$.
 * It may be best to consider the case $i=k$ separately from $i<k$.
   
 Incomplete items: Alternatively, we may have an item $(X ->
@@ -590,12 +611,13 @@ i,\alpha,k,S\ \beta)$.
 Case $S$ is a terminal $T$: Items $(k,T,j)$ arise from incomplete
 items of the form $(X -> i,\alpha,k,T \beta)$. When we process such an
 item, we immediately attempt to parse $T$ at position $k$, and
-remember the result.
+remember the result, a set of ${}(k,T,j)$.
 
 * At stage $k$ we need to record, for each terminal $T$, whether we
   have parsed $T$ from position $k$, and if so, what were the
-  results. This is best done using, at each $k$, a map $Tjs$ of type
+  results. This is best done using, at each $k$, a map $T_k$ of type
   $(Term -> J\ set\ option)$, which is initially everywhere `None`.
+* We then cut these ${}(k,T,j)$ agains the item blocked on $T$.
 
 Case $S$ is a nonterminal $Y$. This involves recording that the item
 is blocked, and expanding $Y$ according to the rules of the grammar.
@@ -608,3 +630,8 @@ is blocked, and expanding $Y$ according to the rules of the grammar.
   stage $k$ (so maintain, at each stage, a set $Ys$ of those
   nonterminal we have expanded). If we have not, we expand $Y$
   according to the rules of the grammar.
+* For an item blocked on $k,Y$ we may also have a complete item
+  ${}(k,Y,k)$ (in which case, we have already expanded $Y$ at stage
+  $k$). If so, we need to cut it against any items blocked on
+  $k,Y$. This is $Cut/complete_{i,X,k}$ (or $Cut/complete_{k,Y,k}$ to
+  be more specific).
