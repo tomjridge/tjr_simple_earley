@@ -54,15 +54,15 @@ this documentation file.
 Earley's algorithm is a general parsing algorithm for all context free
 grammars. We assume that the reader understands the words
 "nonterminal", "terminal" and "symbol". A grammar is a list of rules,
-where each rule is of the form $(X -> \alpha)$, where
+where each rule is of the form $(X \-> \alpha)$, where
 $X$ is a nonterminal and $\alpha$ is a list of
 symbols.
 
-Traditional Earley works with "items" of the form $(X -> \alpha
+Traditional Earley works with "items" of the form $(X \-> \alpha
 . \beta,j)$. The algorithm works in stages. At stage $k$ the algorithm
 is looking at the input string at position $k$. The existence of an
-item $(X -> \alpha . \beta,j)$ at stage $k$ means that, starting from
-input position $j$, using rule $(X -> \alpha \beta)$, it was possible to
+item $(X \-> \alpha . \beta,j)$ at stage $k$ means that, starting from
+input position $j$, using rule $(X \-> \alpha \beta)$, it was possible to
 parse the symbols $\alpha$ to match the input between position
 $j$ and $k$.
 
@@ -571,67 +571,146 @@ X -> i,as S,j,bs
 Now we consider the different types of item at stage $k$:
 
 * Complete items of the form $(i,X,k)$ or $(k,T,j)$.
-* Incomplete items of the form $(X -> i,\alpha,k,\beta)$.
+* Incomplete items of the form $(X \-> i,\alpha,k,\beta)$.
 
 We also consider the following "work items". Work items serve to label
 pieces of work which we ideally execute only once (this is the
 "dynamic programming" aspect of Earley's algorithm).
 
-(1) $Cut/complete_{i,X,k}$: Cut complete ${}(i,X,k)$ with items blocked on ${}(i,X)$.
+(1) $W-CUT-COMPLETE(i,X,k)$: Cut complete $(i,X,k)$ with items blocked on $(i,X)$. 
 
-(2) $Cut/complete_{k,T,j}$: Cut (set of) complete $(k,T,j)$ with item (not items) blocked on $(k,T)$.
+(2) $W-CUT-COMPLETE(k,T,j)$: Cut (set of) complete $(k,T,j)$ with item (not items) blocked on $(k,T)$.
 
-(3) $Cut/blocked_{k,X}$: Cut blocked $(i,X)$ with complete $(i,X,k)$; in general new
+(3) $W-CUT-BLOCKED(k,X)$: Cut blocked $(i,X)$ with complete $(i,X,k)$; in general new
 blocked items are blocked on $(k,X)$, so these need only be cut
-against ${}(k,X,k)$ complete items.
+against $(k,X,k)$ complete items.
 
-(4) $Expand_{k,T}$: Terminal expand: for item blocked on $(k,T)$, expand to get set of $(k,T,j)$ (and then cut as (2) $Cut/complete{k,T,j}$ above).
+(4) $W-EXPAND(k,T)$: Terminal expand: for item blocked on $(k,T)$, expand to get set of $(k,T,j)$ (and then cut as (2) $W-CUT-COMPLETE(k,T,k)$ above).
 
-(5) $Expand_{k,X}$: Non-terminal expand: for item blocked on $(k,X)$, expand $X$
+(5) $W-EXPAND(k,X)$: Non-terminal expand: for item blocked on $(k,X)$, expand $X$
 according to the rules of the grammar.
 
 
 Returning to the different types of item at stage $k$:
 
-Complete items: Items $(X -> i,\alpha,k,\beta)$ may be of the form $(X
--> i,\alpha,k,[])$, giving a complete item $(i,X,k)$.
+Complete items: Items $(X \-> i,\alpha,k,\beta)$ may be of the form $(X
+\-> i,\alpha,k,[])$, giving a complete item $(i,X,k)$.
 
-* We need to record whether we have processed an item ${}(i,X,k)$ at
-  stage $k$. This can be done using, at each $k$, a set $C_{NT}$
-  (complete non-terminal) of ${}(i,X)$.
+* We need to record whether we have processed an item $(i,X,k)$ at
+  stage $k$. This can be done using, at each $k$, a set $DONE-COMPLETE-NT$
+  of $(i,X)$.
 * If we haven't processed the item, we need to process it and record
-  that we have done so in $C_{NT}$. This is work item
-  $Cut/complete_{i,X,k}$. To process it we need to cut it against all
-  items blocked on $(i,X)$. So we need a map $blocked(i,X)$.
+  that we have done so in $DONE-COMPLETE-NT$. This is work item
+  $W-CUT-COMPLETE(i,X,k)$. To process it we need to cut it against all
+  items blocked on $(i,X)$. So we need a map $B(i,X)$.
 * It may be best to consider the case $i=k$ separately from $i<k$.
   
-Incomplete items: Alternatively, we may have an item $(X ->
+Incomplete items: Alternatively, we may have an item $(X \->
 i,\alpha,k,S\ \beta)$.
 
 Case $S$ is a terminal $T$: Items $(k,T,j)$ arise from incomplete
-items of the form $(X -> i,\alpha,k,T \beta)$. When we process such an
+items of the form $(X \-> i,\alpha,k,T \beta)$. When we process such an
 item, we immediately attempt to parse $T$ at position $k$, and
-remember the result, a set of ${}(k,T,j)$.
+remember the result, a set of $(k,T,j)$. This is $W-EXPAND(k,T)$.
 
 * At stage $k$ we need to record, for each terminal $T$, whether we
   have parsed $T$ from position $k$, and if so, what were the
-  results. This is best done using, at each $k$, a map $T_k$ of type
-  $(Term -> J\ set\ option)$, which is initially everywhere `None`.
-* We then cut these ${}(k,T,j)$ agains the item blocked on $T$.
+  results. This is best done using, at each $k$, a map $DONE-TERMINAL-K(T)$
+  to an optional set of int.
+* We then cut these $(k,T,j)$ against the item blocked on $k,T$. This is $W-CUT-COMPLETE(k,T,j)$.
 
 Case $S$ is a nonterminal $Y$. This involves recording that the item
-is blocked, and expanding $Y$ according to the rules of the grammar.
+is blocked, and expanding $Y$ according to the rules of the
+grammar ($W-EXPAND(k,T)$). It may also involve cutting the blocked item against a
+complete item $(k,Y,k)$.
 
 * At stage $k$, we need to record those items that are blocked on a
-  nonterminal $Y$, using a map $blocked_k(Y)$ from a nonterminal to a
+  nonterminal $Y$, using a map $BLOCKED-K(Y)$ from a nonterminal to a
   set of items. After we finish stage $k$ we need to remember this
-  blocked map as $blocked(k,Y)$ when we process later stages.
+  blocked map as $BLOCKED(k,Y)$ when we process later stages.
 * We need to record, for each $k$, whether we have expanded $Y$ at
-  stage $k$ (so maintain, at each stage, a set $Ys$ of those
-  nonterminal we have expanded). If we have not, we expand $Y$
-  according to the rules of the grammar.
+  stage $k$ (so maintain, at each stage, a set $EXPANDED-K$ of those
+  nonterminals we have expanded). If we have not, we expand $Y$
+  according to the rules of the grammar, and update $EXPANDED-K$. NOTE we can reuse $B(k,X)$ which already record whether an item is blocked on $(k,X)$ (in which case, $X$ would have been expanded).
 * For an item blocked on $k,Y$ we may also have a complete item
-  ${}(k,Y,k)$ (in which case, we have already expanded $Y$ at stage
-  $k$). If so, we need to cut it against any items blocked on
-  $k,Y$. This is $Cut/complete_{i,X,k}$ (or $Cut/complete_{k,Y,k}$ to
-  be more specific).
+  $(k,Y,k)$ (in which case, we have already expanded $Y$ at stage
+  $k$). If so, we need to cut the blocked item against this
+  $(k,Y,k)$. This is $W-CUT-BLOCKED(k,Y)$.
+
+
+\section(Datastructures) // --------------------------------------------
+
+Datastructures specific to stage k:
+
+* $TODO(k)$ - a list of items
+    * called `todo` in code
+* $TODO-DONE(k)$ - a set of items
+    * called `todo_done` in code
+* $B(k,X)$ - a map to a set of items
+    * called `bitms_at_k`
+* $C(i<k,X,k)$ - record complete items encountered (and then processed), implemented as a set of $(i,X)$
+    * called `ixk_done`
+* $C(k,X,k)$ - ditto, implemented as a set of nonterminals
+    * called `ixk_done` - no distinction between i and k
+* $C(k,T,j)$ - implemented as a map from $T$ to optional list of $j$
+    * called `ktjs`
+
+Datastructures at stages < k:
+
+* $B(i<k,X)$
+    - called `bitms_lt_k`
+
+Datastructures at stages > k:
+
+* $TODO(i>k)$
+    - called `todo_gt_k`
+
+
+
+\section(Informal proof of soundness and completeness) // --------------
+
+We prove wrt. the naive algorithm that simply applies the cut rule
+repeatedly, keeping track of the current set of items.
+
+Soundness is straightforward.
+
+For completeness, we need to argue that every action that is taken by
+the naive algorithm is also taken by our implementation.
+
+\verbatim(
+X -> i,as,k,S bs     S -> k,...,j,[]
+------------------------------------ Cut
+X -> i,as S,j,bs
+)
+
+Let's restrict to the case that $S$ is a nonterminal $Y$ say. Let's rename the indices.
+
+\verbatim(
+X -> i,as,i',Y bs     Y -> i',...,k,[]
+------------------------------------ Cut
+X -> i,as Y,k,bs
+)
+
+
+By induction on the execution of the naive algorithm, `X -> i,as,i',Y
+bs` will have been encountered at stage $i'$, and marked as blocked on
+$i',Y$. Similarly $(i',Y,k)$ will have been encountered and recorded
+in $C(i',Y,k)$ (let's assume $i' < k$). Since $i' < k$, the blocked
+item is available when the complete item $C(i',Y,k)$ is processed by
+our algorithm. And our algorithm indeed produces a new item `X -> i,as
+Y,k,bs` to process further. 
+
+Other cases are (presumably!) similar.
+
+For formalization, one option is to annotate the naive algorithm with
+"execution step" numbers to provide an easy way to phrase the
+induction.
+
+\verbatim(
+X -> i,as,i',Y bs|u     Y -> i',...,k,[]|v
+------------------------------------------ Cut
+X -> i,as Y,k,bs|succ(u,v)
+)
+
+Here, we require `succ(u,v)` to be greater than both `u` and `v` (so
+take eg `succ(u,v)=1+u+v`). We induct on this measure.

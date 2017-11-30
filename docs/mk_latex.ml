@@ -121,8 +121,8 @@ let date =
     ~action:(fun s -> date:=Some s; "")
 
 
-let tweak_latex_math = 
-  let action s = 
+let tweak_latex_math = Omacro.sub ("\\->","\\rightarrow{}")
+(*  let action s = 
     Tjr_string.replace_all ~sub:"->" ~rep:"\\rightarrow{}" s
   in
   let name = "$(" in
@@ -137,7 +137,7 @@ let tweak_latex_math =
         let yrest = String.sub yrest 1 (String.length yrest -1) in
         (x^"$"^(action yarg)^"$",yrest))
   }
-        
+*)        
 
 
 let macros = [

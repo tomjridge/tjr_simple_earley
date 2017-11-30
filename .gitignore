@@ -6,3 +6,6 @@ a.out
 *~
 *.native
 _build/
+/docs/tmp.*
+/tmp/
+tmp/
