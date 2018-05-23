@@ -80,7 +80,8 @@ struct
     get_bitms_lt_k: int * nt -> nt_item list m;  (* or set? *)
     add_bitm_at_k: nt_item -> nt -> unit m;  (* FIXME don't need nt *)
     pop_todo: unit -> nt_item option m;
-    add_todos: nt_item list -> unit m;
+    add_todos_at_k: nt_item list -> unit m;
+    add_todos_gt_k: nt_item list -> unit m;
     add_ixk_done: int*nt -> unit m;
     mem_ixk_done: int*nt -> bool m;
     find_ktjs: tm -> int list option m;
@@ -94,14 +95,14 @@ struct
   let run_earley ~at_ops ~new_items ~input ~parse_tm ~input_length = 
     begin
 
-      let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo; add_todos; add_ixk_done; mem_ixk_done; find_ktjs; add_ktjs; with_state } = at_ops in
+      let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo; add_todos_at_k; add_todos_gt_k; add_ixk_done; mem_ixk_done; find_ktjs; add_ktjs; with_state } = at_ops in
 
       let step_at_k k nitm = 
         let get_bitms (i,x) =
           if i=k then get_bitms_at_k x else
             get_bitms_lt_k (i,x)
         in
-       
+
         match is_finished nitm with
         | true -> (
             let (i,x) = (nitm|>dot_i,nitm|>dot_nt) in
@@ -111,7 +112,7 @@ struct
             | false -> (
                 add_ixk_done (i,x) >>= fun _ ->
                 get_bitms (i,x) >>= fun bitms ->
-                add_todos (List.map (fun bitm -> cut bitm k) bitms)))
+                add_todos_at_k (List.map (fun bitm -> cut bitm k) bitms)))
         | false -> (
             let bitm = nitm in
             let s = List.hd (bitm|>dot_bs) in
@@ -123,11 +124,11 @@ struct
                   match bitms_empty with
                   | false -> (
                       mem_ixk_done (k,_Y) >>= function
-                      | true -> add_todos [cut bitm k]
+                      | true -> add_todos_at_k [cut bitm k]
                       | false -> return ())
                   | true -> (
                       let itms = new_items ~nt:_Y ~input ~k in
-                      add_todos itms))
+                      add_todos_at_k itms))
               ~tm:(fun tm ->
                   find_ktjs tm >>= fun ktjs ->
                   (match ktjs with 
@@ -137,19 +138,27 @@ struct
                      add_ktjs tm js >>= fun _ ->
                      return js
                    | Some js -> return js) >>= fun js ->
-                  add_todos (List.map (fun j -> cut bitm j) js)))
+                  (* there may be a 0 in js, in which case we have a
+                     new todo at the current stage *)
+                  let (xs,js) = List.partition (fun x -> x=0) js in
+                  add_todos_gt_k (List.map (fun j -> cut bitm j) js) >>= fun _ ->
+                  match xs with
+                  | [] -> return ()
+                  | _ -> add_todos_at_k [cut bitm k]))
       in
 
 
       (* FIXME monad syntax may make this easier to read *)
       let rec loop_at_k k = 
+        (* print_endline "loop_at_k"; *)
         pop_todo () >>= function
         | None -> return ()
         | Some itm -> step_at_k k itm >>= fun _ -> loop_at_k k
       in
 
       let rec loop k = 
-        match k > input_length with  
+        (* Printf.printf "loop %d\n" k; *)
+        match k >= input_length with  
         (* correct? FIXME don't we have to go one further? *)
         | true -> return ()
         | false -> 
@@ -164,7 +173,9 @@ struct
           let open State in
           with_state (fun s ->
               let todo' = todo_gt_k_find k' s.todo_gt_k in
-              { todo=elements todo';
+              let todo = elements todo' in
+              (* Printf.printf "elements: %d" (List.length todo); *)
+              { todo;
                 todo_done=todo';
                 todo_gt_k=s.todo_gt_k;
                 bitms_lt_k=(update_bitms_lt_k k s.bitms_at_k s.bitms_lt_k);
@@ -306,6 +317,17 @@ module State = struct
   let empty_ixk_done = Ixk_done.empty
 
   let empty_ktjs = Ktjs.empty      
+
+  let empty_state = {
+    todo=[];
+    todo_done=S.Set_nt_item.empty;
+    todo_gt_k=Todo_gt_k.empty;
+    bitms_lt_k=Bitms_lt_k.empty;
+    bitms_at_k=empty_bitms_at_k;
+    ixk_done=empty_ixk_done;
+    ktjs=empty_ktjs
+  }
+  
 end
 
 module X3 = (State:STATE)
@@ -319,8 +341,9 @@ open State
 open Earley
 
 let to_m = Imperative_instance.to_m
-let run_earley ~init_state =
-  let s = ref init_state in
+
+let run_earley ~state =
+  let s = state in
   let get_bitms_at_k = fun nt -> 
     to_m (
       try
@@ -358,9 +381,25 @@ let run_earley ~init_state =
         s:={!s with todo=xs};
         Some x)
   in
-  let add_todos itms = 
+  let add_todos_at_k itms = 
     to_m (
-      s:={!s with todo=itms@ !s.todo};
+      s:={!s with todo=itms@ !s.todo; 
+                  todo_done=Set_nt_item.union (Set_nt_item.of_list itms) (!s.todo_done)};
+      ())
+  in
+  let add_todos_gt_k itms = 
+    to_m (
+      itms |> List.iter (fun itm ->
+          let todo_gt_k = !s.todo_gt_k in
+          let k' = itm.k_ in 
+          let set = 
+            try 
+              Todo_gt_k.find k' todo_gt_k
+            with _ -> Set_nt_item.empty
+          in
+          let set = Set_nt_item.add itm set in
+          let todo_gt_k = Todo_gt_k.add k' set todo_gt_k in
+          s:={!s with todo_gt_k});
       ())
   in
   let add_ixk_done (i,x) =
@@ -392,7 +431,8 @@ let run_earley ~init_state =
     get_bitms_lt_k;
     add_bitm_at_k;
     pop_todo;
-    add_todos;
+    add_todos_at_k;
+    add_todos_gt_k;
     add_ixk_done;
     mem_ixk_done;
     find_ktjs;
@@ -404,7 +444,7 @@ let run_earley ~init_state =
   run_earley ~at_ops
 
 let _ :
-init_state:State.state ->
+state:State.state ref ->
 new_items:(nt:S.nt -> input:'a -> k:S.j_t -> S.nt_item list) ->
 input:'a ->
 parse_tm:(tm:S.tm -> input:'a -> k:S.j_t -> input_length:S.j_t -> S.j_t list) ->
@@ -412,3 +452,70 @@ input_length:S.j_t -> unit M.m
 = run_earley
 
 
+
+
+(* Encode nonterminals and terminals as ints; nts are even; tms are
+   odd *)
+
+let _E = 0
+let eps = 1
+let _1 = 3
+
+(* Encode the grammar E -> E E E | "1" | eps *)
+let rhss = [ [_E;_E;_E]; [_1]; [eps] ]
+
+(* Provide a function that produces new items, given a nonterminal and
+   an input position k *)
+let new_items ~nt ~input ~k = match () with
+  | _ when nt = _E -> 
+    (* print_endline __LOC__; *)
+    rhss   (* E -> E E E | "1" | eps *)
+    |> List.map (fun bs -> { nt; i_=k; k_=k; bs})
+  | _ -> failwith __LOC__
+
+(* Example input; use command line argument *)
+let input = String.make (Sys.argv.(1) |> int_of_string) '1'
+
+(* Provide a function that details how to parse terminals at a given
+   position k in the input *)
+let parse_tm ~tm ~input ~k ~input_length = 
+  match () with
+  | _ when tm = eps -> [k]
+  | _ when tm = _1 -> 
+    (* print_endline (string_of_int k); *)
+    if String.get input k = '1' then [k+1] else []
+  | _ -> failwith __LOC__
+
+let input_length = String.length input
+
+(* Initial nonterminal *)
+let init_nt = _E
+
+(* E -> E *)
+let state = 
+  let todo = [{nt=_E;i_=0;k_=0;bs=[_E]}] in
+  ref { State.empty_state with todo }
+
+let () = 
+  run_earley 
+    ~state
+    ~new_items
+    ~input
+    ~parse_tm
+    ~input_length |> Imperative_instance.from_m
+
+(* result is the final state *)
+
+
+
+
+(*  
+time ./a.out 400
+
+real	0m6.055s
+user	0m6.052s
+sys	0m0.000s
+
+ie almost exactly the same as simple_test.native 400
+
+*)
