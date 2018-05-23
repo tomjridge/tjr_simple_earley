@@ -138,9 +138,9 @@ struct
                      add_ktjs tm js >>= fun _ ->
                      return js
                    | Some js -> return js) >>= fun js ->
-                  (* there may be a 0 in js, in which case we have a
+                  (* there may be a k in js, in which case we have a
                      new todo at the current stage *)
-                  let (xs,js) = List.partition (fun x -> x=0) js in
+                  let (xs,js) = List.partition (fun j -> j=k) js in
                   add_todos_gt_k (List.map (fun j -> cut bitm j) js) >>= fun _ ->
                   match xs with
                   | [] -> return ()
@@ -383,6 +383,8 @@ let run_earley ~state =
   in
   let add_todos_at_k itms = 
     to_m (
+      let todo_done = !s.todo_done in
+      let itms = itms |> List.filter (fun itm -> not (Set_nt_item.mem itm todo_done)) in
       s:={!s with todo=itms@ !s.todo; 
                   todo_done=Set_nt_item.union (Set_nt_item.of_list itms) (!s.todo_done)};
       ())
@@ -512,10 +514,10 @@ let () =
 (*  
 time ./a.out 400
 
-real	0m6.055s
-user	0m6.052s
-sys	0m0.000s
+real	0m6.166s
+user	0m6.156s
+sys	0m0.012s
 
-ie almost exactly the same as simple_test.native 400
+very similar to simple_test.native
 
 *)
