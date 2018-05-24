@@ -128,10 +128,10 @@ discussion is indexed by these labels
   - ek: if we haven't already met (k,tm) then parse (k,tm), update
     ktjs and pass on js
   - otherwise, just reuse js from previously
-  - ey: given the set of js (which are all >= k)
+  - el: given the set of js (which are all >= k)
   - partition into >k, and =k
   - for j > k, cut bitm with j, and add to todos
-  - if k is in js (ie tm matched the empty string) cut bitm with k
+  - em: if k is in js (ie tm matched the empty string) cut bitm with k
 
 *)
 
@@ -186,7 +186,7 @@ discussion is indexed by these labels
                    | Some js -> return js) >>= fun js -> 
                   (* there may be a k in js, in which case we have a 
                      new todo at the current stage *)
-                  let (xs,js) = List.partition (fun j -> j=k) js in (*:ey:*)
+                  let (xs,js) = List.partition (fun j -> j=k) js in (*:el:*)
                   add_todos_gt_k (List.map (fun j -> cut bitm j) js) >>= fun _ ->
                   match xs with                                   (*:em:*)
                   | [] -> return ()     
