@@ -232,7 +232,56 @@ span.comment-delimiter a { color: #b22222;  font-family: Ubuntu Mono;  font-stre
   <span class="governing">let</span> <span class="function-name">run_earley</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">at_ops </span><span class="operator">~</span><span class="variable-name">new_items </span><span class="operator">~</span><span class="variable-name">input </span><span class="operator">~</span><span class="variable-name">parse_tm </span><span class="operator">~</span><span class="variable-name">input_length</span> <span class="operator">=</span> 
     <span class="governing">begin</span>
 
-      <span class="governing">let</span> <span class="operator">{</span> get_bitms_at_k<span class="operator">;</span> get_bitms_lt_k<span class="operator">;</span> add_bitm_at_k<span class="operator">;</span> pop_todo<span class="operator">;</span> add_todos_at_k<span class="operator">;</span> add_todos_gt_k<span class="operator">;</span> add_ixk_done<span class="operator">;</span> mem_ixk_done<span class="operator">;</span> find_ktjs<span class="operator">;</span> add_ktjs<span class="operator">;</span> with_state <span class="operator">}</span> <span class="operator">=</span> at_ops <span class="governing">in</span>
+      <span class="governing">let</span> <span class="operator">{</span> get_bitms_at_k<span class="operator">;</span> get_bitms_lt_k<span class="operator">;</span> add_bitm_at_k<span class="operator">;</span> pop_todo<span class="operator">;</span> add_todos_at_k<span class="operator">;</span> add_todos_gt_k<span class="operator">;</span> 
+            add_ixk_done<span class="operator">;</span> mem_ixk_done<span class="operator">;</span> find_ktjs<span class="operator">;</span> add_ktjs<span class="operator">;</span> with_state <span class="operator">}</span> <span class="operator">=</span> at_ops 
+      <span class="governing">in</span>
+<span class="comment-delimiter">(* </span><span class="comment">
+
+Explanation of step_at_k code which follows:
+
+The basic Earley step is:
+
+X -&gt; i as k',S bs     k' S k
+----------------------------
+X -&gt; i as S k bs
+
+In the code, there are labels of the form (*:am:*). The following
+discussion is indexed by these labels
+
+- af: 
+  - the item nitm is complete, ie of the form Y -&gt; k',as,k,[]
+  - aj,al: has (k',Y,k) been encountered before? if so, do nothing
+  - am: if not encountered before, k' Y k is cut with blocked X -&gt;
+    ... and new todo items are added
+
+- ax: 
+  - item is not complete ie of form _ -&gt; i,as,k,S bs
+
+- ax/ce: 
+  - S is nonterm Y
+  - add bitm to blocked items at (k,Y)
+  - check if we have seen (k,Y) before (bitms_empty)
+  - co: if we have, check if k Y k; cut bitm with k Y k if so
+  - cw: if we haven't, generate new items from (k,Y)
+
+- ax/ec:
+  - S is terminal tm
+  - attempt to retrieve (k,tm,j) set from ktjs
+  - ek: if we haven't already met (k,tm) then parse (k,tm), update
+    ktjs and pass on js
+  - otherwise, just reuse js from previously
+  - el: given the set of js (which are all &gt;= k)
+  - partition into &gt;k, and =k
+  - for j &gt; k, cut bitm with j, and add to todos
+    - note that if this is the first time we meet (k,tm), then there
+      are no other items blocked on (k,tm); if this is not the first
+      time, then we have already processed items blocked on (k,tm); in
+      either case, we do not need to do anything more with items
+      blocked on (k,tm); in fact, we don't even need to record such
+      items
+  - em: if k is in js (ie tm matched the empty string) cut bitm with k
+
+</span><span class="comment-delimiter">*)</span>
 
       <span class="governing">let</span> <span class="function-name">step_at_k</span><span class="variable-name"> k nitm</span> <span class="operator">=</span> 
         <span class="governing">let</span> <span class="function-name">get_bitms</span><span class="variable-name"> </span><span class="operator">(</span><span class="variable-name">i</span><span class="operator">,</span><span class="variable-name">x</span><span class="operator">)</span> <span class="operator">=</span>
@@ -241,7 +290,7 @@ span.comment-delimiter a { color: #b22222;  font-family: Ubuntu Mono;  font-stre
         <span class="governing">in</span>
 
         <span class="keyword">match</span> is_finished nitm <span class="keyword">with</span> 
-        <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="operator">(</span>     <span class="comment-delimiter">(*</span><span class="comment">:af:</span><span class="comment-delimiter">*)</span>
+        <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="operator">(</span>                                               <span class="comment-delimiter">(*</span><span class="comment">:af:</span><span class="comment-delimiter">*)</span>
             <span class="governing">let</span> <span class="operator">(</span><span class="variable-name">k'</span><span class="operator">,</span><span class="variable-name">_Y</span><span class="operator">)</span> <span class="operator">=</span> <span class="operator">(</span>nitm<span class="operator">|&gt;</span>dot_i<span class="operator">,</span>nitm<span class="operator">|&gt;</span>dot_nt<span class="operator">)</span> <span class="governing">in</span>  
             mem_ixk_done <span class="operator">(</span>k'<span class="operator">,</span>_Y<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">already_done</span> <span class="operator">-&gt;</span>          <span class="comment-delimiter">(*</span><span class="comment">:aj:</span><span class="comment-delimiter">*)</span>
             <span class="keyword">match</span> already_done <span class="keyword">with</span>     
@@ -252,8 +301,8 @@ span.comment-delimiter a { color: #b22222;  font-family: Ubuntu Mono;  font-stre
                 add_todos_at_k <span class="operator">(</span><span class="module">List.</span>map <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">bitm</span> <span class="operator">-&gt;</span> cut bitm k<span class="operator">)</span> bitms<span class="operator">)))</span>
         <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="operator">(</span>                                              <span class="comment-delimiter">(*</span><span class="comment">:ax:</span><span class="comment-delimiter">*)</span>
             <span class="governing">let</span> <span class="variable-name">bitm</span> <span class="operator">=</span> nitm <span class="governing">in</span>   
-            <span class="governing">let</span> <span class="variable-name">s</span> <span class="operator">=</span> <span class="module">List.</span>hd <span class="operator">(</span>bitm<span class="operator">|&gt;</span>dot_bs<span class="operator">)</span> <span class="governing">in</span> 
-            s <span class="operator">|&gt;</span> sym_case  
+            <span class="governing">let</span> <span class="variable-name">_S</span> <span class="operator">=</span> <span class="module">List.</span>hd <span class="operator">(</span>bitm<span class="operator">|&gt;</span>dot_bs<span class="operator">)</span> <span class="governing">in</span> 
+            _S <span class="operator">|&gt;</span> sym_case  
               <span class="constant">~nt</span><span class="operator">:(</span><span class="keyword">fun</span> <span class="variable-name">_Y</span> <span class="operator">-&gt;</span>                                      <span class="comment-delimiter">(*</span><span class="comment">:ce:</span><span class="comment-delimiter">*)</span>
                   get_bitms_at_k _Y <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">bitms</span> <span class="operator">-&gt;</span>     
                   <span class="governing">let</span> <span class="variable-name">bitms_empty</span> <span class="operator">=</span> bitms<span class="operator">=[]</span> <span class="governing">in</span>     
@@ -277,7 +326,7 @@ span.comment-delimiter a { color: #b22222;  font-family: Ubuntu Mono;  font-stre
                    <span class="operator">|</span> <span class="constructor">Some</span> js <span class="operator">-&gt;</span> return js<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">js</span> <span class="operator">-&gt;</span> 
                   <span class="comment-delimiter">(* </span><span class="comment">there may be a k in js, in which case we have a 
                      new todo at the current stage </span><span class="comment-delimiter">*)</span>
-                  <span class="governing">let</span> <span class="operator">(</span><span class="variable-name">xs</span><span class="operator">,</span><span class="variable-name">js</span><span class="operator">)</span> <span class="operator">=</span> <span class="module">List.</span>partition <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">j</span> <span class="operator">-&gt;</span> j<span class="operator">=</span>k<span class="operator">)</span> js <span class="governing">in</span> <span class="comment-delimiter">(*</span><span class="comment">:ey:</span><span class="comment-delimiter">*)</span>
+                  <span class="governing">let</span> <span class="operator">(</span><span class="variable-name">xs</span><span class="operator">,</span><span class="variable-name">js</span><span class="operator">)</span> <span class="operator">=</span> <span class="module">List.</span>partition <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">j</span> <span class="operator">-&gt;</span> j<span class="operator">=</span>k<span class="operator">)</span> js <span class="governing">in</span> <span class="comment-delimiter">(*</span><span class="comment">:el:</span><span class="comment-delimiter">*)</span>
                   add_todos_gt_k <span class="operator">(</span><span class="module">List.</span>map <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">j</span> <span class="operator">-&gt;</span> cut bitm j<span class="operator">)</span> js<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>
                   <span class="keyword">match</span> xs <span class="keyword">with</span>                                   <span class="comment-delimiter">(*</span><span class="comment">:em:</span><span class="comment-delimiter">*)</span>
                   <span class="operator">|</span> <span class="operator">[]</span> <span class="operator">-&gt;</span> return <span class="operator">()</span>     
@@ -328,6 +377,7 @@ span.comment-delimiter a { color: #b22222;  font-family: Ubuntu Mono;  font-stre
     <span class="governing">end</span> <span class="comment-delimiter">(* </span><span class="comment">run_earley </span><span class="comment-delimiter">*)</span>
 
 <span class="governing">end</span>
+
 
 
 <span class="comment-delimiter">(* </span><span class="comment">example instance ------------------------------------------------- </span><span class="comment-delimiter">*)</span>

@@ -88,7 +88,7 @@ struct
     add_ktjs: tm -> int list -> unit m;
     with_state: (State.state -> State.state) -> unit m;
   }
-
+g
   let is_finished nitm = nitm|>dot_bs = [] 
 
 
