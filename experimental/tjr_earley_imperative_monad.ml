@@ -92,7 +92,12 @@ struct
   let is_finished nitm = nitm|>dot_bs = [] 
 
 
+  let run_earley ~at_ops ~new_items ~input ~parse_tm ~input_length = 
+    begin
 
+      let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo; add_todos_at_k; add_todos_gt_k; 
+            add_ixk_done; mem_ixk_done; find_ktjs; add_ktjs; with_state } = at_ops 
+      in
 (* 
 
 Explanation of step_at_k code which follows:
@@ -107,13 +112,13 @@ In the code, there are labels of the form (*:am:*). The following
 discussion is indexed by these labels
 
 - af: 
-  - the item nitm is complete, ie of the form Y -> i,as,k',[]
-  - aj: has (k',Y,k) been encountered before? if so, do nothing
+  - the item nitm is complete, ie of the form Y -> k',as,k,[]
+  - aj,al: has (k',Y,k) been encountered before? if so, do nothing
   - am: if not encountered before, k' Y k is cut with blocked X ->
     ... and new todo items are added
 
 - ax: 
-  - item is not complete
+  - item is not complete ie of form _ -> i,as,k,S bs
 
 - ax/ce: 
   - S is nonterm Y
@@ -131,18 +136,16 @@ discussion is indexed by these labels
   - el: given the set of js (which are all >= k)
   - partition into >k, and =k
   - for j > k, cut bitm with j, and add to todos
+    - note that if this is the first time we meet (k,tm), then there
+      are no other items blocked on (k,tm); if this is not the first
+      time, then we have already processed items blocked on (k,tm); in
+      either case, we do not need to do anything more with items
+      blocked on (k,tm); in fact, we don't even need to record such
+      items
   - em: if k is in js (ie tm matched the empty string) cut bitm with k
 
 *)
 
-  let run_earley ~at_ops ~new_items ~input ~parse_tm ~input_length = 
-    begin
-
-      let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo; add_todos_at_k; add_todos_gt_k; 
-            add_ixk_done; mem_ixk_done; find_ktjs; add_ktjs; with_state } = at_ops 
-      in
-
-      (* NOTE there is an explanation of this code below *)
       let step_at_k k nitm = 
         let get_bitms (i,x) =
           if i=k then get_bitms_at_k x else
@@ -161,8 +164,8 @@ discussion is indexed by these labels
                 add_todos_at_k (List.map (fun bitm -> cut bitm k) bitms)))
         | false -> (                                              (*:ax:*)
             let bitm = nitm in   
-            let s = List.hd (bitm|>dot_bs) in 
-            s |> sym_case  
+            let _S = List.hd (bitm|>dot_bs) in 
+            _S |> sym_case  
               ~nt:(fun _Y ->                                      (*:ce:*)
                   get_bitms_at_k _Y >>= fun bitms ->     
                   let bitms_empty = bitms=[] in     
