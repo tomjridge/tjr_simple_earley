@@ -9,12 +9,16 @@
 body { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
 span.default   { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
 span.default a { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.string   { color: #8b2252;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.string a { color: #8b2252;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.builtin   { color: #483d8b;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.builtin a { color: #483d8b;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
 span.keyword   { color: #a020f0;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
 span.keyword a { color: #a020f0;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
-span.constructor   { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
-span.constructor a { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
 span.variable-name   { color: #a0522d;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
 span.variable-name a { color: #a0522d;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
+span.constructor   { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
+span.constructor a { font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  color: #000000;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
 span.constant   { color: #008b8b;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
 span.constant a { color: #008b8b;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: underline; }
 span.function-name   { color: #0000ff;  font-family: Ubuntu Mono;  font-stretch: normal;  font-weight: 500;  font-style: normal;  background: #ffffff;  font-size: 10pt;  text-decoration: none; }
@@ -134,7 +138,12 @@ span.comment-delimiter a { color: #b22222;  font-family: Ubuntu Mono;  font-stre
 <pre><span class="comment-delimiter">(* </span><span class="comment">an experiment to see whether the imperative code (represented using
    a monad) is easier to read; probably it is </span><span class="comment-delimiter">*)</span>
 
-<span class="governing">open </span><span class="module">Tjr_monad.Monad</span>
+<span class="governing">module</span> <span class="governing">type</span> <span class="module">M_</span> <span class="operator">=</span> <span class="governing">sig</span>
+  <span class="governing">type</span> <span class="type">'a m</span>
+  <span class="governing">val</span> <span class="operator">(</span> <span class="operator">&gt;&gt;=</span> <span class="operator">)</span> <span class="operator">:</span> 'a m <span class="operator">-&gt;</span> <span class="operator">(</span>'a <span class="operator">-&gt;</span> 'b m<span class="operator">)</span> <span class="operator">-&gt;</span> 'b m
+  <span class="governing">val</span> <span class="function-name">return</span><span class="operator">:</span> 'a <span class="operator">-&gt;</span> 'a m
+<span class="governing">end</span>
+
 
 <span class="governing">module</span> <span class="governing">type</span> <span class="module">S_</span> <span class="operator">=</span> <span class="governing">sig</span>  
   <span class="governing">type</span> <span class="type">i_t</span> <span class="operator">=</span> int  
@@ -160,92 +169,495 @@ span.comment-delimiter a { color: #b22222;  font-family: Ubuntu Mono;  font-stre
   <span class="governing">val</span> <span class="function-name">elements</span> <span class="operator">:</span> nt_item_set <span class="operator">-&gt;</span> nt_item list
 <span class="governing">end</span>
 
-<span class="governing">module</span> <span class="governing">type</span> <span class="module">M_</span> <span class="operator">=</span> <span class="governing">sig</span>
-  <span class="governing">type</span> <span class="type">'a m</span>
-  <span class="governing">val</span> <span class="operator">(</span> <span class="operator">&gt;&gt;=</span> <span class="operator">)</span> <span class="operator">:</span> 'a m <span class="operator">-&gt;</span> <span class="operator">(</span>'a <span class="operator">-&gt;</span> 'b m<span class="operator">)</span> <span class="operator">-&gt;</span> 'b m
-  <span class="governing">val</span> <span class="function-name">return</span><span class="operator">:</span> 'a <span class="operator">-&gt;</span> 'a m
+
+<span class="governing">module</span> <span class="governing">type</span> <span class="module">STATE</span> <span class="operator">=</span> <span class="governing">sig</span>  
+  <span class="governing">type</span> <span class="type">nt_item</span>
+  <span class="governing">type</span> <span class="type">nt_item_set</span>
+
+  <span class="comment-delimiter">(* </span><span class="comment">when we increase k, we need to alter the state significantly;
+     this reveals the structure of the state </span><span class="comment-delimiter">*)</span>
+
+  <span class="governing">type</span> <span class="type">todo_gt_k</span>  <span class="comment-delimiter">(* </span><span class="comment">int -&gt; nt_item_set </span><span class="comment-delimiter">*)</span>
+  <span class="governing">type</span> <span class="type">bitms_lt_k</span>  <span class="comment-delimiter">(* </span><span class="comment">int -&gt; bitms_at_k </span><span class="comment-delimiter">*)</span>
+  <span class="governing">type</span> <span class="type">bitms_at_k</span>  <span class="comment-delimiter">(* </span><span class="comment">nt -&gt; nt_item_set </span><span class="comment-delimiter">*)</span>
+
+  <span class="comment-delimiter">(* </span><span class="comment">following are per k </span><span class="comment-delimiter">*)</span>
+  <span class="governing">type</span> <span class="type">ixk_done</span>  <span class="comment-delimiter">(* </span><span class="comment">int*nt set </span><span class="comment-delimiter">*)</span>
+  <span class="governing">type</span> <span class="type">ktjs</span>  <span class="comment-delimiter">(* </span><span class="comment">tm -&gt; j list option </span><span class="comment-delimiter">*)</span>
+
+  <span class="governing">type</span> <span class="type">state</span> <span class="operator">=</span> <span class="operator">{</span>
+    todo<span class="operator">:</span> nt_item list<span class="operator">;</span>
+    todo_done<span class="operator">:</span> nt_item_set<span class="operator">;</span>
+    todo_gt_k<span class="operator">:</span> todo_gt_k<span class="operator">;</span>
+    bitms_lt_k<span class="operator">:</span> bitms_lt_k<span class="operator">;</span>
+    bitms_at_k<span class="operator">:</span> bitms_at_k<span class="operator">;</span>
+    ixk_done<span class="operator">:</span> ixk_done<span class="operator">;</span>
+    ktjs<span class="operator">:</span>ktjs
+  <span class="operator">}</span>
+
+  <span class="governing">val</span> <span class="function-name">todo_gt_k_find</span><span class="operator">:</span> int <span class="operator">-&gt;</span> todo_gt_k <span class="operator">-&gt;</span> nt_item_set
+  <span class="governing">val</span> <span class="function-name">update_bitms_lt_k</span><span class="operator">:</span> int <span class="operator">-&gt;</span> bitms_at_k <span class="operator">-&gt;</span> bitms_lt_k <span class="operator">-&gt;</span> bitms_lt_k
+  <span class="governing">val</span> <span class="function-name">empty_bitms_at_k</span><span class="operator">:</span> bitms_at_k
+  <span class="governing">val</span> <span class="function-name">empty_ixk_done</span><span class="operator">:</span> ixk_done
+  <span class="governing">val</span> <span class="function-name">empty_ktjs</span><span class="operator">:</span> ktjs
 <span class="governing">end</span>
 
-<span class="governing">module</span> <span class="module">Make</span> <span class="operator">=</span> <span class="governing">functor</span> <span class="operator">(</span><span class="variable-name">S</span><span class="operator">:</span><span class="type">S_</span><span class="operator">)(</span><span class="constructor">M</span><span class="operator">:</span><span class="type">M_</span><span class="operator">)</span> <span class="operator">-&gt;</span> <span class="governing">struct</span>
+
+<span class="governing">module</span> <span class="module">Make</span> <span class="operator">=</span> <span class="governing">functor</span> 
+  <span class="operator">(</span><span class="constructor">S</span><span class="operator">:</span><span class="type">S_</span><span class="operator">)</span>
+  <span class="operator">(</span><span class="constructor">State</span><span class="operator">:</span><span class="module">STATE </span><span class="governing">with type</span><span class="module"> </span><span class="type">nt_item</span><span class="module"> </span><span class="operator">=</span><span class="module"> S.nt_item </span><span class="governing">and type</span><span class="module"> </span><span class="type">nt_item_set</span><span class="module"> </span><span class="operator">=</span><span class="module"> S.nt_item_set</span><span class="operator">)</span>
+  <span class="operator">(</span><span class="constructor">M</span><span class="operator">:</span><span class="type">M_</span><span class="operator">)</span> <span class="operator">-&gt;</span> 
+<span class="governing">struct</span>
   <span class="comment-delimiter">(*</span><span class="comment">:np:</span><span class="comment-delimiter">*)</span>
   <span class="governing">open </span><span class="module">S</span>
   <span class="governing">open </span><span class="module">M</span>
 
   <span class="governing">type</span> <span class="type">atomic_operations</span> <span class="operator">=</span> <span class="operator">{</span>
-    get_bitms<span class="operator">:</span> int <span class="operator">*</span> nt <span class="operator">-&gt;</span> nt_item list m<span class="operator">;</span>  <span class="comment-delimiter">(* </span><span class="comment">or set? </span><span class="comment-delimiter">*)</span>
+    get_bitms_at_k<span class="operator">:</span> nt <span class="operator">-&gt;</span> nt_item list m<span class="operator">;</span>  <span class="comment-delimiter">(* </span><span class="comment">or set? </span><span class="comment-delimiter">*)</span>
+    get_bitms_lt_k<span class="operator">:</span> int <span class="operator">*</span> nt <span class="operator">-&gt;</span> nt_item list m<span class="operator">;</span>  <span class="comment-delimiter">(* </span><span class="comment">or set? </span><span class="comment-delimiter">*)</span>
     add_bitm_at_k<span class="operator">:</span> nt_item <span class="operator">-&gt;</span> nt <span class="operator">-&gt;</span> unit m<span class="operator">;</span>  <span class="comment-delimiter">(* </span><span class="comment">FIXME don't need nt </span><span class="comment-delimiter">*)</span>
     pop_todo<span class="operator">:</span> unit <span class="operator">-&gt;</span> nt_item option m<span class="operator">;</span>
-    add_todos<span class="operator">:</span> nt_item list <span class="operator">-&gt;</span> unit m<span class="operator">;</span>
+    add_todos_at_k<span class="operator">:</span> nt_item list <span class="operator">-&gt;</span> unit m<span class="operator">;</span>
+    add_todos_gt_k<span class="operator">:</span> nt_item list <span class="operator">-&gt;</span> unit m<span class="operator">;</span>
     add_ixk_done<span class="operator">:</span> int<span class="operator">*</span>nt <span class="operator">-&gt;</span> unit m<span class="operator">;</span>
     mem_ixk_done<span class="operator">:</span> int<span class="operator">*</span>nt <span class="operator">-&gt;</span> bool m<span class="operator">;</span>
     find_ktjs<span class="operator">:</span> tm <span class="operator">-&gt;</span> int list option m<span class="operator">;</span>
     add_ktjs<span class="operator">:</span> tm <span class="operator">-&gt;</span> int list <span class="operator">-&gt;</span> unit m<span class="operator">;</span>
+    with_state<span class="operator">:</span> <span class="operator">(</span><span class="module">State.</span>state <span class="operator">-&gt;</span> <span class="module">State.</span>state<span class="operator">)</span> <span class="operator">-&gt;</span> unit m<span class="operator">;</span>
+  <span class="operator">}</span>
+
+  <span class="governing">let</span> <span class="function-name">is_finished</span><span class="variable-name"> nitm</span> <span class="operator">=</span> nitm<span class="operator">|&gt;</span>dot_bs <span class="operator">=</span> <span class="operator">[</span><span class="operator">]</span> 
+
+
+  <span class="governing">let</span> <span class="function-name">run_earley</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">at_ops </span><span class="operator">~</span><span class="variable-name">new_items </span><span class="operator">~</span><span class="variable-name">input </span><span class="operator">~</span><span class="variable-name">parse_tm </span><span class="operator">~</span><span class="variable-name">input_length</span> <span class="operator">=</span> 
+    <span class="governing">begin</span>
+
+      <span class="governing">let</span> <span class="operator">{</span> get_bitms_at_k<span class="operator">;</span> get_bitms_lt_k<span class="operator">;</span> add_bitm_at_k<span class="operator">;</span> pop_todo<span class="operator">;</span> add_todos_at_k<span class="operator">;</span> add_todos_gt_k<span class="operator">;</span> add_ixk_done<span class="operator">;</span> mem_ixk_done<span class="operator">;</span> find_ktjs<span class="operator">;</span> add_ktjs<span class="operator">;</span> with_state <span class="operator">}</span> <span class="operator">=</span> at_ops <span class="governing">in</span>
+
+      <span class="governing">let</span> <span class="function-name">step_at_k</span><span class="variable-name"> k nitm</span> <span class="operator">=</span> 
+        <span class="governing">let</span> <span class="function-name">get_bitms</span><span class="variable-name"> </span><span class="operator">(</span><span class="variable-name">i</span><span class="operator">,</span><span class="variable-name">x</span><span class="operator">)</span> <span class="operator">=</span>
+          <span class="keyword">if</span> i<span class="operator">=</span>k <span class="keyword">then</span> get_bitms_at_k x <span class="keyword">else</span>
+            get_bitms_lt_k <span class="operator">(</span>i<span class="operator">,</span>x<span class="operator">)</span>
+        <span class="governing">in</span>
+
+        <span class="keyword">match</span> is_finished nitm <span class="keyword">with</span> 
+        <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="operator">(</span>     <span class="comment-delimiter">(*</span><span class="comment">:af:</span><span class="comment-delimiter">*)</span>
+            <span class="governing">let</span> <span class="operator">(</span><span class="variable-name">k'</span><span class="operator">,</span><span class="variable-name">_Y</span><span class="operator">)</span> <span class="operator">=</span> <span class="operator">(</span>nitm<span class="operator">|&gt;</span>dot_i<span class="operator">,</span>nitm<span class="operator">|&gt;</span>dot_nt<span class="operator">)</span> <span class="governing">in</span>  
+            mem_ixk_done <span class="operator">(</span>k'<span class="operator">,</span>_Y<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">already_done</span> <span class="operator">-&gt;</span>          <span class="comment-delimiter">(*</span><span class="comment">:aj:</span><span class="comment-delimiter">*)</span>
+            <span class="keyword">match</span> already_done <span class="keyword">with</span>     
+            <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> return <span class="operator">()</span>                                   <span class="comment-delimiter">(*</span><span class="comment">:al:</span><span class="comment-delimiter">*</span><span class="comment-delimiter">)</span>
+            <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="operator">(</span>                                          <span class="comment-delimiter">(*</span><span class="comment">:am:</span><span class="comment-delimiter">*)</span>
+                add_ixk_done <span class="operator">(</span>k'<span class="operator">,</span>_Y<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>                   
+                get_bitms <span class="operator">(</span>k'<span class="operator">,</span>_Y<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">bitms</span> <span class="operator">-&gt;</span>                  
+                add_todos_at_k <span class="operator">(</span><span class="module">List.</span>map <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">bitm</span> <span class="operator">-&gt;</span> cut bitm k<span class="operator">)</span> bitms<span class="operator">)))</span>
+        <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="operator">(</span>                                              <span class="comment-delimiter">(*</span><span class="comment">:ax:</span><span class="comment-delimiter">*)</span>
+            <span class="governing">let</span> <span class="variable-name">bitm</span> <span class="operator">=</span> nitm <span class="governing">in</span>   
+            <span class="governing">let</span> <span class="variable-name">s</span> <span class="operator">=</span> <span class="module">List.</span>hd <span class="operator">(</span>bitm<span class="operator">|&gt;</span>dot_bs<span class="operator">)</span> <span class="governing">in</span> 
+            s <span class="operator">|&gt;</span> sym_case  
+              <span class="constant">~nt</span><span class="operator">:(</span><span class="keyword">fun</span> <span class="variable-name">_Y</span> <span class="operator">-&gt;</span>                                      <span class="comment-delimiter">(*</span><span class="comment">:ce:</span><span class="comment-delimiter">*)</span>
+                  get_bitms_at_k _Y <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">bitms</span> <span class="operator">-&gt;</span>     
+                  <span class="governing">let</span> <span class="variable-name">bitms_empty</span> <span class="operator">=</span> bitms<span class="operator">=[]</span> <span class="governing">in</span>     
+                  add_bitm_at_k bitm _Y <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>     
+                  <span class="keyword">match</span> bitms_empty <span class="keyword">with</span>  
+                  <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="operator">(</span>                                    <span class="comment-delimiter">(*</span><span class="comment">:co:</span><span class="comment-delimiter">*)</span>
+                      mem_ixk_done <span class="operator">(</span>k<span class="operator">,</span>_Y<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">function</span>    
+                      <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> add_todos_at_k <span class="operator">[</span>cut bitm k<span class="operator">]</span> 
+                      <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> return <span class="operator">())</span>    
+                  <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="operator">(</span>                                     <span class="comment-delimiter">(*</span><span class="comment">:cw:</span><span class="comment-delimiter">*)</span>
+                      <span class="governing">let</span> <span class="variable-name">itms</span> <span class="operator">=</span> new_items <span class="constant">~nt</span><span class="operator">:</span>_Y <span class="operator">~</span>input <span class="operator">~</span>k <span class="governing">in</span>
+                      add_todos_at_k itms<span class="operator">))</span>  
+              <span class="constant">~tm</span><span class="operator">:(</span><span class="keyword">fun</span> <span class="variable-name">tm</span> <span class="operator">-&gt;</span>                                      <span class="comment-delimiter">(*</span><span class="comment">:ec:</span><span class="comment-delimiter">*)</span>
+                  find_ktjs tm <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">ktjs</span> <span class="operator">-&gt;</span>     
+                  <span class="operator">(</span><span class="keyword">match</span> ktjs <span class="keyword">with</span>
+                   <span class="operator">|</span> <span class="constructor">None</span> <span class="operator">-&gt;</span>      
+                     <span class="comment-delimiter">(* </span><span class="comment">we need to process kT </span><span class="comment-delimiter">*)</span>                  <span class="comment-delimiter">(*</span><span class="comment">:ek:</span><span class="comment-delimiter">*)</span>
+                     <span class="governing">let</span> <span class="variable-name">js</span> <span class="operator">=</span> parse_tm <span class="operator">~</span>tm <span class="operator">~</span>input <span class="operator">~</span>k <span class="operator">~</span>input_length <span class="governing">in</span> 
+                     add_ktjs tm js <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>  
+                     return js 
+                   <span class="operator">|</span> <span class="constructor">Some</span> js <span class="operator">-&gt;</span> return js<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">js</span> <span class="operator">-&gt;</span> 
+                  <span class="comment-delimiter">(* </span><span class="comment">there may be a k in js, in which case we have a 
+                     new todo at the current stage </span><span class="comment-delimiter">*)</span>
+                  <span class="governing">let</span> <span class="operator">(</span><span class="variable-name">xs</span><span class="operator">,</span><span class="variable-name">js</span><span class="operator">)</span> <span class="operator">=</span> <span class="module">List.</span>partition <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">j</span> <span class="operator">-&gt;</span> j<span class="operator">=</span>k<span class="operator">)</span> js <span class="governing">in</span> <span class="comment-delimiter">(*</span><span class="comment">:ey:</span><span class="comment-delimiter">*)</span>
+                  add_todos_gt_k <span class="operator">(</span><span class="module">List.</span>map <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">j</span> <span class="operator">-&gt;</span> cut bitm j<span class="operator">)</span> js<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>
+                  <span class="keyword">match</span> xs <span class="keyword">with</span>                                   <span class="comment-delimiter">(*</span><span class="comment">:em:</span><span class="comment-delimiter">*)</span>
+                  <span class="operator">|</span> <span class="operator">[]</span> <span class="operator">-&gt;</span> return <span class="operator">()</span>     
+                  <span class="operator">|</span> _ <span class="operator">-&gt;</span> add_todos_at_k <span class="operator">[</span>cut bitm k<span class="operator">]))</span>
+      <span class="governing">in</span> 
+
+
+      <span class="comment-delimiter">(* </span><span class="comment">FIXME monad syntax may make this easier to read </span><span class="comment-delimiter">*)</span>
+      <span class="governing">let</span> <span class="governing">rec</span> <span class="function-name">loop_at_k</span><span class="variable-name"> k</span> <span class="operator">=</span> 
+        <span class="comment-delimiter">(* </span><span class="comment">print_endline &quot;loop_at_k&quot;; </span><span class="comment-delimiter">*)</span>
+        pop_todo <span class="operator">()</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">function</span>
+        <span class="operator">|</span> <span class="constructor">None</span> <span class="operator">-&gt;</span> return <span class="operator">()</span>
+        <span class="operator">|</span> <span class="constructor">Some</span> itm <span class="operator">-&gt;</span> step_at_k k itm <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span> loop_at_k k
+      <span class="governing">in</span>
+
+      <span class="governing">let</span> <span class="governing">rec</span> <span class="function-name">loop</span><span class="variable-name"> k</span> <span class="operator">=</span> 
+        <span class="comment-delimiter">(* </span><span class="comment">Printf.printf &quot;loop %d\n&quot; k; </span><span class="comment-delimiter">*)</span>
+        <span class="keyword">match</span> k <span class="operator">&gt;=</span> input_length <span class="keyword">with</span>  
+        <span class="comment-delimiter">(* </span><span class="comment">correct? FIXME don't we have to go one further? </span><span class="comment-delimiter">*)</span>
+        <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> return <span class="operator">()</span>
+        <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> 
+          <span class="comment-delimiter">(* </span><span class="comment">process items </span><span class="comment-delimiter">*)</span>
+          loop_at_k k <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>
+          <span class="governing">let</span> <span class="variable-name">k'</span> <span class="operator">=</span> k<span class="operator">+</span>1 <span class="governing">in</span>
+          <span class="comment-delimiter">(* </span><span class="comment">
+           todo and todo_done are updated with todo_gt_k[k'];
+           bitms_lt_k is updated: bitms_lt_k[k]=bitms_at_k
+           bitms_at_k is reset;</span><span class="comment">
+</span><span class="comment">           ixk_done and ktjs are reset </span><span class="comment-delimiter">*)</span>
+          <span class="governing">let</span> <span class="governing">open </span><span class="module">State</span> <span class="governing">in</span>
+          with_state <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">s</span> <span class="operator">-&gt;</span>
+              <span class="governing">let</span> <span class="variable-name">todo'</span> <span class="operator">=</span> todo_gt_k_find k' s.todo_gt_k <span class="governing">in</span>
+              <span class="governing">let</span> <span class="variable-name">todo</span> <span class="operator">=</span> elements todo' <span class="governing">in</span>
+              <span class="comment-delimiter">(* </span><span class="comment">Printf.printf &quot;elements: %d&quot; (List.length todo); </span><span class="comment-delimiter">*)</span>
+              <span class="operator">{</span> todo<span class="operator">;</span>
+                todo_done<span class="operator">=</span>todo'<span class="operator">;</span>
+                todo_gt_k<span class="operator">=</span>s.todo_gt_k<span class="operator">;</span>
+                bitms_lt_k<span class="operator">=(</span>update_bitms_lt_k k s.bitms_at_k s.bitms_lt_k<span class="operator">);</span>
+                bitms_at_k<span class="operator">=</span>empty_bitms_at_k<span class="operator">;</span>
+                ixk_done<span class="operator">=</span>empty_ixk_done<span class="operator">;</span>
+                ktjs<span class="operator">=</span>empty_ktjs<span class="operator">;</span>
+              <span class="operator">})</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>
+          loop k'
+      <span class="governing">in</span>
+
+
+      loop 0
+    <span class="governing">end</span> <span class="comment-delimiter">(* </span><span class="comment">run_earley </span><span class="comment-delimiter">*)</span>
+
+<span class="governing">end</span>
+
+
+<span class="comment-delimiter">(* </span><span class="comment">example instance ------------------------------------------------- </span><span class="comment-delimiter">*)</span>
+
+<span class="governing">open </span><span class="module">Tjr_monad</span>
+<span class="governing">open </span><span class="module">Tjr_monad.Monad</span>
+
+
+<span class="governing">module</span> <span class="module">M</span> <span class="operator">=</span> <span class="governing">struct</span>
+  <span class="governing">open </span><span class="module">Tjr_monad.Imperative_instance</span>
+  <span class="governing">type</span> <span class="type">'a m</span> <span class="operator">=</span> <span class="operator">(</span>'a<span class="operator">,</span>imperative<span class="operator">)</span> <span class="module">Monad.</span>m
+  <span class="governing">let</span> <span class="variable-name">return</span> <span class="operator">=</span> monad_ops.return
+  <span class="governing">let</span> <span class="operator">(</span><span class="variable-name"> </span><span class="operator">&gt;&gt;=</span><span class="variable-name"> </span><span class="operator">)</span> <span class="operator">=</span> monad_ops.bind  
+<span class="governing">end</span>
+
+<span class="governing">module</span> <span class="module">X1</span> <span class="operator">=</span> <span class="operator">(</span><span class="constructor">M</span><span class="operator">:</span><span class="type">M_</span><span class="operator">)</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">Implement the signature required by the Earley code </span><span class="comment-delimiter">*)</span>
+<span class="governing">module</span> <span class="module">S</span> <span class="operator">=</span> <span class="governing">struct</span>
+  <span class="governing">type</span> <span class="type">i_t</span> <span class="operator">=</span> int
+  <span class="governing">type</span> <span class="type">k_t</span> <span class="operator">=</span> int
+  <span class="governing">type</span> <span class="type">j_t</span> <span class="operator">=</span> int
+
+  <span class="comment-delimiter">(* </span><span class="comment">NOTE we need to be able to distinguish nonterminals from terminals </span><span class="comment-delimiter">*)</span>
+  <span class="governing">type</span> <span class="type">nt</span> <span class="operator">=</span> int <span class="comment-delimiter">(* </span><span class="comment">even, say </span><span class="comment-delimiter">*)</span>
+  <span class="governing">type</span> <span class="type">tm</span> <span class="operator">=</span> int <span class="comment-delimiter">(* </span><span class="comment">odd, say </span><span class="comment-delimiter">*)</span>
+  <span class="governing">type</span> <span class="type">sym</span> <span class="operator">=</span> int
+  <span class="governing">let</span> <span class="function-name">even</span><span class="variable-name"> x</span> <span class="operator">=</span> <span class="operator">(</span>x <span class="operator">mod</span> 2 <span class="operator">=</span> 0<span class="operator">)</span>
+  <span class="governing">let</span> <span class="function-name">sym_case</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">nt </span><span class="operator">~</span><span class="variable-name">tm sym</span> <span class="operator">=</span> 
+    <span class="keyword">if</span> even sym <span class="keyword">then</span> nt sym <span class="keyword">else</span> tm sym
+
+  <span class="governing">let</span> <span class="function-name">_NT</span><span class="operator">:</span> <span class="type">nt </span><span class="operator">-&gt;</span><span class="type"> sym </span><span class="operator">=</span> <span class="keyword">fun</span> <span class="variable-name">x</span> <span class="operator">-&gt;</span> x
+
+  <span class="governing">type</span> <span class="type">nt_item</span> <span class="operator">=</span> <span class="operator">{</span> nt<span class="operator">:</span>nt<span class="operator">;</span> i_<span class="operator">:</span>i_t<span class="operator">;</span> k_<span class="operator">:</span>k_t<span class="operator">;</span> bs<span class="operator">:</span>sym list <span class="operator">}</span>
+
+  <span class="comment-delimiter">(* </span><span class="comment">Implement the accessor functions by using simple arithmetic </span><span class="comment-delimiter">*)</span>
+  <span class="governing">let</span> <span class="function-name">dot_nt</span><span class="variable-name"> nitm</span> <span class="operator">=</span> nitm.nt
+  <span class="governing">let</span> <span class="function-name">dot_i</span><span class="variable-name"> nitm</span> <span class="operator">=</span> nitm.i_
+  <span class="governing">let</span> <span class="function-name">dot_k</span><span class="variable-name"> nitm</span> <span class="operator">=</span> nitm.k_
+  <span class="governing">let</span> <span class="function-name">dot_bs</span><span class="variable-name"> nitm</span> <span class="operator">=</span> nitm.bs
+
+  <span class="governing">let</span> <span class="variable-name">cut</span> <span class="operator">:</span> <span class="type">nt_item </span><span class="operator">-&gt;</span><span class="type"> j_t </span><span class="operator">-&gt;</span><span class="type"> nt_item </span><span class="operator">=</span> 
+    <span class="keyword">fun</span> <span class="variable-name">bitm j0</span> <span class="operator">-&gt;</span> 
+      <span class="operator">{</span> bitm <span class="keyword">with</span> k_<span class="operator">=</span>j0<span class="operator">;</span> bs<span class="operator">=(</span><span class="module">List.</span>tl bitm.bs<span class="operator">)}</span>
+  <span class="governing">type</span> <span class="type">cut</span> <span class="operator">=</span> nt_item <span class="operator">-&gt;</span> j_t <span class="operator">-&gt;</span> nt_item
+
+
+  <span class="governing">type</span> <span class="type">nt_item_ops</span> <span class="operator">=</span> <span class="operator">{</span>
+    dot_nt<span class="operator">:</span> nt_item <span class="operator">-&gt;</span> nt<span class="operator">;</span>
+    dot_i<span class="operator">:</span> nt_item <span class="operator">-&gt;</span> i_t<span class="operator">;</span>
+    dot_k<span class="operator">:</span> nt_item <span class="operator">-&gt;</span> k_t<span class="operator">;</span>
+    dot_bs<span class="operator">:</span> nt_item <span class="operator">-&gt;</span> sym list<span class="operator">;</span>
+  <span class="operator">}</span>
+
+  <span class="governing">module</span> <span class="module">Set_nt_item</span> <span class="operator">=</span> <span class="module">Set.Make</span><span class="operator">(</span>
+    <span class="governing">struct</span> 
+      <span class="governing">type</span> <span class="type">t</span> <span class="operator">=</span> nt_item 
+      <span class="governing">let</span> <span class="variable-name">compare</span> <span class="operator">:</span> <span class="type">t </span><span class="operator">-&gt;</span><span class="type"> t </span><span class="operator">-&gt;</span><span class="type"> int </span><span class="operator">=</span><span class="type"> </span><span class="module">Pervasives.</span><span class="type">compare 
+    </span><span class="governing">end</span><span class="operator">)</span>
+  <span class="governing">type</span> <span class="type">nt_item_set</span> <span class="operator">=</span> <span class="module">Set_nt_item.</span>t
+  <span class="governing">let</span> <span class="variable-name">elements</span> <span class="operator">=</span> <span class="module">Set_nt_item.</span>elements
+<span class="governing">end</span>  
+
+<span class="governing">module</span> <span class="module">X2</span> <span class="operator">=</span> <span class="operator">(</span><span class="constructor">S</span><span class="operator">:</span><span class="type">S_</span><span class="operator">)</span>
+
+
+<span class="governing">module</span> <span class="module">State</span> <span class="operator">=</span> <span class="governing">struct</span>
+  <span class="governing">type</span> <span class="type">nt_item</span> <span class="operator">=</span> <span class="module">S.</span>nt_item
+  <span class="governing">type</span> <span class="type">nt_item_set</span> <span class="operator">=</span> <span class="module">S.</span>nt_item_set
+
+  <span class="governing">module</span> <span class="module">Todo_gt_k</span> <span class="operator">=</span> <span class="module">Tjr_map.Map_int</span>
+  <span class="governing">type</span> <span class="type">todo_gt_k</span> <span class="operator">=</span> nt_item_set <span class="module">Todo_gt_k.</span>t
+
+  <span class="governing">module</span> <span class="module">Bitms_at_k</span> <span class="operator">=</span> <span class="module">Map.Make</span><span class="operator">(</span>
+    <span class="governing">struct</span> 
+      <span class="governing">type</span> <span class="type">t</span> <span class="operator">=</span> <span class="module">S.</span>nt
+      <span class="governing">let</span> <span class="variable-name">compare</span><span class="operator">:</span> <span class="type">t </span><span class="operator">-&gt;</span><span class="type"> t </span><span class="operator">-&gt;</span><span class="type"> int </span><span class="operator">=</span><span class="type"> </span><span class="module">Pervasives.</span><span class="type">compare 
+    </span><span class="governing">end</span><span class="operator">)</span>
+  <span class="governing">type</span> <span class="type">bitms_at_k</span> <span class="operator">=</span> nt_item_set <span class="module">Bitms_at_k.</span>t
+
+  <span class="governing">module</span> <span class="module">Bitms_lt_k</span> <span class="operator">=</span> <span class="module">Map.Make</span><span class="operator">(</span>
+    <span class="governing">struct</span> 
+      <span class="governing">type</span> <span class="type">t</span> <span class="operator">=</span> int 
+      <span class="governing">let</span> <span class="variable-name">compare</span><span class="operator">:</span> <span class="type">t </span><span class="operator">-&gt;</span><span class="type"> t </span><span class="operator">-&gt;</span><span class="type"> int </span><span class="operator">=</span><span class="type"> </span><span class="module">Pervasives.</span><span class="type">compare 
+    </span><span class="governing">end</span><span class="operator">)</span>
+  <span class="governing">type</span> <span class="type">bitms_lt_k</span> <span class="operator">=</span> bitms_at_k <span class="module">Bitms_lt_k.</span>t
+      
+  <span class="governing">module</span> <span class="module">Ixk_done</span> <span class="operator">=</span> <span class="module">Set.Make</span><span class="operator">(</span>
+    <span class="governing">struct</span> 
+      <span class="governing">type</span> <span class="type">t</span> <span class="operator">=</span> int <span class="operator">*</span> <span class="module">S.</span>nt 
+      <span class="governing">let</span> <span class="variable-name">compare</span><span class="operator">:</span> <span class="type">t </span><span class="operator">-&gt;</span><span class="type"> t </span><span class="operator">-&gt;</span><span class="type"> int </span><span class="operator">=</span><span class="type"> </span><span class="module">Pervasives.</span><span class="type">compare 
+    </span><span class="governing">end</span><span class="operator">)</span>
+  <span class="governing">type</span> <span class="type">ixk_done</span> <span class="operator">=</span> <span class="module">Ixk_done.</span>t
+
+  <span class="governing">module</span> <span class="module">Ktjs</span> <span class="operator">=</span> <span class="module">Map.Make</span><span class="operator">(</span>
+    <span class="governing">struct</span>
+      <span class="governing">type</span> <span class="type">t</span> <span class="operator">=</span> <span class="module">S.</span>tm                   
+      <span class="governing">let</span> <span class="variable-name">compare</span><span class="operator">:</span> <span class="type">t </span><span class="operator">-&gt;</span><span class="type"> t </span><span class="operator">-&gt;</span><span class="type"> int </span><span class="operator">=</span><span class="type"> </span><span class="module">Pervasives.</span><span class="type">compare 
+    </span><span class="governing">end</span><span class="operator">)</span>
+  <span class="governing">type</span> <span class="type">ktjs</span> <span class="operator">=</span> <span class="module">S.</span>j_t list option <span class="module">Ktjs.</span>t
+
+  <span class="governing">type</span> <span class="type">state</span> <span class="operator">=</span> <span class="operator">{</span>
+    todo<span class="operator">:</span> nt_item list<span class="operator">;</span>
+    todo_done<span class="operator">:</span> nt_item_set<span class="operator">;</span>
+    todo_gt_k<span class="operator">:</span> todo_gt_k<span class="operator">;</span>
+    bitms_lt_k<span class="operator">:</span> bitms_lt_k<span class="operator">;</span>
+    bitms_at_k<span class="operator">:</span> bitms_at_k<span class="operator">;</span>
+    ixk_done<span class="operator">:</span> ixk_done<span class="operator">;</span>
+    ktjs<span class="operator">:</span>ktjs
   <span class="operator">}</span>
 
 
+  <span class="governing">let</span> <span class="function-name">todo_gt_k_find</span><span class="variable-name"> k t</span> <span class="operator">=</span> 
+    <span class="keyword">try</span> 
+      <span class="module">Todo_gt_k.</span>find k t
+    <span class="keyword">with</span> _ <span class="operator">-&gt;</span> <span class="module">S.Set_nt_item.</span>empty
 
-  <span class="governing">let</span> <span class="function-name">run_earley</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">at_ops </span><span class="operator">~</span><span class="variable-name">new_items </span><span class="operator">~</span><span class="variable-name">input </span><span class="operator">~</span><span class="variable-name">parse_tm </span><span class="operator">~</span><span class="variable-name">input_length </span><span class="operator">~</span><span class="variable-name">init_nt</span> <span class="operator">=</span> 
+  <span class="governing">let</span> <span class="variable-name">update_bitms_lt_k</span> <span class="operator">:</span> <span class="type">int </span><span class="operator">-&gt;</span><span class="type"> bitms_at_k </span><span class="operator">-&gt;</span><span class="type"> bitms_lt_k </span><span class="operator">-&gt;</span><span class="type"> bitms_lt_k </span><span class="operator">=</span>
+    <span class="keyword">fun</span> <span class="variable-name">i at lt</span> <span class="operator">-&gt;</span>
+    <span class="module">Bitms_lt_k.</span>add i at lt
 
-    <span class="governing">let</span> <span class="operator">{</span> get_bitms<span class="operator">;</span> add_bitm_at_k<span class="operator">;</span> pop_todo<span class="operator">;</span> add_todos<span class="operator">;</span> add_ixk_done<span class="operator">;</span> mem_ixk_done<span class="operator">;</span> find_ktjs<span class="operator">;</span> add_ktjs <span class="operator">}</span> <span class="operator">=</span> at_ops <span class="governing">in</span>
+  <span class="governing">let</span> <span class="variable-name">empty_bitms_at_k</span> <span class="operator">=</span> <span class="module">Bitms_at_k.</span>empty
 
-    <span class="comment-delimiter">(* </span><span class="comment">step_k ------------------------------------------------------- </span><span class="comment-delimiter">*)</span>
+  <span class="governing">let</span> <span class="variable-name">empty_ixk_done</span> <span class="operator">=</span> <span class="module">Ixk_done.</span>empty
 
-    <span class="governing">let</span> <span class="function-name">is_finished</span><span class="variable-name"> nitm</span> <span class="operator">=</span> nitm<span class="operator">|&gt;</span>dot_bs <span class="operator">=</span> <span class="operator">[</span><span class="operator">]</span> <span class="governing">in</span>
+  <span class="governing">let</span> <span class="variable-name">empty_ktjs</span> <span class="operator">=</span> <span class="module">Ktjs.</span>empty      
 
-    <span class="governing">let</span> <span class="function-name">step_at_k</span><span class="variable-name"> k nitm</span> <span class="operator">=</span> 
-      <span class="keyword">match</span> is_finished nitm <span class="keyword">with</span>
-      <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
-          <span class="governing">let</span> <span class="operator">(</span><span class="variable-name">i</span><span class="operator">,</span><span class="variable-name">x</span><span class="operator">)</span> <span class="operator">=</span> <span class="operator">(</span>nitm<span class="operator">|&gt;</span>dot_i<span class="operator">,</span>nitm<span class="operator">|&gt;</span>dot_nt<span class="operator">)</span> <span class="governing">in</span>
-          mem_ixk_done <span class="operator">(</span>i<span class="operator">,</span>x<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">already_done</span> <span class="operator">-&gt;</span>
-          <span class="keyword">match</span> already_done <span class="keyword">with</span>
-          <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> return <span class="operator">()</span>
-          <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
-              add_ixk_done <span class="operator">(</span>i<span class="operator">,</span>x<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>
-              get_bitms <span class="operator">(</span>i<span class="operator">,</span>x<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">bitms</span> <span class="operator">-&gt;</span>
-              add_todos <span class="operator">(</span><span class="module">List.</span>map <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">bitm</span> <span class="operator">-&gt;</span> cut bitm k<span class="operator">)</span> bitms<span class="operator">)))</span>
-      <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
-          <span class="governing">let</span> <span class="variable-name">bitm</span> <span class="operator">=</span> nitm <span class="governing">in</span>
-          <span class="governing">let</span> <span class="variable-name">s</span> <span class="operator">=</span> <span class="module">List.</span>hd <span class="operator">(</span>bitm<span class="operator">|&gt;</span>dot_bs<span class="operator">)</span> <span class="governing">in</span>
-          s <span class="operator">|&gt;</span> sym_case
-            <span class="constant">~nt</span><span class="operator">:(</span><span class="keyword">fun</span> <span class="variable-name">_Y</span> <span class="operator">-&gt;</span> 
-                get_bitms <span class="operator">(</span>k<span class="operator">,</span>_Y<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">bitms</span> <span class="operator">-&gt;</span>
-                <span class="governing">let</span> <span class="variable-name">bitms_empty</span> <span class="operator">=</span> bitms<span class="operator">=[]</span> <span class="governing">in</span>
-                add_bitm_at_k bitm _Y <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>
-                <span class="keyword">match</span> bitms_empty <span class="keyword">with</span>
-                <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
-                    mem_ixk_done <span class="operator">(</span>k<span class="operator">,</span>_Y<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">function</span>
-                    <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> add_todos <span class="operator">[</span>cut bitm k<span class="operator">]</span>
-                    <span class="operator">|</span> <span class="constant">false</span> <span class="operator">-&gt;</span> return <span class="operator">())</span>
-                <span class="operator">|</span> <span class="constant">true</span> <span class="operator">-&gt;</span> <span class="operator">(</span>
-                    <span class="governing">let</span> <span class="variable-name">itms</span> <span class="operator">=</span> new_items <span class="constant">~nt</span><span class="operator">:</span>_Y <span class="operator">~</span>input <span class="operator">~</span>k <span class="governing">in</span>
-                    add_todos itms<span class="operator">))</span>
-            <span class="constant">~tm</span><span class="operator">:(</span><span class="keyword">fun</span> <span class="variable-name">tm</span> <span class="operator">-&gt;</span>
-                find_ktjs tm <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">ktjs</span> <span class="operator">-&gt;</span>
-                <span class="operator">(</span><span class="keyword">match</span> ktjs <span class="keyword">with</span> 
-                 <span class="operator">|</span> <span class="constructor">None</span> <span class="operator">-&gt;</span> 
-                   <span class="comment-delimiter">(* </span><span class="comment">we need to process kT </span><span class="comment-delimiter">*)</span>
-                   <span class="governing">let</span> <span class="variable-name">js</span> <span class="operator">=</span> parse_tm <span class="operator">~</span>tm <span class="operator">~</span>input <span class="operator">~</span>k <span class="operator">~</span>input_length <span class="governing">in</span>
-                   add_ktjs tm js <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span>
-                   return js
-                 <span class="operator">|</span> <span class="constructor">Some</span> js <span class="operator">-&gt;</span> return js<span class="operator">)</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">js</span> <span class="operator">-&gt;</span>
-                add_todos <span class="operator">(</span><span class="module">List.</span>map <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">j</span> <span class="operator">-&gt;</span> cut bitm j<span class="operator">)</span> js<span class="operator">)))</span>
-    <span class="governing">in</span>
-
-    <span class="comment-delimiter">(* </span><span class="comment">loop_k: loop at k -------------------------------------------- </span><span class="comment-delimiter">*)</span>
-
-    <span class="comment-delimiter">(* </span><span class="comment">FIXME monad syntax may make this easier to read </span><span class="comment-delimiter">*)</span>
-    <span class="governing">let</span> <span class="governing">rec</span> <span class="function-name">loop_at_k</span><span class="variable-name"> k</span> <span class="operator">=</span> 
-      pop_todo <span class="operator">()</span> <span class="operator">&gt;&gt;=</span> <span class="keyword">function</span>
-      <span class="operator">|</span> <span class="constructor">None</span> <span class="operator">-&gt;</span> return <span class="operator">()</span>
-      <span class="operator">|</span> <span class="constructor">Some</span> itm <span class="operator">-&gt;</span> step_at_k k itm <span class="operator">&gt;&gt;=</span> <span class="keyword">fun</span> <span class="variable-name">_</span> <span class="operator">-&gt;</span> loop_at_k k
-    <span class="governing">in</span>
-
-    loop_at_k
-
-  <span class="comment-delimiter">(* </span><span class="comment">FIXME rest of code can be ported to monad also </span><span class="comment-delimiter">*)</span>
-
-
+  <span class="governing">let</span> <span class="variable-name">empty_state</span> <span class="operator">=</span> <span class="operator">{</span>
+    todo<span class="operator">=[];</span>
+    todo_done<span class="operator">=</span><span class="module">S.Set_nt_item.</span>empty<span class="operator">;</span>
+    todo_gt_k<span class="operator">=</span><span class="module">Todo_gt_k.</span>empty<span class="operator">;</span>
+    bitms_lt_k<span class="operator">=</span><span class="module">Bitms_lt_k.</span>empty<span class="operator">;</span>
+    bitms_at_k<span class="operator">=</span>empty_bitms_at_k<span class="operator">;</span>
+    ixk_done<span class="operator">=</span>empty_ixk_done<span class="operator">;</span>
+    ktjs<span class="operator">=</span>empty_ktjs
+  <span class="operator">}</span>
+  
 <span class="governing">end</span>
+
+<span class="governing">module</span> <span class="module">X3</span> <span class="operator">=</span> <span class="operator">(</span><span class="constructor">State</span><span class="operator">:</span><span class="type">STATE</span><span class="operator">)</span>
+
+<span class="governing">module</span> <span class="module">Earley</span> <span class="operator">=</span> <span class="module">Make </span><span class="operator">(</span><span class="module">S</span><span class="operator">)(</span><span class="module">State</span><span class="operator">)(</span><span class="module">M</span><span class="operator">)</span>
+
+<span class="governing">open </span><span class="module">M</span>
+<span class="governing">open </span><span class="module">S</span>
+<span class="governing">open </span><span class="module">State</span>
+
+<span class="governing">open </span><span class="module">Earley</span>
+
+<span class="governing">let</span> <span class="variable-name">to_m</span> <span class="operator">=</span> <span class="module">Imperative_instance.</span>to_m
+
+<span class="governing">let</span> <span class="function-name">run_earley</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">state</span> <span class="operator">=</span>
+  <span class="governing">let</span> <span class="variable-name">s</span> <span class="operator">=</span> state <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">get_bitms_at_k</span> <span class="operator">=</span> <span class="keyword">fun</span> <span class="variable-name">nt</span> <span class="operator">-&gt;</span> 
+    to_m <span class="operator">(</span>
+      <span class="keyword">try</span>
+        <span class="module">Bitms_at_k.</span>find nt <span class="operator">!</span>s.bitms_at_k <span class="operator">|&gt;</span> elements
+      <span class="keyword">with</span> _ <span class="operator">-&gt;</span> <span class="operator">[])</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">get_bitms_lt_k</span> <span class="operator">=</span> <span class="keyword">fun</span> <span class="operator">(</span><span class="variable-name">i</span><span class="operator">,</span><span class="variable-name">x</span><span class="operator">)</span> <span class="operator">-&gt;</span>
+    <span class="operator">(</span>
+      <span class="governing">let</span> <span class="variable-name">bitms</span> <span class="operator">=</span> 
+        <span class="keyword">try</span>
+          <span class="module">Bitms_lt_k.</span>find i <span class="operator">!</span>s.bitms_lt_k
+        <span class="keyword">with</span> _ <span class="operator">-&gt;</span> <span class="module">Bitms_at_k.</span>empty
+      <span class="governing">in</span>
+      <span class="keyword">try</span> 
+        <span class="module">Bitms_at_k.</span>find x bitms
+      <span class="keyword">with</span> _ <span class="operator">-&gt;</span> <span class="module">Set_nt_item.</span>empty<span class="operator">)</span>
+    <span class="operator">|&gt;</span> elements
+    <span class="operator">|&gt;</span> to_m
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">add_bitm_at_k</span> <span class="operator">=</span> <span class="keyword">fun</span> <span class="variable-name">itm nt</span> <span class="operator">-&gt;</span>
+    to_m <span class="operator">(</span>
+      <span class="governing">let</span> <span class="variable-name">s_</span> <span class="operator">=</span> <span class="operator">!</span>s <span class="governing">in</span>
+      <span class="governing">let</span> <span class="variable-name">itms</span> <span class="operator">=</span> 
+        <span class="keyword">try</span> <span class="module">Bitms_at_k.</span>find nt s_.bitms_at_k <span class="keyword">with</span> _ <span class="operator">-&gt;</span> <span class="module">Set_nt_item.</span>empty
+      <span class="governing">in</span>
+      <span class="governing">let</span> <span class="variable-name">itms</span> <span class="operator">=</span> <span class="module">Set_nt_item.</span>add itm itms <span class="governing">in</span>
+      s<span class="operator">:={</span>s_ <span class="keyword">with</span> bitms_at_k<span class="operator">=</span><span class="module">Bitms_at_k.</span>add nt itms s_.bitms_at_k<span class="operator">};</span>
+      <span class="operator">())</span>      
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">pop_todo</span> <span class="operator">=</span> <span class="keyword">fun</span> <span class="operator">()</span> <span class="operator">-&gt;</span>
+    to_m <span class="operator">(</span>
+      <span class="keyword">match</span> <span class="operator">!</span>s.todo <span class="keyword">with</span>
+      <span class="operator">|</span> <span class="operator">[]</span> <span class="operator">-&gt;</span> <span class="constructor">None</span>
+      <span class="operator">|</span> x<span class="operator">::</span>xs <span class="operator">-&gt;</span> 
+        s<span class="operator">:={!</span>s <span class="keyword">with</span> todo<span class="operator">=</span>xs<span class="operator">};</span>
+        <span class="constructor">Some</span> x<span class="operator">)</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">add_todos_at_k</span><span class="variable-name"> itms</span> <span class="operator">=</span> 
+    to_m <span class="operator">(</span>
+      <span class="governing">let</span> <span class="variable-name">todo_done</span> <span class="operator">=</span> <span class="operator">!</span>s.todo_done <span class="governing">in</span>
+      <span class="governing">let</span> <span class="variable-name">itms</span> <span class="operator">=</span> itms <span class="operator">|&gt;</span> <span class="module">List.</span>filter <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">itm</span> <span class="operator">-&gt;</span> <span class="operator">not</span> <span class="operator">(</span><span class="module">Set_nt_item.</span>mem itm todo_done<span class="operator">))</span> <span class="governing">in</span>
+      s<span class="operator">:={!</span>s <span class="keyword">with</span> todo<span class="operator">=</span>itms<span class="operator">@</span> <span class="operator">!</span>s.todo<span class="operator">;</span> 
+                  todo_done<span class="operator">=</span><span class="module">Set_nt_item.</span>union <span class="operator">(</span><span class="module">Set_nt_item.</span>of_list itms<span class="operator">)</span> <span class="operator">(!</span>s.todo_done<span class="operator">)};</span>
+      <span class="operator">())</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">add_todos_gt_k</span><span class="variable-name"> itms</span> <span class="operator">=</span> 
+    to_m <span class="operator">(</span>
+      itms <span class="operator">|&gt;</span> <span class="module">List.</span>iter <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">itm</span> <span class="operator">-&gt;</span>
+          <span class="governing">let</span> <span class="variable-name">todo_gt_k</span> <span class="operator">=</span> <span class="operator">!</span>s.todo_gt_k <span class="governing">in</span>
+          <span class="governing">let</span> <span class="variable-name">k'</span> <span class="operator">=</span> itm.k_ <span class="governing">i</span><span class="governing">n</span> 
+          <span class="governing">let</span> <span class="variable-name">set</span> <span class="operator">=</span> 
+            <span class="keyword">try</span> 
+              <span class="module">Todo_gt_k.</span>find k' todo_gt_k
+            <span class="keyword">with</span> _ <span class="operator">-&gt;</span> <span class="module">Set_nt_item.</span>empty
+          <span class="governing">in</span>
+          <span class="governing">let</span> <span class="variable-name">set</span> <span class="operator">=</span> <span class="module">Set_nt_item.</span>add itm set <span class="governing">in</span>
+          <span class="governing">let</span> <span class="variable-name">todo_gt_k</span> <span class="operator">=</span> <span class="module">Todo_gt_k.</span>add k' set todo_gt_k <span class="governing">in</span>
+          s<span class="operator">:={!</span>s <span class="keyword">with</span> todo_gt_k<span class="operator">});</span>
+      <span class="operator">())</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">add_ixk_done</span><span class="variable-name"> </span><span class="operator">(</span><span class="variable-name">i</span><span class="operator">,</span><span class="variable-name">x</span><span class="operator">)</span> <span class="operator">=</span>
+    to_m <span class="operator">(</span>
+      s<span class="operator">:={!</span>s <span class="keyword">with</span> ixk_done<span class="operator">=</span><span class="module">Ixk_done.</span>add <span class="operator">(</span>i<span class="operator">,</span>x<span class="operator">)</span> <span class="operator">!</span>s.ixk_done<span class="operator">};</span>
+      <span class="operator">())</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">mem_ixk_done</span><span class="variable-name"> </span><span class="operator">(</span><span class="variable-name">i</span><span class="operator">,</span><span class="variable-name">x</span><span class="operator">)</span> <span class="operator">=</span>
+    to_m <span class="operator">(</span>
+      <span class="module">Ixk_done.</span>mem <span class="operator">(</span>i<span class="operator">,</span>x<span class="operator">)</span> <span class="operator">!</span>s.ixk_done<span class="operator">)</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">find_ktjs</span><span class="variable-name"> tm</span> <span class="operator">=</span> 
+    to_m <span class="operator">(</span>
+      <span class="keyword">try</span>
+        <span class="module">Ktjs.</span>find tm <span class="operator">!</span>s.ktjs
+      <span class="keyword">with</span> _ <span class="operator">-&gt;</span> <span class="constructor">None</span><span class="operator">)</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">add_ktjs</span><span class="variable-name"> tm ints</span> <span class="operator">=</span> 
+    to_m <span class="operator">(</span>
+      s<span class="operator">:={!</span>s <span class="keyword">with</span> ktjs<span class="operator">=</span><span class="module">Ktjs.</span>add tm <span class="operator">(</span><span class="constructor">Some</span> ints<span class="operator">)</span> <span class="operator">!</span>s.ktjs<span class="operator">})</span>
+  <span class="governing">in</span>
+  <span class="governing">let</span> <span class="function-name">with_state</span><span class="variable-name"> f</span> <span class="operator">=</span>
+    to_m <span class="operator">(</span>
+      s<span class="operator">:=</span>f <span class="operator">!</span>s<span class="operator">)</span>
+  <span class="governing">in</span>
+
+  <span class="governing">let</span> <span class="variable-name">at_ops</span> <span class="operator">=</span> <span class="operator">{</span>
+    get_bitms_at_k<span class="operator">;</span>
+    get_bitms_lt_k<span class="operator">;</span>
+    add_bitm_at_k<span class="operator">;</span>
+    pop_todo<span class="operator">;</span>
+    add_todos_at_k<span class="operator">;</span>
+    add_todos_gt_k<span class="operator">;</span>
+    add_ixk_done<span class="operator">;</span>
+    mem_ixk_done<span class="operator">;</span>
+    find_ktjs<span class="operator">;</span>
+    add_ktjs<span class="operator">;</span>
+    with_state
+  <span class="operator">}</span>
+  <span class="governing">in</span>
+
+  run_earley <span class="operator">~</span>at_ops
+
+<span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">:</span><span class="type">
+</span><span class="constant">state</span><span class="operator">:</span><span class="module">State.</span><span class="type">state </span><span class="builtin">ref</span><span class="type"> </span><span class="operator">-&gt;</span><span class="type">
+</span><span class="constant">new_items</span><span class="operator">:(</span><span class="type">nt</span><span class="operator">:</span><span class="module">S.</span><span class="type">nt </span><span class="operator">-&gt;</span><span class="type"> </span><span class="constant">input</span><span class="operator">:</span><span class="type">'a </span><span class="operator">-&gt;</span><span class="type"> </span><span class="constant">k</span><span class="operator">:</span><span class="module">S.</span><span class="type">j_t </span><span class="operator">-&gt;</span><span class="type"> </span><span class="module">S.</span><span class="type">nt_item list</span><span class="operator">)</span><span class="type"> </span><span class="operator">-&gt;</span><span class="type">
+</span><span class="constant">input</span><span class="operator">:</span><span class="type">'a </span><span class="operator">-&gt;</span><span class="type">
+</span><span class="constant">parse_tm</span><span class="operator">:(</span><span class="type">tm</span><span class="operator">:</span><span class="module">S.</span><span class="type">tm </span><span class="operator">-&gt;</span><span class="type"> </span><span class="constant">input</span><span class="operator">:</span><span class="type">'a </span><span class="operator">-&gt;</span><span class="type"> </span><span class="constant">k</span><span class="operator">:</span><span class="module">S.</span><span class="type">j_t </span><span class="operator">-&gt;</span><span class="type"> </span><span class="constant">input_length</span><span class="operator">:</span><span class="module">S.</span><span class="type">j_t </span><span class="operator">-&gt;</span><span class="type"> </span><span class="module">S.</span><span class="type">j_t list</span><span class="operator">)</span><span class="type"> </span><span class="operator">-&gt;</span><span class="type">
+</span><span class="constant">input_length</span><span class="operator">:</span><span class="module">S.</span><span class="type">j_t </span><span class="operator">-&gt;</span><span class="type"> unit </span><span class="module">M.</span><span class="type">m
+</span><span class="operator">=</span> run_earley
+
+
+
+
+<span class="comment-delimiter">(* </span><span class="comment">Encode nonterminals and terminals as ints; nts are even; tms are
+   odd </span><span class="comment-delimiter">*)</span>
+
+<span class="governing">let</span> <span class="variable-name">_E</span> <span class="operator">=</span> 0
+<span class="governing">let</span> <span class="variable-name">eps</span> <span class="operator">=</span> 1
+<span class="governing">let</span> <span class="variable-name">_1</span> <span class="operator">=</span> 3
+
+<span class="comment-delimiter">(* </span><span class="comment">Encode the grammar E -&gt; E E E | &quot;1&quot; | eps </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="variable-name">rhss</span> <span class="operator">=</span> <span class="operator">[</span> <span class="operator">[</span>_E<span class="operator">;</span>_E<span class="operator">;</span>_E<span class="operator">];</span> <span class="operator">[</span>_1<span class="operator">];</span> <span class="operator">[</span>eps<span class="operator">]</span> <span class="operator">]</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">Provide a function that produces new items, given a nonterminal and
+   an input position k </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="function-name">new_items</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">nt </span><span class="operator">~</span><span class="variable-name">input </span><span class="operator">~</span><span class="variable-name">k</span> <span class="operator">=</span> <span class="keyword">match</span> <span class="operator">()</span> <span class="keyword">with</span>
+  <span class="operator">|</span> _ <span class="keyword">when</span> nt <span class="operator">=</span> _E <span class="operator">-&gt;</span> 
+    <span class="comment-delimiter">(* </span><span class="comment">print_endline __LOC__; </span><span class="comment-delimiter">*)</span>
+    rhss   <span class="comment-delimiter">(* </span><span class="comment">E -&gt; E E E | &quot;1&quot; | eps </span><span class="comment-delimiter">*)</span>
+    <span class="operator">|&gt;</span> <span class="module">List.</span>map <span class="operator">(</span><span class="keyword">fun</span> <span class="variable-name">bs</span> <span class="operator">-&gt;</span> <span class="operator">{</span> nt<span class="operator">;</span> i_<span class="operator">=</span>k<span class="operator">;</span> k_<span class="operator">=</span>k<span class="operator">;</span> bs<span class="operator">})</span>
+  <span class="operator">|</span> _ <span class="operator">-&gt;</span> <span class="builtin">failwith</span> __LOC__
+
+<span class="comment-delimiter">(* </span><span class="comment">Example input; use command line argument </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="variable-name">input</span> <span class="operator">=</span> <span class="module">String.</span>make <span class="operator">(</span><span class="module">Sys.</span>argv.<span class="operator">(</span>1<span class="operator">)</span> <span class="operator">|&gt;</span> int_of_string<span class="operator">)</span> <span class="string">'</span><span class="string">1</span><span class="string">'</span>
+
+<span class="comment-delimiter">(* </span><span class="comment">Provide a function that details how to parse terminals at a given
+   position k in the input </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="function-name">parse_tm</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">tm </span><span class="operator">~</span><span class="variable-name">input </span><span class="operator">~</span><span class="variable-name">k </span><span class="operator">~</span><span class="variable-name">input_length</span> <span class="operator">=</span> 
+  <span class="keyword">match</span> <span class="operator">()</span> <span class="keyword">with</span>
+  <span class="operator">|</span> _ <span class="keyword">when</span> tm <span class="operator">=</span> eps <span class="operator">-&gt;</span> <span class="operator">[</span>k<span class="operator">]</span>
+  <span class="operator">|</span> _ <span class="keyword">when</span> tm <span class="operator">=</span> _1 <span class="operator">-&gt;</span> 
+    <span class="comment-delimiter">(* </span><span class="comment">print_endline (string_of_int k); </span><span class="comment-delimiter">*)</span>
+    <span class="keyword">if</span> <span class="module">String.</span>get input k <span class="operator">=</span> <span class="string">'</span><span class="string">1</span><span class="string">'</span> <span class="keyword">then</span> <span class="operator">[</span>k<span class="operator">+</span>1<span class="operator">]</span> <span class="keyword">else</span> <span class="operator">[]</span>
+  <span class="operator">|</span> _ <span class="operator">-&gt;</span> <span class="builtin">failwith</span> __LOC__
+
+<span class="governing">let</span> <span class="variable-name">input_length</span> <span class="operator">=</span> <span class="module">String.</span>length input
+
+<span class="comment-delimiter">(* </span><span class="comment">Initial nonterminal </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="variable-name">init_nt</span> <span class="operator">=</span> _E
+
+<span class="comment-delimiter">(* </span><span class="comment">E -&gt; E </span><span class="comment-delimiter">*)</span>
+<span class="governing">let</span> <span class="variable-name">state</span> <span class="operator">=</span> 
+  <span class="governing">let</span> <span class="variable-name">todo</span> <span class="operator">=</span> <span class="operator">[{</span>nt<span class="operator">=</span>_E<span class="operator">;</span>i_<span class="operator">=</span>0<span class="operator">;</span>k_<span class="operator">=</span>0<span class="operator">;</span>bs<span class="operator">=[</span>_E<span class="operator">]}</span><span class="operator">]</span> <span class="governing">in</span>
+  <span class="builtin">ref</span> <span class="operator">{</span> <span class="module">State.</span>empty_state <span class="keyword">with</span> todo <span class="operator">}</span>
+
+<span class="governing">let</span> <span class="operator">()</span> <span class="operator">=</span> 
+  run_earley 
+    <span class="operator">~</span>state
+    <span class="operator">~</span>new_items
+    <span class="operator">~</span>input
+    <span class="operator">~</span>parse_tm
+    <span class="operator">~</span>input_length <span class="operator">|&gt;</span> <span class="module">Imperative_instance.</span>from_m
+
+<span class="comment-delimiter">(* </span><span class="comment">result is the final state </span><span class="comment-delimiter">*)</span>
+
+
+
+
+<span class="comment-delimiter">(*  </span><span class="comment">
+</span><span class="comment">time ./a.out 400</span><span class="comment">
+</span><span class="comment">
+real	0m6.166s
+user	0m6.156s
+sys	0m0.012s
+</span><span class="comment">
+very similar to simple_test.native
+
+</span><span class="comment-delimiter">*)</span>
 </pre>
 
  </body>

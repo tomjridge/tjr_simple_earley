@@ -92,60 +92,106 @@ struct
   let is_finished nitm = nitm|>dot_bs = [] 
 
 
+
+(* 
+
+Explanation of step_at_k code which follows:
+
+The basic Earley step is:
+
+X -> i as k',S bs     k' S k
+----------------------------
+X -> i as S k bs
+
+In the code, there are labels of the form (*:am:*). The following
+discussion is indexed by these labels
+
+- af: 
+  - the item nitm is complete, ie of the form Y -> i,as,k',[]
+  - aj: has (k',Y,k) been encountered before? if so, do nothing
+  - am: if not encountered before, k' Y k is cut with blocked X ->
+    ... and new todo items are added
+
+- ax: 
+  - item is not complete
+
+- ax/ce: 
+  - S is nonterm Y
+  - add bitm to blocked items at (k,Y)
+  - check if we have seen (k,Y) before (bitms_empty)
+  - co: if we have, check if k Y k; cut bitm with k Y k if so
+  - cw: if we haven't, generate new items from (k,Y)
+
+- ax/ec:
+  - S is terminal tm
+  - attempt to retrieve (k,tm,j) set from ktjs
+  - ek: if we haven't already met (k,tm) then parse (k,tm), update
+    ktjs and pass on js
+  - otherwise, just reuse js from previously
+  - ey: given the set of js (which are all >= k)
+  - partition into >k, and =k
+  - for j > k, cut bitm with j, and add to todos
+  - if k is in js (ie tm matched the empty string) cut bitm with k
+
+*)
+
   let run_earley ~at_ops ~new_items ~input ~parse_tm ~input_length = 
     begin
 
-      let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo; add_todos_at_k; add_todos_gt_k; add_ixk_done; mem_ixk_done; find_ktjs; add_ktjs; with_state } = at_ops in
+      let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo; add_todos_at_k; add_todos_gt_k; 
+            add_ixk_done; mem_ixk_done; find_ktjs; add_ktjs; with_state } = at_ops 
+      in
 
+      (* NOTE there is an explanation of this code below *)
       let step_at_k k nitm = 
         let get_bitms (i,x) =
           if i=k then get_bitms_at_k x else
             get_bitms_lt_k (i,x)
         in
 
-        match is_finished nitm with
-        | true -> (
-            let (i,x) = (nitm|>dot_i,nitm|>dot_nt) in
-            mem_ixk_done (i,x) >>= fun already_done ->
-            match already_done with
-            | true -> return ()
-            | false -> (
-                add_ixk_done (i,x) >>= fun _ ->
-                get_bitms (i,x) >>= fun bitms ->
+        match is_finished nitm with 
+        | true -> (                                               (*:af:*)
+            let (k',_Y) = (nitm|>dot_i,nitm|>dot_nt) in  
+            mem_ixk_done (k',_Y) >>= fun already_done ->          (*:aj:*)
+            match already_done with     
+            | true -> return ()                                   (*:al:*)
+            | false -> (                                          (*:am:*)
+                add_ixk_done (k',_Y) >>= fun _ ->                   
+                get_bitms (k',_Y) >>= fun bitms ->                  
                 add_todos_at_k (List.map (fun bitm -> cut bitm k) bitms)))
-        | false -> (
-            let bitm = nitm in
-            let s = List.hd (bitm|>dot_bs) in
-            s |> sym_case
-              ~nt:(fun _Y -> 
-                  get_bitms_at_k _Y >>= fun bitms ->
-                  let bitms_empty = bitms=[] in
-                  add_bitm_at_k bitm _Y >>= fun _ ->
-                  match bitms_empty with
-                  | false -> (
-                      mem_ixk_done (k,_Y) >>= function
-                      | true -> add_todos_at_k [cut bitm k]
-                      | false -> return ())
-                  | true -> (
+        | false -> (                                              (*:ax:*)
+            let bitm = nitm in   
+            let s = List.hd (bitm|>dot_bs) in 
+            s |> sym_case  
+              ~nt:(fun _Y ->                                      (*:ce:*)
+                  get_bitms_at_k _Y >>= fun bitms ->     
+                  let bitms_empty = bitms=[] in     
+                  add_bitm_at_k bitm _Y >>= fun _ ->     
+                  match bitms_empty with  
+                  | false -> (                                    (*:co:*)
+                      mem_ixk_done (k,_Y) >>= function    
+                      | true -> add_todos_at_k [cut bitm k] 
+                      | false -> return ())    
+                  | true -> (                                     (*:cw:*)
                       let itms = new_items ~nt:_Y ~input ~k in
-                      add_todos_at_k itms))
-              ~tm:(fun tm ->
-                  find_ktjs tm >>= fun ktjs ->
-                  (match ktjs with 
-                   | None -> 
-                     (* we need to process kT *)
-                     let js = parse_tm ~tm ~input ~k ~input_length in
-                     add_ktjs tm js >>= fun _ ->
-                     return js
-                   | Some js -> return js) >>= fun js ->
-                  (* there may be a k in js, in which case we have a
+                      add_todos_at_k itms))  
+              ~tm:(fun tm ->                                      (*:ec:*)
+                  find_ktjs tm >>= fun ktjs ->     
+                  (match ktjs with
+                   | None ->      
+                     (* we need to process kT *)                  (*:ek:*)
+                     let js = parse_tm ~tm ~input ~k ~input_length in 
+                     add_ktjs tm js >>= fun _ ->  
+                     return js 
+                   | Some js -> return js) >>= fun js -> 
+                  (* there may be a k in js, in which case we have a 
                      new todo at the current stage *)
-                  let (xs,js) = List.partition (fun j -> j=k) js in
+                  let (xs,js) = List.partition (fun j -> j=k) js in (*:ey:*)
                   add_todos_gt_k (List.map (fun j -> cut bitm j) js) >>= fun _ ->
-                  match xs with
-                  | [] -> return ()
+                  match xs with                                   (*:em:*)
+                  | [] -> return ()     
                   | _ -> add_todos_at_k [cut bitm k]))
-      in
+      in 
 
 
       (* FIXME monad syntax may make this easier to read *)
@@ -191,6 +237,7 @@ struct
     end (* run_earley *)
 
 end
+
 
 
 (* example instance ------------------------------------------------- *)
