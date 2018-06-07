@@ -4,6 +4,8 @@
 
 // FIXME \toc // FIXME or pass through to raw latex?
 
+// FIXME this should be updated to match the experimental code which is shorter
+
 \section(Introduction) // --------------------------------------------------
 
 This is a version of Earley's algorithm which was essentially derived
