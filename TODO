@@ -1,0 +1,11 @@
+-*- org -*-
+
+Todo:
+
+- use experimental version with "efficient" src/bin/test.ml
+  datastructures
+- export results 
+- combine with a p1-like action phase
+- integrate with p1_extra/parsing_dsl2
+- for performance, combine earley with top-down recursive parsing of
+  block structure
