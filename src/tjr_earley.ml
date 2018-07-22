@@ -87,8 +87,8 @@ module type S_ = sig
   type nt_item_ops = {
     dot_nt: nt_item -> nt;
     dot_i: nt_item -> i_t;
-    dot_k: nt_item -> k_t;
-    dot_bs: nt_item -> sym list;
+    dot_k: nt_item -> k_t;  (* FIXME we don't need this - already have k info at use points *)
+    dot_bs: nt_item -> sym list;  (* FIXME only need to check empty and get head *)
   }
 
   (*:mp:*)
