@@ -9,3 +9,6 @@ Todo:
 - integrate with p1_extra/parsing_dsl2
 - for performance, combine earley with top-down recursive parsing of
   block structure
+- test.ml: use a hashmap to hashset for implementation of sets of items
+- think about using eg roaring bitsets/maps for efficient
+  implementation of sets of integers

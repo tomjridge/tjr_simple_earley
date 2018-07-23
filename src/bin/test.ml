@@ -165,7 +165,9 @@ module S = struct
   }
 
   (* The rest of the code is straightforward *)
-                      
+
+  (* FIXME better to represent sets of items as a hashmap from i to
+     (X,i,bs) since then O(1) operations *)
   module Set_nt_item = Set.Make(
     struct type t = nt_item let compare : t -> t -> int = Pervasives.compare end)
   type nt_item_set = Set_nt_item.t
