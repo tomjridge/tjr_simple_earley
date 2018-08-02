@@ -1,0 +1,2 @@
+After parsing using Earley, we want to apply actions. We follow a
+p1-style combinator parsing approach.

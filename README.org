@@ -10,8 +10,6 @@ the examples, check the code out from github, cd to src/bin, and make.
 
 ** Documentation
 
-# assert(repo_name=tjr_simple_earley) and below
-
 On github, to preview the documented code, try 
 http://tomjridge.github.io/tjr_simple_earley
 
@@ -66,5 +64,7 @@ real	0m2.491s
 user	0m2.484s
 sys	0m0.004s
 #+END_SRC
+
+
 
 
