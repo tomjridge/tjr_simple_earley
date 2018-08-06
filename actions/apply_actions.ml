@@ -3,7 +3,7 @@
 We are given:
 
 - types for terminals and nonterms (nonterms likely ints, but we shouldn't assume this)
-- for nts, a *function* that takes an nt and provides the rhs for the rule
+- for nts, a *function* that takes an nt and provides the rhss for the rules
 - for a given nonterminal X appearing as part of the rhs of a rule st
 
    Y -> i alpha X j beta  
@@ -36,7 +36,7 @@ module type REQUIRES = sig
 
   type 'a elt
 
-  val elt_case: 'a elt -> nt:('a tm -> 'b) -> tm:('a tm -> 'b) -> 'b
+  val elt_case: nt:('a nt -> 'b) -> tm:('a tm -> 'b) -> 'a elt -> 'b
 
   type 'z rhs = 
     | Rhs1: 'a elt * ('a -> 'z) -> 'z rhs
@@ -52,6 +52,10 @@ module type REQUIRES = sig
 
   type nt_ops = {
     expand: 'a. 'a nt -> 'a rhs list
+  }
+
+  type oracle_ops = {
+    cut: 'a. int -> 'a nt -> int -> int
   }
 
 end
@@ -71,5 +75,67 @@ combines each with the values returned from recursive call on (k,S,j), and
 merges the results
 
 *)
+
+
+  type rec_calls = {
+    exec_nt: 'a. int -> int -> 'a nt -> 'a list;
+    exec_rhs: 'a. int -> int -> 'a rhs -> 'a list
+  }
+
+  (* split a rhs into last elt, and prefix *)
+  let split_rhs = 
+    let id = fun x -> x in
+    function
+    | Rhs1(_,_) -> failwith __LOC__
+    | Rhs2((e1,e2),f) -> (Rhs1(e1,id),f,e2)  (* FIXME note that this won't work - id is from an existential tyvar *)
+
+  let execute ~oracle_ops ~nt_ops ~rec_calls =
+    let exec_nt i j =
+      let f : 'a nt -> 'a list = fun _X ->
+        let rhss = nt_ops.expand _X in
+        rhss |> List.map (fun rhs -> rec_calls.exec_rhs i j rhs) |> List.concat
+      in
+      f
+    and exec_rhs i j = 
+      (* this is where we need to identify the last sym *)
+      failwith ""
+    and exec_rhs' i j = 
+      let exec_rhs = rec_calls.exec_rhs in
+      let f : 'a rhs -> 'a list = function
+        | Rhs1 (_Y,f) -> (_Y |> elt_case 
+                            ~nt:(fun _Y -> rec_calls.exec_nt i j _Y)
+                            ~tm:(fun _ -> failwith "") |> List.map f)
+        | Rhs2((e1,e2),f) -> 
+          (* FIXME for the following we need to cut the range using the oracle *)
+          exec_rhs i j (Rhs1(e1,fun x -> x)) |> fun xs ->
+          exec_rhs i j (Rhs1(e2,fun x -> x)) |> fun ys ->
+          List.map2 (fun x y -> f(x,y)) xs ys
+        | Rhs3((e1,e2,e),f) ->
+          exec_rhs i j (Rhs2((e1,e2),fun x -> x)) |> fun xs ->
+          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
+          List.map2 (fun (x1,x2) y -> f(x1,x2,y)) xs ys
+        | Rhs4((e1,e2,e3,e),f) ->
+          exec_rhs i j (Rhs3((e1,e2,e3),fun x -> x)) |> fun xs ->
+          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
+          List.map2 (fun (x1,x2,x3) y -> f(x1,x2,x3,y)) xs ys
+        | Rhs5((e1,e2,e3,e4,e),f) ->
+          exec_rhs i j (Rhs4((e1,e2,e3,e4),fun x -> x)) |> fun xs ->
+          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
+          List.map2 (fun (x1,x2,x3,x4) y -> f(x1,x2,x3,x4,y)) xs ys
+        | Rhs6((e1,e2,e3,e4,e5,e),f) ->
+          exec_rhs i j (Rhs5((e1,e2,e3,e4,e5),fun x -> x)) |> fun xs ->
+          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
+          List.map2 (fun (x1,x2,x3,x4,x5) y -> f(x1,x2,x3,x4,x5,y)) xs ys
+        | Rhs7((e1,e2,e3,e4,e5,e6,e),f) ->
+          exec_rhs i j (Rhs6((e1,e2,e3,e4,e5,e6),fun x -> x)) |> fun xs ->
+          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
+          List.map2 (fun (x1,x2,x3,x4,x5,x6) y -> f(x1,x2,x3,x4,x5,x6,y)) xs ys
+
+      in  
+      f
+    in
+    exec_nt
+
+
 
 end
