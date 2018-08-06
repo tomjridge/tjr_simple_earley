@@ -16,6 +16,9 @@ We are given:
 
   Other choices for the parse info are possible here, since we know a lot more about how the rhs matched - FIXME think about what the *right* choice is
 
+  Another (better? at least it fits better with terminal parsers) is to work forwards from i, ie the oracle takes (i,X,j) and produces k such that (i,X,k) and j <= j
+
+
 - for each rhs, we are also given an action to apply
 
 - for the rhs, at the moment we assume the implementation is via gadt as in p1_extra/parsing_dsl2.ml, but with elts either tm or nt
@@ -54,8 +57,9 @@ module type REQUIRES = sig
     expand: 'a. 'a nt -> 'a rhs list
   }
 
+  (* FIXME perhaps we want to take 'a elt ? *)
   type oracle_ops = {
-    cut: 'a. int -> 'a nt -> int -> int
+    cut: 'a. int -> 'a elt -> int -> int list  (* NOTE this takes i,E,j and produces k such that k <= j and i,E,k *)
   }
 
 end
@@ -82,12 +86,16 @@ merges the results
     exec_rhs: 'a. int -> int -> 'a rhs -> 'a list
   }
 
-  (* split a rhs into last elt, and prefix *)
-  let split_rhs = 
-    let id = fun x -> x in
-    function
-    | Rhs1(_,_) -> failwith __LOC__
-    | Rhs2((e1,e2),f) -> (Rhs1(e1,id),f,e2)  (* FIXME note that this won't work - id is from an existential tyvar *)
+
+(*
+
+FIXME the GADT types are not buying much and are rather inflexible. Is
+there anyway to get almost-as-good typing without using GADTs?
+
+*)
+
+  let is_nt nt = true
+  let dest_nt nt = failwith ""
 
   let execute ~oracle_ops ~nt_ops ~rec_calls =
     let exec_nt i j =
@@ -96,20 +104,28 @@ merges the results
         rhss |> List.map (fun rhs -> rec_calls.exec_rhs i j rhs) |> List.concat
       in
       f
-    and exec_rhs i j = 
-      (* this is where we need to identify the last sym *)
+    in
+    let exec_rhs i j = 
+      (* this is where we need to identify the first sym and recurse *)
       failwith ""
-    and exec_rhs' i j = 
-      let exec_rhs = rec_calls.exec_rhs in
-      let f : 'a rhs -> 'a list = function
-        | Rhs1 (_Y,f) -> (_Y |> elt_case 
+    in 
+    let exec_rhs1 i j _Y f = (_Y |> elt_case 
                             ~nt:(fun _Y -> rec_calls.exec_nt i j _Y)
                             ~tm:(fun _ -> failwith "") |> List.map f)
-        | Rhs2((e1,e2),f) -> 
-          (* FIXME for the following we need to cut the range using the oracle *)
-          exec_rhs i j (Rhs1(e1,fun x -> x)) |> fun xs ->
-          exec_rhs i j (Rhs1(e2,fun x -> x)) |> fun ys ->
-          List.map2 (fun x y -> f(x,y)) xs ys
+    in
+    let exec_rhs' i j = 
+      let exec_rhs = rec_calls.exec_rhs in
+      let f : 'a rhs -> 'a list = function
+        | Rhs1 (_Y,f) -> exec_rhs1 i j _Y f
+        | Rhs2((e1,e2),f) when is_nt e2 -> 
+          let e2 = dest_nt e2 in
+          oracle_ops.cut i e2 j 
+          |> List.map (fun k -> 
+              (* FIXME for the following we need to cut the range using the oracle *)
+              exec_rhs i k (Rhs1(e1,fun x -> x)) |> fun xs ->
+              exec_rhs k j (Rhs1(e2,fun x -> x)) |> fun ys ->
+              List.map2 (fun x y -> f(x,y)) xs ys)
+          |> List.concat
         | Rhs3((e1,e2,e),f) ->
           exec_rhs i j (Rhs2((e1,e2),fun x -> x)) |> fun xs ->
           exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
