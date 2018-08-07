@@ -25,39 +25,65 @@ We are given:
 
 *)
 
+(* inefficient? *)
+let all_pairs f xs ys = 
+  xs |> List.rev_map f
+  |> List.rev_map (fun fx -> List.map fx ys)
+  |> List.concat
+
+let _ = all_pairs
+
+
+
+type 'unt ctxt = C_empty | C of int * int * 'unt list  (* really set *)
+
+let ctxt_contains ~nt2u ~ctxt (i,_X,j) = 
+  match ctxt with
+  | C_empty -> false
+  | C (i',j',nts) -> (i,j) = (i',j') && List.mem (nt2u _X) nts
+
+let ctxt_add ~nt2u ~ctxt (i,_X,j) =
+  let _X = nt2u _X in
+  match ctxt with
+  | C_empty -> C(i,j,[_X])
+  | C (i',j',nts) ->
+    assert(i'<=i&& j<=j');
+    match (i,j) = (i',j') with
+    | true -> (
+        assert(not (List.mem _X nts));
+        C (i',j',_X::nts))
+    | false -> C (i,j,[_X])
+
+
+
 module type REQUIRES = sig
 
   type 'a nt
 
+  type untyped_nt  (* needed for the p1 context *)
+
+  val nt2u : 'a nt -> untyped_nt
+
   type 'a tm
 
-  type input
-
   type tm_ops = {
-    parse_tm: 'a. 'a tm -> int -> input -> (int*'a) list
+    parse_tm: 'a. 'a tm -> int -> int -> 'a list  (* takes i,j and returns vs *)
   }
 
   type 'a elt
 
   val elt_case: nt:('a nt -> 'b) -> tm:('a tm -> 'b) -> 'a elt -> 'b
 
-  type 'z rhs = 
-    | Rhs1: 'a elt * ('a -> 'z) -> 'z rhs
-    | Rhs2: ('a elt * 'b elt) * ('a * 'b -> 'z) -> 'z rhs
-    | Rhs3: ('a elt * 'b elt * 'c elt) * ('a * 'b * 'c -> 'z) -> 'z rhs
-    | Rhs4: ('a elt * 'b elt * 'c elt * 'd elt) * ('a * 'b * 'c * 'd -> 'z) -> 'z rhs
-    | Rhs5: ('a elt * 'b elt * 'c elt * 'd elt * 'e elt) * 
-            ('a * 'b * 'c * 'd * 'e -> 'z) -> 'z rhs
-    | Rhs6: ('a elt * 'b elt * 'c elt * 'd elt * 'e elt * 'f elt) * 
-            ('a * 'b * 'c * 'd * 'e * 'f -> 'z) -> 'z rhs
-    | Rhs7: ('a elt * 'b elt * 'c elt * 'd elt * 'e elt * 'f elt * 'g elt) * 
-            ('a * 'b * 'c * 'd * 'e * 'f * 'g -> 'z) -> 'z rhs
+
+  (* fix a type for elts *)
+  type _a
+
+  type 'z rhs = Rhs of _a elt list * (_a list -> 'z)
 
   type nt_ops = {
     expand: 'a. 'a nt -> 'a rhs list
   }
 
-  (* FIXME perhaps we want to take 'a elt ? *)
   type oracle_ops = {
     cut: 'a. int -> 'a elt -> int -> int list  (* NOTE this takes i,E,j and produces k such that k <= j and i,E,k *)
   }
@@ -69,89 +95,161 @@ module Make(Requires:REQUIRES) = struct
 
   open Requires
 
-  (* 
+(* 
 
 For nonterminals X: the executor takes a range i,j; it calls expand to
-get the rhss, then for each rhs (not Rhs1!) it looks at the last sym S
+get the rhss, then for each rhs it looks at the first sym S
 and calls the oracle on i,S,j; the ks are returned and then it
-recursively calls itself on the prefix of the rhs, gets the results,
+recursively calls itself on the remainder of the rhs, gets the results,
 combines each with the values returned from recursive call on (k,S,j), and
 merges the results
 
 *)
 
 
+  type nonrec ctxt = untyped_nt ctxt
+
   type rec_calls = {
-    exec_nt: 'a. int -> int -> 'a nt -> 'a list;
-    exec_rhs: 'a. int -> int -> 'a rhs -> 'a list
+    exec_nt_elt:  'a. ctxt -> int -> int -> 'a nt -> 'a list;  (* provide to users *)
+    exec_rhs: 'a. ctxt -> int -> int -> 'a rhs -> 'a list
   }
 
-
-(*
-
-FIXME the GADT types are not buying much and are rather inflexible. Is
-there anyway to get almost-as-good typing without using GADTs?
-
-*)
-
-  let is_nt nt = true
-  let dest_nt nt = failwith ""
-
-  let execute ~oracle_ops ~nt_ops ~rec_calls =
-    let exec_nt i j =
-      let f : 'a nt -> 'a list = fun _X ->
+  let execute ~rec_calls ~oracle_ops ~tm_ops ~nt_ops =
+    (* results for i,_X,j *)
+    let exec_nt_elt ctxt i j _X =
+      match ctxt_contains ~nt2u ~ctxt (i,_X,j) with
+      | true -> []
+      | false -> 
+        let ctxt = ctxt_add ~nt2u ~ctxt (i,_X,j) in
         let rhss = nt_ops.expand _X in
-        rhss |> List.map (fun rhs -> rec_calls.exec_rhs i j rhs) |> List.concat
-      in
-      f
+        rhss |> List.map (fun rhs -> (rec_calls ()).exec_rhs ctxt i j rhs) |> List.concat
     in
-    let exec_rhs i j = 
-      (* this is where we need to identify the first sym and recurse *)
-      failwith ""
-    in 
-    let exec_rhs1 i j _Y f = (_Y |> elt_case 
-                            ~nt:(fun _Y -> rec_calls.exec_nt i j _Y)
-                            ~tm:(fun _ -> failwith "") |> List.map f)
+    let exec_tm_elt i j tm = tm_ops.parse_tm tm i j in
+    let exec_elt ctxt i j _Y = (_Y |> elt_case 
+                            ~nt:(fun _Y -> exec_nt_elt ctxt i j _Y)
+                            ~tm:(fun tm -> exec_tm_elt i j tm))
     in
-    let exec_rhs' i j = 
-      let exec_rhs = rec_calls.exec_rhs in
-      let f : 'a rhs -> 'a list = function
-        | Rhs1 (_Y,f) -> exec_rhs1 i j _Y f
-        | Rhs2((e1,e2),f) when is_nt e2 -> 
-          let e2 = dest_nt e2 in
-          oracle_ops.cut i e2 j 
-          |> List.map (fun k -> 
-              (* FIXME for the following we need to cut the range using the oracle *)
-              exec_rhs i k (Rhs1(e1,fun x -> x)) |> fun xs ->
-              exec_rhs k j (Rhs1(e2,fun x -> x)) |> fun ys ->
-              List.map2 (fun x y -> f(x,y)) xs ys)
-          |> List.concat
-        | Rhs3((e1,e2,e),f) ->
-          exec_rhs i j (Rhs2((e1,e2),fun x -> x)) |> fun xs ->
-          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
-          List.map2 (fun (x1,x2) y -> f(x1,x2,y)) xs ys
-        | Rhs4((e1,e2,e3,e),f) ->
-          exec_rhs i j (Rhs3((e1,e2,e3),fun x -> x)) |> fun xs ->
-          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
-          List.map2 (fun (x1,x2,x3) y -> f(x1,x2,x3,y)) xs ys
-        | Rhs5((e1,e2,e3,e4,e),f) ->
-          exec_rhs i j (Rhs4((e1,e2,e3,e4),fun x -> x)) |> fun xs ->
-          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
-          List.map2 (fun (x1,x2,x3,x4) y -> f(x1,x2,x3,x4,y)) xs ys
-        | Rhs6((e1,e2,e3,e4,e5,e),f) ->
-          exec_rhs i j (Rhs5((e1,e2,e3,e4,e5),fun x -> x)) |> fun xs ->
-          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
-          List.map2 (fun (x1,x2,x3,x4,x5) y -> f(x1,x2,x3,x4,x5,y)) xs ys
-        | Rhs7((e1,e2,e3,e4,e5,e6,e),f) ->
-          exec_rhs i j (Rhs6((e1,e2,e3,e4,e5,e6),fun x -> x)) |> fun xs ->
-          exec_rhs i j (Rhs1(e,fun x -> x)) |> fun ys ->
-          List.map2 (fun (x1,x2,x3,x4,x5,x6) y -> f(x1,x2,x3,x4,x5,x6,y)) xs ys
+    (* results for i,rhs,j *)
+    let exec_rhs ctxt i j = function
+      | Rhs ([],f) -> failwith __LOC__
+      | Rhs ([_Y],f) -> 
+        (* NOTE f is expecting a list of length 1 *)
+        let rs : _a list = exec_elt ctxt i j _Y in
+        let rs' = rs |> List.map (fun x -> f [x]) in
+        rs'
+      | Rhs (_Y::es,f) -> 
+        oracle_ops.cut i _Y j 
+        |> List.map (fun k -> 
+            exec_elt ctxt i k _Y |> fun xs ->
+            (rec_calls ()).exec_rhs ctxt k j (Rhs (es,fun x -> x)) |> fun ys ->
+            all_pairs (fun x y -> f (x::y)) xs ys)
+        |> List.concat
+    in  
+    (exec_nt_elt,exec_rhs)
 
-      in  
-      f
+  let _ = execute
+
+  let execute ~oracle_ops ~tm_ops ~nt_ops =
+    let rec execute' () = execute ~rec_calls ~oracle_ops ~tm_ops ~nt_ops
+    and rec_calls = fun () -> 
+      let (exec_nt_elt,exec_rhs) = execute' () in 
+      let exec_nt_elt : ctxt -> int -> int -> 'a nt -> 'a list = exec_nt_elt in
+      let exec_rhs : ctxt -> int -> int -> 'a rhs -> 'a list = exec_rhs in
+      { exec_nt_elt=(Obj.magic exec_nt_elt); exec_rhs=(Obj.magic exec_rhs) }
     in
-    exec_nt
+    rec_calls
+
+  let _ = execute
 
 
+  (* TODO: add memoization *)
 
 end
+
+
+module Test = struct
+
+  module Requires = struct
+    type 'a nt = E
+    let _E : int nt = E
+
+    type untyped_nt = int
+    let nt2u x = 0
+    type 'a tm = Eps | One
+    type tm_ops = {
+      parse_tm: 'a. 'a tm -> int -> int -> 'a list  (* takes i,j and returns vs *)
+    }
+    type 'a elt = Nt of 'a nt | Tm of 'a tm
+
+    let elt_case: nt:('a nt -> 'b) -> tm:('a tm -> 'b) -> 'a elt -> 'b = fun ~nt ~tm e ->
+      match e with
+      | Nt x -> nt x
+      | Tm x -> tm x
+
+    type _a
+    type 'z rhs = Rhs of _a elt list * (_a list -> 'z)
+
+    type nt_ops = {
+      expand: 'a. 'a nt -> 'a rhs list
+    }
+
+    type oracle_ops = {
+      cut: 'a. int -> 'a elt -> int -> int list  (* NOTE this takes i,E,j and produces k such that k <= j and i,E,k *)
+    }
+
+  end
+
+  open Requires
+
+  module Made = Make(Requires)
+
+  open Made
+
+  let execute : 
+    oracle_ops:Requires.oracle_ops ->
+    tm_ops:Requires.tm_ops -> nt_ops:Requires.nt_ops -> unit -> Made.rec_calls
+    = Made.execute
+
+  let oracle_ops = {
+    cut=fun i _E j -> match _E with
+      | Nt E -> Tjr_list.from_to i j
+      | Tm Eps -> [i]
+      | Tm One -> if i < j then [i+1] else []
+  }
+
+  let tm_ops = {
+    parse_tm= 
+      let f  : int tm -> int -> int -> int list  = fun tm i j -> match tm with
+      | Eps -> if i=j then [0] else []
+      | One -> if i+1=j then [1] else []
+      in
+      Obj.magic f
+  }
+
+  let nt_ops = {
+    expand=
+      let f = fun (x: int nt) -> match x with
+      | E -> [
+          Rhs ([Nt E; Nt E; Nt E],fun [e1;e2;e3] -> 
+              let (e1,e2,e3) = Obj.magic (e1,e2,e3) in
+              e1+e2+e3);
+          Rhs ([Tm One],fun [e1] -> Obj.magic e1);
+          Rhs ([Tm Eps],fun [e1] -> Obj.magic e1);
+        ]
+      in
+      Obj.magic f
+  }
+
+  let exec_nt = (execute ~oracle_ops ~tm_ops ~nt_ops ()).exec_nt_elt
+
+  let run_test len = 
+    let r = exec_nt C_empty 0 len _E in
+    List.iter (fun i -> Printf.printf "%d\n" i) (r : int list)
+
+
+  let main () = run_test 3
+
+end
+
+
+let _ = Test.main ()
