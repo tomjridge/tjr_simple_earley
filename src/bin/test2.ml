@@ -44,7 +44,10 @@ module Make_rhs(X:sig type sym end) = struct
 
   open X
 
-  (* map syms to an int, and a possible head of the list *)
+  (* map syms to an int, and a possible head of the list; the use of a
+     list of syms is fine, because this is only for the interface -
+     the grammar function is memoized so that sym lists are never used
+     more than once per nonterm per parse *)
   type rhs_enum = {
     mutable free:int;
     tbl: (sym list,(int * int option)) Hashtbl.t  (* mutable anyway *)
@@ -77,9 +80,12 @@ module Make_rhs(X:sig type sym end) = struct
 end
 
 
-  (* itms are triples (enum_key,nt,rhs_as_int,int_opt_head_rhs); perhaps we
-     should be working with itms rather than enumerated rhs, since we
-     also want to enumerate itms *)
+  (* itms (without start index i) are triples
+     (nt,rhs_as_int,int_opt_head_rhs); FIXME calculate
+     int_opt_head_rhs using lookup table instead?
+
+     perhaps we should be working with itms rather than enumerated
+     rhs, since we also want to enumerate itms *)
 
 FIXME got here
 

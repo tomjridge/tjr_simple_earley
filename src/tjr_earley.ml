@@ -31,6 +31,8 @@
 
 *)
 
+let dest_Some = function | Some x -> x | None -> failwith __LOC__
+
 (*:ma:*)
 module List_ = struct
 
@@ -88,7 +90,7 @@ module type S_ = sig
     dot_nt: nt_item -> nt;
     dot_i: nt_item -> i_t;
     dot_k: nt_item -> k_t;  (* FIXME we don't need this - already have k info at use points *)
-    dot_bs: nt_item -> sym list;  (* FIXME only need to check empty and get head *)
+    dot_bs_hd: nt_item -> sym option; (* can use to check empty *)
   }
 
   (*:mp:*)
@@ -244,7 +246,7 @@ module Make = functor (S:S_) -> struct
 
     (*:oc:*)
 
-    let {dot_nt;dot_i;dot_k;dot_bs} = nt_item_ops in
+    let {dot_nt;dot_i;dot_k;dot_bs_hd} = nt_item_ops in
     let add_todo = add_todo ~nt_item_ops in
     let bitms = bitms ~bitms_lt_k_ops in
 
@@ -262,7 +264,7 @@ module Make = functor (S:S_) -> struct
       let k = s0.k in    
       let bitms = bitms s0 in
       let (nitm,s0) = pop_todo s0 in
-      let nitm_complete = nitm|>dot_bs = [] in
+      let nitm_complete = nitm|>dot_bs_hd = None in
       assert(log P.bc);  
       (* NOTE waypoints before each split and at end of branch *)
       match nitm_complete with
@@ -296,7 +298,7 @@ module Make = functor (S:S_) -> struct
       | false (* = nitm_complete *) -> (
           (* NEW BLOCKED item X -> i,as,k,S bs' on k S *)
           let bitm = nitm in
-          let s = List.hd (bitm|>dot_bs) in
+          let s = (bitm|>dot_bs_hd|>dest_Some) in
           s |> sym_case
             (*:oh:*)
             ~nt:(fun _Y -> 

@@ -161,7 +161,7 @@ module S = struct
     dot_nt: nt_item -> nt;
     dot_i: nt_item -> i_t;
     dot_k: nt_item -> k_t;
-    dot_bs: nt_item -> sym list;
+    dot_bs_hd: nt_item -> sym option;
   }
 
   (* The rest of the code is straightforward *)
@@ -263,11 +263,15 @@ let init_nt = _E
 (* Construct (nonterminal) item operations *)
 let dot_bs = dot_bs' arr
 
+let dot_bs_hd nt_itm = dot_bs nt_itm |> function | [] -> None | x::xs -> Some x
+
+
+
 let nt_item_ops = {
   dot_nt;
   dot_i;
   dot_k;
-  dot_bs
+  dot_bs_hd
 }
 
 let bitms_lt_k_ops = {

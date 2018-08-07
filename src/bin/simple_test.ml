@@ -43,6 +43,10 @@ module S = struct
   let dot_k nitm = nitm.k_
   let dot_bs nitm = nitm.bs
 
+  let dot_bs_hd nitm = nitm |> dot_bs |> function
+    | [] -> None
+    | x::xs -> Some x
+
   let cut : nt_item -> j_t -> nt_item = 
     fun bitm j0 -> 
       { bitm with k_=j0; bs=(List.tl bitm.bs)}
@@ -53,7 +57,7 @@ module S = struct
     dot_nt: nt_item -> nt;
     dot_i: nt_item -> i_t;
     dot_k: nt_item -> k_t;
-    dot_bs: nt_item -> sym list;
+    dot_bs_hd: nt_item -> sym option;
   }
 
   (* The rest of the code is straightforward *)
@@ -146,7 +150,7 @@ let nt_item_ops = {
   dot_nt;
   dot_i;
   dot_k;
-  dot_bs
+  dot_bs_hd
 }
 
 let bitms_lt_k_ops = {
