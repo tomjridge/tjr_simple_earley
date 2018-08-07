@@ -81,11 +81,21 @@ end
 
 
   (* itms (without start index i) are triples
-     (nt,rhs_as_int,int_opt_head_rhs); FIXME calculate
-     int_opt_head_rhs using lookup table instead?
+     (nt,bs_as_int,int_opt_hd_bs); FIXME calculate int_opt using
+     lookup table instead?
 
      perhaps we should be working with itms rather than enumerated
-     rhs, since we also want to enumerate itms *)
+     rhs, since we also want to enumerate itms
+
+
+     something like to_int(nt,i,bs_as_int) with the understanding that
+     we can take the tl of bs by incrememting by 1
+
+     but we still need to do something for hd_bs; this is basically an
+     int -> int option map where the src and dst are small; so
+     presumably we should use an array
+
+  *)
 
 FIXME got here
 
