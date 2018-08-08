@@ -11,12 +11,12 @@ all:
 build:
 	$$ocamlc -c $$mls
 	$$ocamlopt -c $$mls
-	$$mk_cma -g -a -o $$libname.cmxa $$cmos
+	$$mk_cma -g -a -o $$libname.cma $$cmos
 	$$mk_cmxa -g -a -o $$libname.cmxa $$cmxs
 
 install:
 	-ocamlfind remove $$package_name
-	ocamlfind install $$package_name META *.cmi *.cmo *.o *.a *.cmxa *.cmx 
+	ocamlfind install $$package_name META *.cmi *.cmo *.o *.a *.cma *.cmxa *.cmx 
 
 update_config:
 	ocaml <config.ml_
