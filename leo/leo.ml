@@ -123,57 +123,57 @@ end) = struct
     let { dot_nt; dot_i; dot_bs_hd } = nt_item_ops in
     let loop_at_k = 
       get_k () >>= fun k -> 
-      let rec loop () =
-        finished () >>= function
-        | true -> return ()
-        | false -> 
-          let process_itm itm = 
-            match dot_bs_hd itm with 
-            | None -> (
-                (* NOTE complete item (i,X,k) *)
-                let (i,_X) = (dot_i itm, dot_nt itm) in
-                note_complete_item_at_current_k ~i ~nt:_X >>= fun seen_before ->
-                match seen_before with
+      let process_itm itm = 
+        match dot_bs_hd itm with 
+        | None -> (
+            (* NOTE complete item (i,X,k) *)
+            let (i,_X) = (dot_i itm, dot_nt itm) in
+            note_complete_item_at_current_k ~i ~nt:_X >>= fun seen_before ->
+            match seen_before with
+            | true -> return ()
+            | false -> 
+              (* cut with blocked items *)
+              cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items ~i ~nt:_X >>= fun () ->
+              return ())              
+        | Some _S -> 
+          _S |> sym_case 
+            ~nt:(fun _X ->
+                add_blocked_item_at_current_k ~nt:_X ~itm >>= fun () ->
+                have_we_expanded_nonterm_at_current_k ~nt:_X >>= function
                 | true -> return ()
                 | false -> 
-                  (* cut with blocked items *)
-                  cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items ~i ~nt:_X >>= fun () ->
-                  return ())              
-            | Some _S -> 
-              _S |> sym_case 
-                ~nt:(fun _X ->
-                    add_blocked_item_at_current_k ~nt:_X ~itm >>= fun () ->
-                    have_we_expanded_nonterm_at_current_k ~nt:_X >>= function
-                    | true -> return ()
-                    | false -> 
-                      expand_nonterm ~k ~nt:_X >>= fun () ->
-                      return ())
-                ~tm:(fun tm -> 
-                    input_matches_tm_at_k ~k ~tm >>= function
-                    | true -> 
-                      let itm' = cut itm (k+1) in
-                      add_item_at_suc_k ~itm:itm'
-                    | false ->
-                      return ())
-          in
-          get_item () >>= fun itm -> 
+                  expand_nonterm ~k ~nt:_X >>= fun () ->
+                  return ())
+            ~tm:(fun tm -> 
+                input_matches_tm_at_k ~k ~tm >>= function
+                | true -> 
+                  let itm' = cut itm (k+1) in
+                  add_item_at_suc_k ~itm:itm'
+                | false ->
+                  return ())
+      in
+      let rec loop () =
+        get_item () >>= function
+        | Some itm -> 
           process_itm itm >>= fun () -> 
           loop ()
+        | None ->
+          return ()
       in
       loop ()
     in
     let rec earley () =
       loop_at_k >>= fun () ->
-        incr_k () >>= fun () ->        
-        (* finished if no initial items at the next stage, or we have reached the end of the input *)
-        finished () >>= function
-        | true -> get_final_state ()  (* what we actually return *)
-        | false -> earley ()
+      incr_k () >>= fun () ->        
+      (* finished if no initial items at the next stage, or we have reached the end of the input *)
+      finished () >>= function
+      | true -> get_final_state ()  (* what we actually return *)
+      | false -> earley ()
     in
     (* exit the monad *)
     let r : state = run ~code:(earley()) ~init_state:() in
     r
-      
+
     
 
 end
