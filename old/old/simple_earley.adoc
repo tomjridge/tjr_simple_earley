@@ -1,0 +1,20 @@
+= Simple Earley Parsing: unstaged, terminals uncached
+Author: Tom Ridge
+:toc:
+:sectnums:
+:stem: latexmath
+:source-highlighter: pygments
+
+
+== Meta
+
+HTML preview: http://htmlpreview.github.io/?https://github.com/tomjridge/simple_earley/blob/master/src/simple_earley.html
+
+include::se_common.pp.adoc[]
+
+include::se_spec.pp.adoc[]
+
+include::se_simple.pp.adoc[]
+
+include::se_staged.pp.adoc[]
+

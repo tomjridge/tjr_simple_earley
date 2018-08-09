@@ -1,0 +1,12 @@
+(* use Jane St. Core *)
+
+open Core.Time_stamp_counter
+
+let get_timestamp () = now () 
+
+let ts_ops = {
+  get_timestamp;
+  diff;
+  to_string=Int.to_string;
+}
+  
