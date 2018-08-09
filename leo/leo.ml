@@ -9,6 +9,7 @@
 open Earley_util.Set_ops
 open Earley_util.Map_ops
 
+(* FIXME probably separate out monad from NEEDED, and apply the functor to the state passing monad *)
 module type REQUIRES = sig
   type 'a m
   val return : 'a -> 'a m
