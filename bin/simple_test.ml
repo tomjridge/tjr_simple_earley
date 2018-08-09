@@ -1,9 +1,10 @@
 (* test, represent nt_item as a simple record *)
 
-
-open Tjr_earley
+open Earley_util
 open Set_ops
 open Map_ops
+
+open Tjr_earley
 
 (* Simple map implementation *)
 module Map_make = functor (Ord:Set.OrderedType) -> struct

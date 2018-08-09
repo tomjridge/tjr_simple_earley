@@ -6,7 +6,7 @@ export BASH_ENV
 all: 
 	$(MAKE) build
 	$(MAKE) install
-	$(MAKE) -C bin
+#	$(MAKE) -C ../bin  # FIXME comment for release
 
 build:
 	$$ocamlc -c $$mls
@@ -29,7 +29,8 @@ snips: FORCE
 clean:
 	rm -f *.cmi *.cmo *.cmx *.o *.x *.a *.cma *.cmxa
 	find . -xtype l -exec rm -f \{\} \;
-	$(MAKE) -C bin clean
+
+#	$(MAKE) -C bin clean
 
 
 FORCE:

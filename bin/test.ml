@@ -5,9 +5,10 @@
    up so that the operation of "cutting" an item against another complete
    item can be done by incrementing the int for the blocked item. *)
 
-open Tjr_earley
+open Earley_util
 open Set_ops
 open Map_ops
+open Tjr_earley
 
 (* Simple map implementation *)
 module Map_make = functor (Ord:Set.OrderedType) -> struct

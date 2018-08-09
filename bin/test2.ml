@@ -1,6 +1,8 @@
 (* test2, represent nt_item as int *)
 
 
+open Earley_util
+
 (* Compared to test.ml, we compute int mappings lazily *)
 
 

@@ -44,7 +44,7 @@ open Earley_util.Map_ops
 module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
   (*:np:*)
   open X
-  open Profile
+(*  open Profile *)
 
   type bitms_at_k = map_nt  (* bitms blocked at k,X *)
   let bitms_at_k_ops = map_nt_ops 
@@ -162,17 +162,17 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
     (* step_k ------------------------------------------------------- *)
     let step_k s0 = (
       debug_endline "XXXstep_k";
-      assert(log P.ab);
+      (* assert(log P.ab); *)
       (*        let _ = (
                 counter:=1 + !counter; 
                 if (!counter mod 1000 = 0) then Gc.full_major() else () )
                 in*)
-      assert(log P.ac);
+      (* assert(log P.ac); *)
       let k = s0.k in    
       let bitms = bitms s0 in
       let (nitm,s0) = pop_todo s0 in
       let nitm_complete = nitm|>dot_bs_hd = None in
-      assert(log P.bc);  
+      (* assert(log P.bc);   *)
       (* NOTE waypoints before each split and at end of branch *)
       match nitm_complete with
       (*:oe:*)
@@ -180,7 +180,7 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
           let (i,x) = (nitm|>dot_i,nitm|>dot_nt) in
           (* possible new complete item (i,X,k) *)
           let already_done = mem_ixk_done (i,x) s0 in
-          assert(log P.cd);          
+          (* assert(log P.cd);           *)
           already_done |> function
             (*:of:*)
           | true -> (
@@ -199,7 +199,7 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
                 ~f:(fun ~state:s bitm -> add_todo (cut bitm k) s)
                 ~init_state:s0
               |> fun s ->
-              assert(log P.de);
+              (* assert(log P.de); *)
               s))  
       (*:og:*)
       | false (* = nitm_complete *) -> (
@@ -216,7 +216,7 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
                 (* NOTE the following line serves to record that we
                    are processing kY *)
                 let s0 = add_bitm_at_k bitm _Y s0 in
-                assert(log P.fg);
+                (* assert(log P.fg); *)
                 bitms_empty |> function
                   (*:oi:*)
                 | false -> (
@@ -238,13 +238,13 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
                       ~step:(fun ~state:s nitm -> add_todo nitm s) 
                       ~init_state:s0
                     |> fun s -> 
-                    assert(log P.gh);
+                    (* assert(log P.gh); *)
                     s))
             (*:ok:*)
             ~tm:(fun t ->
                 (* have we already processed kT ? *)
                 find_ktjs t s0 |> fun ktjs ->
-                assert(log P.hi);
+                (* assert(log P.hi); *)
                 ktjs 
                 |> (function 
                     (*:ol:*)
@@ -261,7 +261,7 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
                       debug_endline "ktjs Some"; 
                       (js,s0))                  
                 |> fun (js,s0) ->                 
-                assert(log P.ij);
+                (* assert(log P.ij); *)
                 (* cut (k,T,j) against the current item NOTE each item
                    that gets blocked on kT is immediately processed
                    against items kTj *)
@@ -270,7 +270,7 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
                   ~step:(fun ~state:s j -> add_todo (cut bitm j) s)
                   ~init_state:s0 
                 |> fun s -> 
-                assert(log P.jk);
+                (* assert(log P.jk); *)
                 s))
     ) (* step_k *)
     in
