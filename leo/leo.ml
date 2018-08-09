@@ -31,13 +31,10 @@ open Set_ops
 
 open Map_ops
 
-
-module Make(X: sig
-    type 'a m
-    val return : 'a -> 'a m
-    val ( >>= ): 'a m -> ('a -> 'b m) -> 'b m
-
-    val run: code:'a m -> init_state:unit -> 'a
+module type REQUIRES = sig
+  type 'a m
+  val return : 'a -> 'a m
+  val ( >>= ): 'a m -> ('a -> 'b m) -> 'b m
 
   type i_t = int  
   type k_t = int
@@ -95,9 +92,11 @@ module Make(X: sig
 
 
 
-end) = struct
+end
 
-  open X
+module Make(Requires: REQUIRES) = struct
+
+  open Requires
   (* maintain invariant that if (X->i,as,k,B bs) is in the current
      set, and nullable(B) then (X -> i,as B, k, bs) is in the set *)
 
@@ -118,7 +117,7 @@ end) = struct
       ~incr_k 
       ~input_matches_tm_at_k
       ~note_complete_item_at_current_k
-      
+
     = 
     let { dot_nt; dot_i; dot_bs_hd } = nt_item_ops in
     let loop_at_k = 
@@ -170,10 +169,11 @@ end) = struct
       | true -> get_final_state ()  (* what we actually return *)
       | false -> earley ()
     in
-    (* exit the monad *)
-    let r : state = run ~code:(earley()) ~init_state:() in
-    r
+    earley
 
-    
 
 end
+
+
+  val run: code:'a m -> init_state:unit -> 'a
+

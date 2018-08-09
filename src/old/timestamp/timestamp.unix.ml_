@@ -1,9 +1,0 @@
-(* use Unix.gettimeofday *)
-
-type timestamp = float
-
-let get_time () : timestamp = 
-  Unix.gettimeofday ()
-
-type 't ts_ops = {
-  get_time: unit -> 
