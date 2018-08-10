@@ -66,7 +66,7 @@ module Make(Monad:MONAD)(Requires: Earley_util.NEEDED_BASIC_INTERFACE) = struct
                   expand_nonterm ~k ~nt:_X >>= fun () ->
                   return ())
             ~tm:(fun tm -> 
-                input_matches_tm_at_k ~k ~tm >>= function
+                input_matches_tm_at_k ~k ~tm |> function
                 | true -> 
                   let itm' : nt_item = cut itm (k+1) in
                   add_item_at_suc_k ~itm:itm'
@@ -273,7 +273,7 @@ expand_nonterm:(k:int ->
 input_length:int ->
 input_matches_tm_at_k:(k:int ->
                        tm:Simple_datastructure_implementations.S.tm ->
-                       bool M.m) ->
+                       bool) ->
 unit -> unit M.m
 = make_earley
 
@@ -292,7 +292,7 @@ let _ :
 nullable:(sym -> bool) ->
 expand_nonterm:(k:int -> nt:nt -> unit M.m) ->
 input_length:int ->
-input_matches_tm_at_k:(k:int -> tm:tm ->bool M.m) ->
+input_matches_tm_at_k:(k:int -> tm:tm ->bool) ->
 init_items:nt_item list -> 
 state
 = earley
