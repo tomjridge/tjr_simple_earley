@@ -53,6 +53,7 @@ module Make(Monad:MONAD)(Requires: Earley_util.NEEDED_BASIC_INTERFACE) = struct
             | true -> return ()
             | false -> 
               (* cut with blocked items *)
+              (* FIXME is it clear that we never twice add an item to the list ? Needs some thought here *)
               cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items ~i ~nt:_X >>= fun () ->
               return ())              
         | Some _S -> 
@@ -119,6 +120,16 @@ type state = {
   complete_items_at_current_k: ixk_set;
   bitms_at_k: map_nt;
   bitms_lt_k: map_nt array
+}
+
+let make_empty_state ~input_length = {
+  k=0;
+  current_items=[];
+  items_at_suc_k=nt_item_set_ops.empty;
+  nonterms_expanded_at_current_k=nt_set_ops.empty;
+  complete_items_at_current_k=ixk_set_ops.empty;
+  bitms_at_k=map_nt_ops.map_empty;
+  bitms_lt_k=Array.make (input_length+1) map_nt_ops.map_empty
 }
 
 module M = struct
@@ -255,8 +266,35 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
       ~note_complete_item_at_current_k
       ~nt_item_ops)
 
-let _ = make_earley
+let _ :
+nullable:(Simple_datastructure_implementations.S.sym -> bool) ->
+expand_nonterm:(k:int ->
+                nt:Simple_datastructure_implementations.S.nt -> unit M.m) ->
+input_length:int ->
+input_matches_tm_at_k:(k:int ->
+                       tm:Simple_datastructure_implementations.S.tm ->
+                       bool M.m) ->
+unit -> unit M.m
+= make_earley
+
+let earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k ~init_items =
+  let init_state = 
+    make_empty_state ~input_length |> fun s ->
+    {s with current_items=init_items }
+  in
+  make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k ()
+  |> State_passing_instance.run
+    ~init_state
+  |> fun (a,s) -> s
 
 
-(* val run: code:'a m -> init_state:unit -> 'a *)
+let _ : 
+nullable:(sym -> bool) ->
+expand_nonterm:(k:int -> nt:nt -> unit M.m) ->
+input_length:int ->
+input_matches_tm_at_k:(k:int -> tm:tm ->bool M.m) ->
+init_items:nt_item list -> 
+state
+= earley
+
 
