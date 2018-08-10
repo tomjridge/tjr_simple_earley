@@ -10,16 +10,16 @@ open Earley_util.Set_ops
 open Earley_util.Map_ops
 
 (* FIXME probably separate out monad from NEEDED, and apply the functor to the state passing monad *)
-module type REQUIRES = sig
+
+module type MONAD = sig
   type 'a m
   val return : 'a -> 'a m
   val ( >>= ): 'a m -> ('a -> 'b m) -> 'b m
-
-  include Earley_util.NEEDED_BASIC_INTERFACE  (* NOTE don't need dot_k *)
 end
 
 
-module Make(Requires: REQUIRES) = struct
+module Make(Monad:MONAD)(Requires: Earley_util.NEEDED_BASIC_INTERFACE) = struct
+  open Monad
   open Requires
   (* maintain invariant that if (X->i,as,k,B bs) is in the current
      set, and nullable(B) then (X -> i,as B, k, bs) is in the set *)
@@ -32,7 +32,6 @@ module Make(Requires: REQUIRES) = struct
       ~cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items
       ~expand_nonterm     (* takes k as argument *)
       ~finished 
-(*      ~get_initial_items_at_k   *)
       ~get_item
       ~get_k 
       ~have_we_expanded_nonterm_at_current_k 
@@ -102,20 +101,163 @@ end
 
 (* specialize monad and implement reqs ----------------------------- *)
 
-(*
+open Tjr_monad
+open Tjr_monad.Monad
 
-  type nt_set
-  val nt_set_ops: (nt,nt_set) set_ops
+open Simple_datastructure_implementations.S
+
+module Set_nt = Set.Make(
+  struct type t = nt let compare : t -> t -> int = Pervasives.compare end)
+type nt_set = Set_nt.t
+let nt_set_ops = Set_nt.{ add; mem; empty; is_empty; elements }
+
+type state = {
+  k:int;
+  current_items: nt_item list;
+  items_at_suc_k: nt_item_set;
+  nonterms_expanded_at_current_k: nt_set;
+  complete_items_at_current_k: ixk_set;
+  bitms_at_k: map_nt;
+  bitms_lt_k: map_nt array
+}
+
+module M = struct
+  open Tjr_monad.State_passing_instance
+  type 'a m = ('a,state state_passing) Monad.m
+  let mops = monad_ops()
+  let return = mops.return
+  let ( >>= ) = mops.bind
+end
 
 
-  type state = {
-    k:int;
-    current_items: nt_item list;
-    items_at_suc_k: nt_item_set;
-    nonterms_expanded_at_current_k: nt_set;
-    complete_items_at_current_k: nt_item_set;
-  }
-*)
+module Leo = Make(M)(Simple_datastructure_implementations.S)
+
+let with_world = State_passing_instance.with_world
+
+(* FIXME we probably want an option to cut an item without altering the k val *)
+
+(* NOTE expand_nonterm must update nonterms_expanded_at_current_k;
+   actually assume that the function passed in simply returns the
+   ntitems *)
+let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k = (
+  let trans_items itm = 
+    let k = dot_k itm in
+    let rec f itm = 
+      itm::(
+        match dot_bs_hd itm with
+        | None -> []
+        | Some s ->
+          match nullable s with
+          | true -> f (cut itm k)
+          | false -> [])
+    in
+    f itm
+  in
+
+  let add_many_items set itms =
+    itms |> Earley_util.List_.with_each_elt
+      ~init_state:set
+      ~step:(fun ~state itm -> 
+          nt_item_set_ops.add itm state)
+  in
+                     
+  let add_blocked_item_at_current_k ~nt ~itm =
+    with_world (fun s ->
+        ((),{s with
+             bitms_at_k=
+               map_nt_ops.map_find nt s.bitms_at_k |> fun itms' ->
+               (trans_items itm) 
+               |> add_many_items itms'
+               |> fun itms'' ->               
+               map_nt_ops.map_add nt itms'' s.bitms_at_k}))
+  in
+
+  let add_item_at_suc_k ~itm =
+    with_world (fun s ->
+        ((),{s with
+             items_at_suc_k=
+               (trans_items itm) 
+               |> add_many_items s.items_at_suc_k}))
+  in
+
+  let cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items ~i ~nt =
+    with_world (fun s ->
+        ((),match s.k=i with 
+          | true -> s
+          | false -> 
+            (* i < k *)
+            (* get blocked items *)
+            Array.get s.bitms_lt_k i |> fun bitms ->
+            map_nt_ops.map_find nt bitms |> fun bitms ->
+            nt_item_set_ops.elements bitms |> fun bitms ->
+            List.map (fun bitm -> cut bitm s.k) bitms |> fun bitms ->
+            List.map trans_items bitms |> List.concat |> fun new_itms ->            
+            {s with
+             current_items=new_itms@s.current_items}))
+  in
+
+  let finished () =
+    with_world (fun s ->
+        (s.k = input_length || [] = s.current_items),s)
+  in
+
+  let get_item () = 
+    with_world (fun s ->
+        s.current_items |> function
+        | [] -> None,s
+        | x::current_items -> Some x, {s with current_items})
+  in
+
+  let get_k () = 
+    with_world (fun s -> s.k,s)
+  in
+
+  let have_we_expanded_nonterm_at_current_k ~nt =
+    with_world (fun s -> 
+        nt_set_ops.mem nt s.nonterms_expanded_at_current_k, s)
+  in
+
+  let incr_k () =
+    with_world (fun s -> 
+        (), { k=s.k+1;
+              current_items=nt_item_set_ops.elements s.items_at_suc_k;
+              items_at_suc_k=nt_item_set_ops.empty;
+              nonterms_expanded_at_current_k=nt_set_ops.empty;
+              complete_items_at_current_k=ixk_set_ops.empty;
+              bitms_at_k=map_nt_ops.map_empty;
+              bitms_lt_k=(
+                Array.set s.bitms_lt_k s.k s.bitms_at_k;
+                (* NOTE arrays are mutable anyway... *)
+                s.bitms_lt_k);
+            })
+  in
+
+  let note_complete_item_at_current_k ~i ~nt =
+    with_world (fun s -> 
+        let seen_before = ixk_set_ops.mem (i,nt) s.complete_items_at_current_k in
+        seen_before, { s with
+                       complete_items_at_current_k=(ixk_set_ops.add (i,nt) s.complete_items_at_current_k )})
+  in
+
+  let nt_item_ops = { dot_i; dot_nt; dot_k; dot_bs_hd } in  (* FIXME dot_k *)
+
+  Leo.earley 
+      ~add_blocked_item_at_current_k
+      ~add_item_at_suc_k 
+      ~cut
+      ~cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items
+      ~expand_nonterm
+      ~finished 
+      ~get_item
+      ~get_k 
+      ~have_we_expanded_nonterm_at_current_k 
+      ~incr_k 
+      ~input_matches_tm_at_k
+      ~note_complete_item_at_current_k
+      ~nt_item_ops)
+
+let _ = make_earley
+
 
 (* val run: code:'a m -> init_state:unit -> 'a *)
 
