@@ -140,8 +140,7 @@ let with_world = State_passing_instance.with_world
    actually assume that the function passed in simply returns the
    ntitems *)
 let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k = (
-  let trans_items itm = 
-    let k = dot_k itm in
+  let trans_items ~k itm = 
     let rec f itm = 
       itm::(
         match dot_bs_hd itm with
@@ -166,7 +165,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
         ((),{s with
              bitms_at_k=
                map_nt_ops.map_find nt s.bitms_at_k |> fun itms' ->
-               (trans_items itm) 
+               (trans_items ~k:s.k itm) 
                |> add_many_items itms'
                |> fun itms'' ->               
                map_nt_ops.map_add nt itms'' s.bitms_at_k}))
@@ -176,7 +175,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
     with_world (fun s ->
         ((),{s with
              items_at_suc_k=
-               (trans_items itm) 
+               (trans_items ~k:s.k itm) 
                |> add_many_items s.items_at_suc_k}))
   in
 
@@ -191,7 +190,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
             map_nt_ops.map_find nt bitms |> fun bitms ->
             nt_item_set_ops.elements bitms |> fun bitms ->
             List.map (fun bitm -> cut bitm s.k) bitms |> fun bitms ->
-            List.map trans_items bitms |> List.concat |> fun new_itms ->            
+            List.map (trans_items ~k:s.k) bitms |> List.concat |> fun new_itms ->            
             {s with
              current_items=new_itms@s.current_items}))
   in
