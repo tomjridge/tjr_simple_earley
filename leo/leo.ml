@@ -152,7 +152,10 @@ let with_world = State_passing_instance.with_world
    ntitems *)
 let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k = (
   let trans_items ~k itm = 
+    (* Printf.printf "Called %d %d %d %d \n%!" itm.nt itm.i_ itm.k_ (List.length itm.bs); *)
     let rec f itm = 
+      (* Printf.printf "f %d %d %d %d \n%!" itm.nt itm.i_ itm.k_ (List.length itm.bs); *)
+
       itm::(
         match dot_bs_hd itm with
         | None -> []
@@ -176,6 +179,8 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
         ((),{s with
              bitms_at_k=
                map_nt_ops.map_find nt s.bitms_at_k |> fun itms' ->
+               (* Printf.printf "Size of itms': %d %d\n%!" s.k (nt_item_set_ops.elements itms' |> List.length); *)
+               (* Printf.printf "Called %d %d %d %d \n%!" itm.nt itm.i_ itm.k_ (List.length itm.bs); *)
                (trans_items ~k:s.k itm) 
                |> add_many_items itms'
                |> fun itms'' ->               
@@ -186,7 +191,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
     with_world (fun s ->
         ((),{s with
              items_at_suc_k=
-               (trans_items ~k:s.k itm) 
+               (trans_items ~k:(s.k+1) itm) 
                |> add_many_items s.items_at_suc_k}))
   in
 
@@ -202,9 +207,22 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
             nt_item_set_ops.elements bitms |> fun bitms ->
             List.map (fun bitm -> cut bitm s.k) bitms |> fun bitms ->
             List.map (trans_items ~k:s.k) bitms |> List.concat |> fun new_itms ->            
+            let current_items = new_itms@s.current_items in
+            Printf.printf "Length of items: %d\n%!" (List.length current_items);
+            {s with current_items}))
+  in
+
+
+  let expand_nonterm ~k ~nt =
+    with_world (fun s ->
+        assert(k=s.k);
+        ((),
+         expand_nonterm ~k ~nt |> fun itms -> 
+         List.map (trans_items ~k) itms |> List.concat |> fun new_itms ->
             {s with
              current_items=new_itms@s.current_items}))
   in
+         
 
   let finished () =
     with_world (fun s ->
@@ -269,7 +287,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
 let _ :
 nullable:(Simple_datastructure_implementations.S.sym -> bool) ->
 expand_nonterm:(k:int ->
-                nt:Simple_datastructure_implementations.S.nt -> unit M.m) ->
+                nt:Simple_datastructure_implementations.S.nt -> nt_item list) ->
 input_length:int ->
 input_matches_tm_at_k:(k:int ->
                        tm:Simple_datastructure_implementations.S.tm ->
@@ -290,11 +308,70 @@ let earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k ~init_
 
 let _ : 
 nullable:(sym -> bool) ->
-expand_nonterm:(k:int -> nt:nt -> unit M.m) ->
+expand_nonterm:(k:int -> nt:nt -> nt_item list) ->
 input_length:int ->
 input_matches_tm_at_k:(k:int -> tm:tm ->bool) ->
 init_items:nt_item list -> 
 state
 = earley
 
+
+
+(* test ------------------------------------------------------------- *)
+
+(* from simple_test.ml *)
+
+(* Encode nonterminals and terminals as ints; nts are even; tms are
+   odd *)
+
+let _E = 0
+let _1 = 1
+
+let nullable sym = match sym with 
+  | _ when sym=_E -> true
+  | _ -> false
+
+(* Encode the grammar E -> E E E | "1" | eps; eps is captured by nullable *)
+let rhss = [ [_E;_E;_E]; [_1] ]
+
+(* Provide a function that produces new items, given a nonterminal and
+   an input position k *)
+let expand_nonterm ~k ~nt = match () with
+  | _ when nt = _E -> 
+    rhss   (* E -> E E E | "1" | eps *)
+    |> List.map (fun bs -> { nt; i_=k; k_=k; bs})
+  | _ -> failwith __LOC__
+
+(* Example input; use command line argument *)
+let input = String.make (Sys.argv.(1) |> int_of_string) '1'
+
+let input_length = String.length input
+
+(* Provide a function that details how to parse terminals at a given
+   position k in the input *)
+let input_matches_tm_at_k ~k ~tm =
+  assert (tm=_1);
+  if k < input_length then true else false
+
+
+(* Initial nonterminal *)
+let init_nt = _E
+
+let nt_item_ops = {
+  dot_nt;
+  dot_i;
+  dot_k;
+  dot_bs_hd
+}
+
+
+
+(* Finally, run Earley! *)
+
+let main () = 
+  earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k
+    ~init_items:[{nt=_E; i_=0; k_=0; bs=[_E]}]
+  |> fun s -> s.k |> string_of_int |> print_endline
+
+let _ = main ()
 
