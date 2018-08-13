@@ -49,6 +49,7 @@ module S = struct
 
   let cut : nt_item -> j_t -> nt_item = 
     fun bitm j0 -> 
+      assert (bitm.bs <> []);
       { bitm with k_=j0; bs=(List.tl bitm.bs)}
   type cut = nt_item -> j_t -> nt_item
 

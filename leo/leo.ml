@@ -181,9 +181,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
                map_nt_ops.map_find nt s.bitms_at_k |> fun itms' ->
                (* Printf.printf "Size of itms': %d %d\n%!" s.k (nt_item_set_ops.elements itms' |> List.length); *)
                (* Printf.printf "Called %d %d %d %d \n%!" itm.nt itm.i_ itm.k_ (List.length itm.bs); *)
-               (trans_items ~k:s.k itm) 
-               |> add_many_items itms'
-               |> fun itms'' ->               
+               nt_item_set_ops.add itm itms' |> fun itms'' ->               
                map_nt_ops.map_add nt itms'' s.bitms_at_k}))
   in
 
@@ -208,7 +206,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
             List.map (fun bitm -> cut bitm s.k) bitms |> fun bitms ->
             List.map (trans_items ~k:s.k) bitms |> List.concat |> fun new_itms ->            
             let current_items = new_itms@s.current_items in
-            Printf.printf "Length of items: %d\n%!" (List.length current_items);
+            (* Printf.printf "Length of items: %d\n%!" (List.length current_items); *)
             {s with current_items}))
   in
 
@@ -220,7 +218,9 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
          expand_nonterm ~k ~nt |> fun itms -> 
          List.map (trans_items ~k) itms |> List.concat |> fun new_itms ->
             {s with
-             current_items=new_itms@s.current_items}))
+             current_items=new_itms@s.current_items;
+             nonterms_expanded_at_current_k=nt_set_ops.add nt s.nonterms_expanded_at_current_k
+            }))
   in
          
 
@@ -375,3 +375,15 @@ let main () =
 
 let _ = main ()
 
+(*
+
+$ leo $ time OCAMLRUNPARAM=b ./leo.native 200
+200
+
+real	0m3.235s
+user	0m3.190s
+sys	0m0.020s
+
+Slower because we need to avoid adding items we have already seen
+
+*)
