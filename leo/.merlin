@@ -1,1 +1,1 @@
-PKG tjr_simple_earley tjr_monad
+PKG tjr_simple_earley tjr_monad tjr_profile core

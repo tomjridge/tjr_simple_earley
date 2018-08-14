@@ -5,6 +5,11 @@
    Earley; it doesn't include Leo's optimization currently
 *)
 
+let now () = Core.Time_stamp_counter.(
+    now () |> to_int63 |> Core.Int63.to_int |> Tjr_profile.dest_Some)
+
+let Tjr_profile.{mark;get_marks} = Tjr_profile.mk_profiler ~now
+open Tjr_profile.P
 
 open Earley_util.Set_ops
 open Earley_util.Map_ops
@@ -41,50 +46,66 @@ module Make(Monad:MONAD)(Requires: Earley_util.NEEDED_BASIC_INTERFACE) = struct
       ~nt_item_ops
     = 
     let { dot_nt; dot_i; dot_bs_hd } = nt_item_ops in
-    let loop_at_k = 
-      get_k () >>= fun k -> 
-      let process_itm itm = 
+    let step_at_k ~k = 
+      return () >>= fun _ ->
+      mark __LINE__; 
+      get_item () >>= function
+      | None -> mark __LINE__; return true (* finished *)
+      | Some itm -> 
+        mark __LINE__;
+        let return = return false in (* not finished *)
         match dot_bs_hd itm with 
         | None -> (
+            mark __LINE__;
             (* NOTE complete item (i,X,k) *)
             let (i,_X) = (dot_i itm, dot_nt itm) in
             note_complete_item_at_current_k ~i ~nt:_X >>= fun seen_before ->
+            mark __LINE__;
             match seen_before with
-            | true -> return ()
+            | true -> mark __LINE__; return 
             | false -> 
               (* cut with blocked items *)
               (* FIXME is it clear that we never twice add an item to the list ? Needs some thought here *)
               cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items ~i ~nt:_X >>= fun () ->
-              return ())              
+              mark __LINE__;
+              return )              
         | Some _S -> 
+          mark __LINE__;
           _S |> sym_case 
             ~nt:(fun _X ->
+                mark __LINE__;
                 add_blocked_item_at_current_k ~nt:_X ~itm >>= fun () ->
+                mark __LINE__;
                 have_we_expanded_nonterm_at_current_k ~nt:_X >>= function
-                | true -> return ()
+                | true -> mark __LINE__; return
                 | false -> 
+                  mark __LINE__;
                   expand_nonterm ~k ~nt:_X >>= fun () ->
-                  return ())
-            ~tm:(fun tm -> 
+                  mark __LINE__;
+                  return)
+            ~tm:(fun tm ->                
                 input_matches_tm_at_k ~k ~tm |> function
                 | true -> 
+                  mark __LINE__;
                   let itm' : nt_item = cut itm (k+1) in
-                  add_item_at_suc_k ~itm:itm'
+                  add_item_at_suc_k ~itm:itm' >>= fun () ->
+                  mark __LINE__;
+                  return
                 | false ->
-                  return ())
+                  mark __LINE__;
+                  return)
+    in
+    let loop_at_k ~k = 
+      let rec f () = step_at_k ~k >>= fun finished ->
+        match finished with 
+        | true -> return ()
+        | false -> f ()
       in
-      let rec loop () =
-        get_item () >>= function
-        | Some itm -> 
-          process_itm itm >>= fun () -> 
-          loop ()
-        | None ->
-          return ()
-      in
-      loop ()
+      f ()
     in
     let rec earley () =
-      loop_at_k >>= fun () ->
+      get_k () >>= fun k ->
+      loop_at_k ~k >>= fun () ->
       incr_k () >>= fun () ->        
       (* finished if no initial items at the next stage, or we have reached the end of the input *)
       finished () >>= function
@@ -153,6 +174,8 @@ let with_world = State_passing_instance.with_world
    actually assume that the function passed in simply returns the
    ntitems *)
 let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k = (
+
+  (* NOTE following could be based on trans_rhs, which need only be calculated once per rhs *)
   let trans_items ~k itm = 
     (* Printf.printf "Called %d %d %d %d \n%!" itm.nt itm.i_ itm.k_ (List.length itm.bs); *)
     let rec f itm = 
@@ -252,6 +275,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
 
   let have_we_expanded_nonterm_at_current_k ~nt =
     with_world (fun s -> 
+        assert(nt_set_ops.elements s.nonterms_expanded_at_current_k |> List.length < 2);
         nt_set_ops.mem nt s.nonterms_expanded_at_current_k, s)
   in
 
@@ -386,6 +410,10 @@ let main () =
 
 let _ = main ()
 
+let _ = 
+  let open Tjr_profile in
+  get_marks () |> print_profile_summary
+
 (*
 
 $ leo $ time ./leo.native 200
@@ -406,5 +434,38 @@ user	0m34.896s
 sys	0m0.020s
 
 v. slow compared to test/test2
+
+Profiling info:
+
+$ leo $ time ./leo.native 200
+200
+Time:0  53 53 count:1
+Time:52091  73 89 count:200
+Time:60382  78 82 count:200
+Time:64913  51 53 count:200
+Time:75288  92 51 count:200
+Time:110710  89 92 count:200
+Time:111319  84 51 count:200
+Time:1828693  82 84 count:200
+Time:28341436  70 51 count:20100
+Time:243617864  53 51 count:199
+Time:306412186  55 73 count:1373901
+Time:376911493  63 65 count:2666600
+Time:646772294  73 76 count:1373701
+Time:688170760  55 59 count:2686700
+Time:984968977  78 80 count:1373501
+Time:2072100263  80 51 count:1373501
+Time:2463280315  76 78 count:1373701
+Time:3361288346  63 70 count:20100
+Time:3528461144  65 51 count:2666600 - this is a return from l. 65; half the time
+Time:4365131924  51 55 count:4060601  - this is get_item, which should be quick
+Time:5247637371  59 63 count:2686700
+
+real	0m15.521s
+user	0m14.708s
+sys	0m0.808s
+
+
+overall, it is just about possible that the defn of the monad is not being optimized, whereas it was in other versions
 
 *)

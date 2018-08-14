@@ -2,3 +2,5 @@
 
 - timings are very slow for this version of leo (at least, compared
   with the current src/ version); but they should be comparable FIXME
+  - possibly this is because the monad is not being optimized away
+  - perhaps use tjr_monad directly rather than functorize?
