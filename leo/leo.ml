@@ -115,6 +115,7 @@ let nt_set_ops = Set_nt.{ add; mem; empty; is_empty; elements }
 type state = {
   k:int;
   current_items: nt_item list;
+  todo_done_at_k: nt_item_set;
   items_at_suc_k: nt_item_set;
   nonterms_expanded_at_current_k: nt_set;
   complete_items_at_current_k: ixk_set;
@@ -125,6 +126,7 @@ type state = {
 let make_empty_state ~input_length = {
   k=0;
   current_items=[];
+  todo_done_at_k=nt_item_set_ops.empty;
   items_at_suc_k=nt_item_set_ops.empty;
   nonterms_expanded_at_current_k=nt_set_ops.empty;
   complete_items_at_current_k=ixk_set_ops.empty;
@@ -189,8 +191,11 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
     with_world (fun s ->
         ((),{s with
              items_at_suc_k=
-               (trans_items ~k:(s.k+1) itm) 
-               |> add_many_items s.items_at_suc_k}))
+               match nt_item_set_ops.mem itm s.items_at_suc_k with
+               | true -> s.items_at_suc_k
+               | false -> 
+                 (trans_items ~k:(s.k+1) itm) 
+                 |> add_many_items s.items_at_suc_k}))
   in
 
   let cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items ~i ~nt =
@@ -204,6 +209,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
             map_nt_ops.map_find nt bitms |> fun bitms ->
             nt_item_set_ops.elements bitms |> fun bitms ->
             List.map (fun bitm -> cut bitm s.k) bitms |> fun bitms ->
+            List.filter (fun bitm -> not (nt_item_set_ops.mem bitm s.todo_done_at_k)) bitms |> fun bitms ->
             List.map (trans_items ~k:s.k) bitms |> List.concat |> fun new_itms ->            
             let current_items = new_itms@s.current_items in
             (* Printf.printf "Length of items: %d\n%!" (List.length current_items); *)
@@ -214,11 +220,15 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
   let expand_nonterm ~k ~nt =
     with_world (fun s ->
         assert(k=s.k);
+        assert(not (nt_set_ops.mem nt s.nonterms_expanded_at_current_k));
         ((),
          expand_nonterm ~k ~nt |> fun itms -> 
          List.map (trans_items ~k) itms |> List.concat |> fun new_itms ->
+         (* we only expand new_itms once at each k, so the items can't already be in the current_items *)
+         (* List.filter (fun itm -> not (nt_item_set_ops.mem itm s.todo_done_at_k)) new_itms -> fun new_itms -> *)
             {s with
              current_items=new_itms@s.current_items;
+             todo_done_at_k=add_many_items s.todo_done_at_k new_itms;
              nonterms_expanded_at_current_k=nt_set_ops.add nt s.nonterms_expanded_at_current_k
             }))
   in
@@ -249,6 +259,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
     with_world (fun s -> 
         (), { k=s.k+1;
               current_items=nt_item_set_ops.elements s.items_at_suc_k;
+              todo_done_at_k=s.items_at_suc_k;
               items_at_suc_k=nt_item_set_ops.empty;
               nonterms_expanded_at_current_k=nt_set_ops.empty;
               complete_items_at_current_k=ixk_set_ops.empty;
@@ -298,7 +309,7 @@ unit -> unit M.m
 let earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k ~init_items =
   let init_state = 
     make_empty_state ~input_length |> fun s ->
-    {s with current_items=init_items }
+    {s with current_items=init_items }  (* FIXME todo_done_at_k? *)
   in
   make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k ()
   |> State_passing_instance.run
@@ -377,13 +388,23 @@ let _ = main ()
 
 (*
 
-$ leo $ time OCAMLRUNPARAM=b ./leo.native 200
+$ leo $ time ./leo.native 200
 200
 
-real	0m3.235s
-user	0m3.190s
+real	0m2.546s
+user	0m2.544s
+sys	0m0.000s
+
+Slower because we need to avoid adding items we have already seen?
+
+
+$ leo $ time ./leo.native 400
+400
+
+real	0m34.919s
+user	0m34.896s
 sys	0m0.020s
 
-Slower because we need to avoid adding items we have already seen
+v. slow compared to test/test2
 
 *)

@@ -1,0 +1,4 @@
+-*- org -*-
+
+- timings are very slow for this version of leo (at least, compared
+  with the current src/ version); but they should be comparable FIXME

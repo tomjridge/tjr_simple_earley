@@ -70,3 +70,21 @@ let main () =
 
 let _ = main ()
 
+
+(*
+$ bin $ time ./simple_test.native 200
+200
+
+real	0m0.800s
+user	0m0.796s
+sys	0m0.000s
+
+
+$ bin $ time ./simple_test.native 400
+400
+
+real	0m6.477s
+user	0m6.476s
+sys	0m0.000s
+
+*)

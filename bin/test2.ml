@@ -1,4 +1,7 @@
 (* test2, represent nt_item as int *)
+
+(* compared to test, we use lazy enumeration *)
+
 open Earley_util.Map_ops
 open Fast_datastructure_implementations
 

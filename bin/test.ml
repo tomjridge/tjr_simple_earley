@@ -1,5 +1,6 @@
 (* test, represent nt_item as int *)
 
+(* probably superceded by test2, which uses lazy enumeration *)
 
 (* This test code represents items as ints. The representation is set
    up so that the operation of "cutting" an item against another complete
@@ -515,5 +516,24 @@ end
 
 
 
+
+*)
+
+
+
+
+
+(*
+
+
+$ bin $ time ./test.native 400
+Right hand side suffix count: 8
+400
+
+real	0m2.415s
+user	0m2.412s
+sys	0m0.000s
+
+# (h:pc1177) (p:/tmp/l/github/p_tjr_simple_earley/bin) (d:/dev/loop7[/git])  [dev !?]
 
 *)
