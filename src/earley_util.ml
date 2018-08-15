@@ -35,7 +35,7 @@ module Map_ops = struct
   }
 end
 
-
+(* FIXME really clarify what the interfaces should be *)
 module type NEEDED_BASIC_INTERFACE = sig
   open Set_ops
 
