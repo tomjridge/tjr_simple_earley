@@ -9,6 +9,7 @@ let now () = Core.Time_stamp_counter.(
     now () |> to_int63 |> Core.Int63.to_int |> Tjr_profile.dest_Some)
 
 let Tjr_profile.{mark;get_marks} = Tjr_profile.mk_profiler ~now
+(* let mark x = () *)
 open Tjr_profile.P
 
 open Earley_util.Set_ops
@@ -46,64 +47,57 @@ module Make(Monad:MONAD)(Requires: Earley_util.NEEDED_BASIC_INTERFACE) = struct
       ~nt_item_ops
     = 
     let { dot_nt; dot_i; dot_bs_hd } = nt_item_ops in
-    let step_at_k ~k = 
-      return () >>= fun _ ->
-      mark __LINE__; 
-      get_item () >>= function
-      | None -> mark __LINE__; return true (* finished *)
-      | Some itm -> 
-        mark __LINE__;
-        let return = return false in (* not finished *)
-        match dot_bs_hd itm with 
-        | None -> (
-            mark __LINE__;
-            (* NOTE complete item (i,X,k) *)
-            let (i,_X) = (dot_i itm, dot_nt itm) in
-            note_complete_item_at_current_k ~i ~nt:_X >>= fun seen_before ->
-            mark __LINE__;
-            match seen_before with
-            | true -> mark __LINE__; return 
+    let rec step_at_k ~k ~itm = 
+      mark __LINE__;
+      match dot_bs_hd itm with 
+      | None -> (
+          mark __LINE__;
+          (* NOTE complete item (i,X,k) *)
+          let (i,_X) = (dot_i itm, dot_nt itm) in
+          note_complete_item_at_current_k ~i ~nt:_X >>= fun seen_before ->
+          mark __LINE__;
+          match seen_before with
+          | true -> mark __LINE__; return ()
+          | false -> 
+            (* cut with blocked items *)
+            (* FIXME is it clear that we never twice add an item to the list ? Needs some thought here *)
+            match i=k with
+            | true -> mark __LINE__; return ()
             | false -> 
-              (* cut with blocked items *)
-              (* FIXME is it clear that we never twice add an item to the list ? Needs some thought here *)
               cut_complete_item_at_curr_k_with_blocked_items_and_add_new_items ~i ~nt:_X >>= fun () ->
               mark __LINE__;
-              return )              
-        | Some _S -> 
-          mark __LINE__;
-          _S |> sym_case 
-            ~nt:(fun _X ->
+              return ())              
+      | Some _S -> 
+        mark __LINE__;
+        _S |> sym_case 
+          ~nt:(fun _X ->
+              mark __LINE__;
+              add_blocked_item_at_current_k ~nt:_X ~itm >>= fun () ->
+              mark __LINE__;
+              have_we_expanded_nonterm_at_current_k ~nt:_X >>= function
+              | true -> mark __LINE__; return ()
+              | false -> 
                 mark __LINE__;
-                add_blocked_item_at_current_k ~nt:_X ~itm >>= fun () ->
+                expand_nonterm ~k ~nt:_X >>= fun () ->
                 mark __LINE__;
-                have_we_expanded_nonterm_at_current_k ~nt:_X >>= function
-                | true -> mark __LINE__; return
-                | false -> 
-                  mark __LINE__;
-                  expand_nonterm ~k ~nt:_X >>= fun () ->
-                  mark __LINE__;
-                  return)
-            ~tm:(fun tm ->                
-                input_matches_tm_at_k ~k ~tm |> function
-                | true -> 
-                  mark __LINE__;
-                  let itm' : nt_item = cut itm (k+1) in
-                  add_item_at_suc_k ~itm:itm' >>= fun () ->
-                  mark __LINE__;
-                  return
-                | false ->
-                  mark __LINE__;
-                  return)
-    in
-    let loop_at_k ~k = 
-      let rec f () = step_at_k ~k >>= fun finished ->
-        match finished with 
-        | true -> return ()
-        | false -> f ()
-      in
-      f ()
-    in
-    let rec earley () =
+                return ())
+          ~tm:(fun tm ->                
+              input_matches_tm_at_k ~k ~tm |> function
+              | true -> 
+                mark __LINE__;
+                let itm' : nt_item = cut itm (k+1) in
+                add_item_at_suc_k ~itm:itm' >>= fun () ->
+                mark __LINE__;
+                return ()
+              | false ->
+                mark __LINE__;
+                return ())
+    and loop_at_k ~k = 
+      get_item () >>= function
+      | None -> return ()
+      | Some itm ->
+        step_at_k ~k ~itm >>= fun _ -> loop_at_k ~k
+    and earley () =
       get_k () >>= fun k ->
       loop_at_k ~k >>= fun () ->
       incr_k () >>= fun () ->        
@@ -156,17 +150,19 @@ let make_empty_state ~input_length = {
 }
 
 module M = struct
-  open Tjr_monad.State_passing_instance
-  type 'a m = ('a,state state_passing) Monad.m
-  let mops = monad_ops()
-  let return = mops.return
-  let ( >>= ) = mops.bind
+  open Tjr_monad.Imperative_instance
+  type 'a m = ('a,imperative) Monad.m
+  let return = monad_ops.return
+  let ( >>= ) = monad_ops.bind  
 end
 
 
 module Leo = Make(M)(Simple_datastructure_implementations.S)
 
-let with_world = State_passing_instance.with_world
+let s = ref (make_empty_state ~input_length:500)
+
+let with_world f = 
+  Tjr_monad.Imperative_instance.to_m (!s |> f |> fun (a,s') -> s:=s'; a)
 
 (* FIXME we probably want an option to cut an item without altering the k val *)
 
@@ -235,8 +231,9 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
             List.filter (fun bitm -> not (nt_item_set_ops.mem bitm s.todo_done_at_k)) bitms |> fun bitms ->
             List.map (trans_items ~k:s.k) bitms |> List.concat |> fun new_itms ->            
             let current_items = new_itms@s.current_items in
+            let todo_done_at_k = add_many_items s.todo_done_at_k new_itms in  (* bug was here! *)
             (* Printf.printf "Length of items: %d\n%!" (List.length current_items); *)
-            {s with current_items}))
+            {s with current_items; todo_done_at_k}))
   in
 
 
@@ -281,6 +278,7 @@ let make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k =
 
   let incr_k () =
     with_world (fun s -> 
+        (* Printf.printf "Init items at stage %d: %d\n%!" (s.k+1) (nt_item_set_ops.elements s.items_at_suc_k |> List.length); *)
         (), { k=s.k+1;
               current_items=nt_item_set_ops.elements s.items_at_suc_k;
               todo_done_at_k=s.items_at_suc_k;
@@ -335,10 +333,10 @@ let earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k ~init_
     make_empty_state ~input_length |> fun s ->
     {s with current_items=init_items }  (* FIXME todo_done_at_k? *)
   in
+  let _ = s:=init_state in
   make_earley ~nullable ~expand_nonterm ~input_length ~input_matches_tm_at_k ()
-  |> State_passing_instance.run
-    ~init_state
-  |> fun (a,s) -> s
+  |> Tjr_monad.Imperative_instance.from_m 
+  |> fun _ -> !s
 
 
 let _ : 
@@ -435,36 +433,71 @@ sys	0m0.020s
 
 v. slow compared to test/test2
 
-Profiling info:
+Profiling info w state passing:
 
-$ leo $ time ./leo.native 200
 200
-Time:0  53 53 count:1
-Time:52091  73 89 count:200
-Time:60382  78 82 count:200
-Time:64913  51 53 count:200
-Time:75288  92 51 count:200
-Time:110710  89 92 count:200
-Time:111319  84 51 count:200
-Time:1828693  82 84 count:200
-Time:28341436  70 51 count:20100
-Time:243617864  53 51 count:199
-Time:306412186  55 73 count:1373901
-Time:376911493  63 65 count:2666600
-Time:646772294  73 76 count:1373701
-Time:688170760  55 59 count:2686700
-Time:984968977  78 80 count:1373501
-Time:2072100263  80 51 count:1373501
-Time:2463280315  76 78 count:1373701
-Time:3361288346  63 70 count:20100
-Time:3528461144  65 51 count:2666600 - this is a return from l. 65; half the time
-Time:4365131924  51 55 count:4060601  - this is get_item, which should be quick
-Time:5247637371  59 63 count:2686700
+Time:0  59 59 count:1
+Time:37753  67 83 count:200
+Time:55183  86 50 count:200
+Time:64780  72 76 count:200
+Time:88023  78 50 count:200
+Time:149639  83 86 count:200
+Time:3833103  76 78 count:200
+Time:23271706  64 50 count:20100
+Time:392653772  50 67 count:1373901
+Time:498078296  50 53 count:2686700
+Time:524828025  57 59 count:2666600
+Time:581872031  67 70 count:1373701
+Time:1632820100  72 74 count:1373501
+Time:1759465732  74 50 count:1373501
+Time:3031282741  70 72 count:1373701
+Time:3188218525  57 64 count:20100
+Time:3857811582  59 50 count:2666599 - return from seen before
+Time:6229920531  53 57 count:2686700 - note complete item
 
-real	0m15.521s
-user	0m14.708s
-sys	0m0.808s
+real	0m13.723s
+user	0m13.232s
+sys	0m0.484s
 
+With imperative monad:
+
+real	0m1.946s
+user	0m1.932s
+sys	0m0.012s
+
+Why is this so slow compared to experimental?
+
+
+
+
+old $ leo $ time ./leo.native 200
+old 200
+old Time:0  53 53 count:1
+old Time:52091  73 89 count:200
+old Time:60382  78 82 count:200
+old Time:64913  51 53 count:200
+old Time:75288  92 51 count:200
+old Time:110710  89 92 count:200
+old Time:111319  84 51 count:200
+old Time:1828693  82 84 count:200
+old Time:28341436  70 51 count:20100
+old Time:243617864  53 51 count:199
+old Time:306412186  55 73 count:1373901
+old Time:376911493  63 65 count:2666600
+old Time:646772294  73 76 count:1373701
+old Time:688170760  55 59 count:2686700
+old Time:984968977  78 80 count:1373501
+old Time:2072100263  80 51 count:1373501
+old Time:2463280315  76 78 count:1373701
+old Time:3361288346  63 70 count:20100
+old Time:3528461144  65 51 count:2666600 - this is a return from l. 65; half the time
+old Time:4365131924  51 55 count:4060601  - this is get_item, which should be quick
+old Time:5247637371  59 63 count:2686700
+old 
+old real	0m15.521s
+old user	0m14.708s
+old sys	0m0.808s
+old 
 
 overall, it is just about possible that the defn of the monad is not being optimized, whereas it was in other versions
 

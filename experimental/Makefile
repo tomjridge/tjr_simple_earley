@@ -1,2 +1,2 @@
 all:
-	ocamlfind ocamlopt -package tjr_monad,tjr_lib -linkpkg tjr_earley_imperative_monad.ml
+	ocamlfind ocamlopt -thread -package tjr_monad,tjr_lib,tjr_profile,core -linkpkg tjr_earley_imperative_monad.ml

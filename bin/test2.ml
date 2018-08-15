@@ -104,4 +104,4 @@ sys	0m0.016s
 
 
 
-
+let _ = Printf.printf "Number of items processed: %d\n%!" (!Earley.counter)

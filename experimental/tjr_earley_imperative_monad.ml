@@ -1,6 +1,14 @@
 (* an experiment to see whether the imperative code (represented using
    a monad) is easier to read; probably it is *)
 
+
+let now () = Core.Time_stamp_counter.(
+    now () |> to_int63 |> Core.Int63.to_int |> Tjr_profile.dest_Some)
+
+let Tjr_profile.{mark;get_marks} = Tjr_profile.mk_profiler ~now
+open Tjr_profile.P
+
+
 module type M_ = sig
   type 'a m
   val ( >>= ) : 'a m -> ('a -> 'b m) -> 'b m
@@ -147,38 +155,58 @@ discussion is indexed by these labels
 *)
 
       let step_at_k k nitm = 
+        mark __LINE__;
         let get_bitms (i,x) =
           if i=k then get_bitms_at_k x else
             get_bitms_lt_k (i,x)
         in
-
+        
         match is_finished nitm with 
         | true -> (                                               (*:af:*)
+            mark __LINE__;
             let (k',_Y) = (nitm|>dot_i,nitm|>dot_nt) in  
             mem_ixk_done (k',_Y) >>= fun already_done ->          (*:aj:*)
+            mark __LINE__;
             match already_done with     
-            | true -> return ()                                   (*:al:*)
+            | true -> mark __LINE__; return ()                                   (*:al:*)
             | false -> (                                          (*:am:*)
+                mark __LINE__;                
                 add_ixk_done (k',_Y) >>= fun _ ->                   
+                mark __LINE__;
                 get_bitms (k',_Y) >>= fun bitms ->                  
-                add_todos_at_k (List.map (fun bitm -> cut bitm k) bitms)))
+                mark __LINE__;
+                add_todos_at_k (List.map (fun bitm -> cut bitm k) bitms) >>= fun _ ->
+                mark __LINE__; return ()))
         | false -> (                                              (*:ax:*)
+            mark __LINE__;
             let bitm = nitm in   
             let _S = List.hd (bitm|>dot_bs) in 
             _S |> sym_case  
               ~nt:(fun _Y ->                                      (*:ce:*)
+                  mark __LINE__;
                   get_bitms_at_k _Y >>= fun bitms ->     
+                  mark __LINE__;
                   let bitms_empty = bitms=[] in     
                   add_bitm_at_k bitm _Y >>= fun _ ->     
+                  mark __LINE__;
                   match bitms_empty with  
                   | false -> (                                    (*:co:*)
+                      mark __LINE__;
                       mem_ixk_done (k,_Y) >>= function    
-                      | true -> add_todos_at_k [cut bitm k] 
+                      | true -> 
+                        add_todos_at_k [cut bitm k] >>= fun _ ->
+                        mark __LINE__;
+                        return ()
                       | false -> return ())    
                   | true -> (                                     (*:cw:*)
+                      mark __LINE__;
                       let itms = new_items ~nt:_Y ~input ~k in
-                      add_todos_at_k itms))  
+                      add_todos_at_k itms >>= fun _ ->
+                      mark __LINE__;
+                      return ()
+                    ))  
               ~tm:(fun tm ->                                      (*:ec:*)
+                  mark __LINE__;
                   find_ktjs tm >>= fun ktjs ->     
                   (match ktjs with
                    | None ->      
@@ -569,5 +597,38 @@ user	0m6.156s
 sys	0m0.012s
 
 very similar to simple_test.native
+
+*)
+
+let _ = 
+  let open Tjr_profile in
+  get_marks () |> print_profile_summary
+
+
+(* profile info
+
+$ experimental $ ./a.out 200
+Time:0  198 198 count:1
+Time:14088  191 202 count:200
+Time:48124  205 158 count:200
+Time:59311  181 209 count:400
+Time:76791  194 158 count:200
+Time:1359537  209 158 count:400
+Time:2848920  158 166 count:20100
+Time:3095653  202 205 count:200
+Time:3147639  169 173 count:20100
+Time:5157269  158 181 count:40801
+Time:6673086  191 194 count:40201
+Time:7737012  179 158 count:20100
+Time:8421932  181 186 count:40401
+Time:16927145  166 169 count:20100
+Time:18279231  198 158 count:40000
+Time:34573133  173 175 count:20100
+Time:66783285  188 191 count:40401
+Time:73524495  194 198 count:40001
+Time:132225487  175 177 count:20100
+Time:191734699  186 188 count:40401
+Time:2174587455  177 179 count:20100
+
 
 *)

@@ -4,3 +4,63 @@
   with the current src/ version); but they should be comparable FIXME
   - possibly this is because the monad is not being optimized away
   - perhaps use tjr_monad directly rather than functorize?
+
+
+
+* Leo profile vs experimental profile 
+
+- leo: Time:6229920531  53 57 count:2686700 
+  - this is the note_complete_item_at_current_k line
+    - so we see many more complete items than exp. has in total items
+- experimental: Time:2174587455  177 179 count:20100
+  - this is at the add_todos_at_k line
+
+Note that the count for exp. is much less than that for leo - leo is
+apparently processing many more items.
+
+We expect eg roughly n*(n+1)/2 complete items to be processed; for
+200, this is approx 20100/2, which is roughly in line with the
+experimental version
+
+So Leo is looking at many more complete items than expected.
+
+* Leo profiling, count of unseen complete items seems right
+
+In the below, 58 is before "seen_before", and 68 is after the cut
+
+$ leo $  time ./leo.native 200
+200
+Time:0  60 60 count:1
+Time:20190  58 65 count:200
+Time:28880  90 51 count:200
+Time:32184  65 51 count:200
+Time:44091  82 51 count:200
+Time:46901  76 80 count:200
+Time:48980  71 87 count:200
+Time:116014  87 90 count:200
+Time:925378  80 82 count:200
+Time:25582746  68 51 count:19900
+Time:379608091  51 71 count:1373901
+Time:599109184  58 60 count:2666600
+Time:784951448  71 74 count:1373701
+Time:1118337509  76 78 count:1373501
+Time:1190250339  78 51 count:1373501
+Time:1282572140  51 54 count:2686700
+Time:2452035210  74 76 count:1373701
+Time:2844559336  60 51 count:2666599
+Time:3247279969  58 68 count:19900
+Time:5034927634  54 58 count:2686700
+
+Note the following line
+
+Time:1282572140  51 54 count:2686700
+
+gives the total number of steps taken over all k.
+
+For experimental this is 20100+40801, so c. 61k which is a lot less
+than the 3M items processed by leo
+
+A rough calc gives c. 3k items at stage k, so 3/2 * k^2 items overall
+ie for len=200 we expect 3*10^4 items which is in line with
+experimental.
+

@@ -162,6 +162,7 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
     (* step_k ------------------------------------------------------- *)
     let step_k s0 = (
       debug_endline "XXXstep_k";
+      counter:=1 + !counter; 
       (* assert(log P.ab); *)
       (*        let _ = (
                 counter:=1 + !counter; 
