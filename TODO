@@ -12,3 +12,7 @@ Todo:
 - test.ml: use a hashmap to hashset for implementation of sets of items
 - think about using eg roaring bitsets/maps for efficient
   implementation of sets of integers
+- todo_done sets are not required: can check complete item, blocked_nt
+  item and blocked_tm item (plus maybe some other stuff) by looking at
+  the appropriate sets/maps
+- make the "todo" list a list of lists to avoid append overhead
