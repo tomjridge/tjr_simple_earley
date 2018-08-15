@@ -9,7 +9,7 @@ let now () = Core.Time_stamp_counter.(
     now () |> to_int63 |> Core.Int63.to_int |> Tjr_profile.dest_Some)
 
 let Tjr_profile.{mark;get_marks} = Tjr_profile.mk_profiler ~now
-(* let mark x = () *)
+let mark x = () 
 open Tjr_profile.P
 
 open Earley_util.Set_ops
@@ -408,97 +408,21 @@ let main () =
 
 let _ = main ()
 
+(*
 let _ = 
   let open Tjr_profile in
   get_marks () |> print_profile_summary
+*)
+
+
 
 (*
-
-$ leo $ time ./leo.native 200
-200
-
-real	0m2.546s
-user	0m2.544s
-sys	0m0.000s
-
-Slower because we need to avoid adding items we have already seen?
-
 
 $ leo $ time ./leo.native 400
 400
 
-real	0m34.919s
-user	0m34.896s
-sys	0m0.020s
-
-v. slow compared to test/test2
-
-Profiling info w state passing:
-
-200
-Time:0  59 59 count:1
-Time:37753  67 83 count:200
-Time:55183  86 50 count:200
-Time:64780  72 76 count:200
-Time:88023  78 50 count:200
-Time:149639  83 86 count:200
-Time:3833103  76 78 count:200
-Time:23271706  64 50 count:20100
-Time:392653772  50 67 count:1373901
-Time:498078296  50 53 count:2686700
-Time:524828025  57 59 count:2666600
-Time:581872031  67 70 count:1373701
-Time:1632820100  72 74 count:1373501
-Time:1759465732  74 50 count:1373501
-Time:3031282741  70 72 count:1373701
-Time:3188218525  57 64 count:20100
-Time:3857811582  59 50 count:2666599 - return from seen before
-Time:6229920531  53 57 count:2686700 - note complete item
-
-real	0m13.723s
-user	0m13.232s
-sys	0m0.484s
-
-With imperative monad:
-
-real	0m1.946s
-user	0m1.932s
-sys	0m0.012s
-
-Why is this so slow compared to experimental?
-
-
-
-
-old $ leo $ time ./leo.native 200
-old 200
-old Time:0  53 53 count:1
-old Time:52091  73 89 count:200
-old Time:60382  78 82 count:200
-old Time:64913  51 53 count:200
-old Time:75288  92 51 count:200
-old Time:110710  89 92 count:200
-old Time:111319  84 51 count:200
-old Time:1828693  82 84 count:200
-old Time:28341436  70 51 count:20100
-old Time:243617864  53 51 count:199
-old Time:306412186  55 73 count:1373901
-old Time:376911493  63 65 count:2666600
-old Time:646772294  73 76 count:1373701
-old Time:688170760  55 59 count:2686700
-old Time:984968977  78 80 count:1373501
-old Time:2072100263  80 51 count:1373501
-old Time:2463280315  76 78 count:1373701
-old Time:3361288346  63 70 count:20100
-old Time:3528461144  65 51 count:2666600 - this is a return from l. 65; half the time
-old Time:4365131924  51 55 count:4060601  - this is get_item, which should be quick
-old Time:5247637371  59 63 count:2686700
-old 
-old real	0m15.521s
-old user	0m14.708s
-old sys	0m0.808s
-old 
-
-overall, it is just about possible that the defn of the monad is not being optimized, whereas it was in other versions
+real	0m6.032s
+user	0m6.024s
+sys	0m0.004s
 
 *)
