@@ -89,7 +89,9 @@ let nt_set_ops = Set_nt.{ add; mem; empty; is_empty; elements }
 type state = {
   todo:nt_item list;
   todo_done: nt_item_set;
-  (* bitms: bitms_map;  (\* map from int? *\) *)
+  bitms: map_nt array;
+  nonterms_expanded: nt_set array;
+  complete_items: nt_set array array
 }
 
 let make_empty_state ~input_length = failwith "FIXME"
@@ -121,79 +123,74 @@ let make_earley ~expand_nonterm ~input_length ~input_matches_tm = (
   let add_blocked_item ~nt ~k ~itm =
     with_world (fun s ->
         ((),{s with
-             bitms_at_k=
-               map_nt_ops.map_find nt s.bitms_at_k |> fun itms' ->
-               (* Printf.printf "Size of itms': %d %d\n%!" s.k (nt_item_set_ops.elements itms' |> List.length); *)
-               (* Printf.printf "Called %d %d %d %d \n%!" itm.nt itm.i_ itm.k_ (List.length itm.bs); *)
-               nt_item_set_ops.add itm itms' |> fun itms'' ->               
-               map_nt_ops.map_add nt itms'' s.bitms_at_k}))
+             bitms=
+               Array.get s.bitms k |> fun map ->
+               map_nt_ops.map_find nt map |> fun itms ->
+               nt_item_set_ops.add itm itms |> fun itms ->
+               map_nt_ops.map_add nt itms map |> fun map ->
+               Array.set s.bitms k map;
+               s.bitms}))
   in
 
   let add_item ~itm =
     with_world (fun s ->
-        ((),{s with
-             items_at_suc_k=
-               match nt_item_set_ops.mem itm s.items_at_suc_k with
-               | true -> s.items_at_suc_k
-               | false -> 
-                 (trans_items ~k:(s.k+1) itm) 
-                 |> add_many_items s.items_at_suc_k}))
+        ((),match nt_item_set_ops.mem itm s.todo_done with
+          | true -> s
+          | false -> {s with
+                      todo=itm::s.todo;
+                      todo_done=nt_item_set_ops.add itm s.todo_done
+                     }))
   in
 
-  let cut_complete_item_with_blocked_items ~i ~nt =
+  let cut_complete_item_with_blocked_items ~i ~nt ~k =
     with_world (fun s ->
-        ((),match s.k=i with 
-          | true -> s
-          | false -> 
-            (* i < k *)
-            (* get blocked items *)
-            Array.get s.bitms_lt_k i |> fun bitms ->
-            map_nt_ops.map_find nt bitms |> fun bitms ->
-            nt_item_set_ops.elements bitms |> fun bitms ->
-            List.map (fun bitm -> cut bitm s.k) bitms |> fun bitms ->
-            List.filter (fun bitm -> not (nt_item_set_ops.mem bitm s.todo_done_at_k)) bitms |> fun bitms ->
-            List.map (trans_items ~k:s.k) bitms |> List.concat |> fun new_itms ->            
-            let current_items = new_itms@s.current_items in
-            let todo_done_at_k = add_many_items s.todo_done_at_k new_itms in  (* bug was here! *)
-            (* Printf.printf "Length of items: %d\n%!" (List.length current_items); *)
-            {s with current_items; todo_done_at_k}))
+        Array.get s.bitms i |> fun bitms ->
+        map_nt_ops.map_find nt bitms |> fun bitms ->
+        nt_item_set_ops.elements bitms |> fun bitms ->
+        List.map (fun bitm -> cut bitm k) bitms |> fun bitms ->
+        List.filter (fun bitm -> not (nt_item_set_ops.mem bitm s.todo_done)) bitms |> fun bitms ->        
+        ((),{s with
+             todo=bitms@s.todo;
+             todo_done=add_many_items s.todo_done bitms}))
   in
 
 
   let expand_nonterm ~k ~nt =
     with_world (fun s ->
-        assert(k=s.k);
-        assert(not (nt_set_ops.mem nt s.nonterms_expanded_at_current_k));
+        assert(not (nt_set_ops.mem nt (Array.get s.nonterms_expanded k)));
         ((),
          expand_nonterm ~k ~nt |> fun itms -> 
-         List.map (trans_items ~k) itms |> List.concat |> fun new_itms ->
-         (* we only expand new_itms once at each k, so the items can't already be in the current_items *)
-         (* List.filter (fun itm -> not (nt_item_set_ops.mem itm s.todo_done_at_k)) new_itms -> fun new_itms -> *)
-            {s with
-             current_items=new_itms@s.current_items;
-             todo_done_at_k=add_many_items s.todo_done_at_k new_itms;
-             nonterms_expanded_at_current_k=nt_set_ops.add nt s.nonterms_expanded_at_current_k
-            }))
+         {s with
+          todo=itms@s.todo;
+          todo_done=add_many_items s.todo_done itms;
+          nonterms_expanded=(
+            Array.get s.nonterms_expanded k |> fun set ->
+            nt_set_ops.add nt set |> fun set ->
+            Array.set s.nonterms_expanded k set;
+            s.nonterms_expanded)
+         }))
   in
          
   let get_item () = 
     with_world (fun s ->
-        s.current_items |> function
+        s.todo |> function
         | [] -> None,s
-        | x::current_items -> Some x, {s with current_items})
+        | x::todo -> Some x, {s with todo})
   in
 
-  let have_we_expanded_nonterm ~nt =
+  let have_we_expanded_nonterm ~k ~nt =
     with_world (fun s -> 
-        assert(nt_set_ops.elements s.nonterms_expanded_at_current_k |> List.length < 2);
-        nt_set_ops.mem nt s.nonterms_expanded_at_current_k, s)
+        nt_set_ops.mem nt (Array.get s.nonterms_expanded k), s)
   in
 
   let note_complete_item ~i ~nt ~k =
     with_world (fun s -> 
-        let seen_before = ixk_set_ops.mem (i,nt) s.complete_items_at_current_k in
+        let seen_before = s.complete_items.(i).(k) |> nt_set_ops.mem nt in
         seen_before, { s with
-                       complete_items_at_current_k=(ixk_set_ops.add (i,nt) s.complete_items_at_current_k )})
+                       complete_items=(
+                         s.complete_items.(i).(k) |> nt_set_ops.add nt |> fun set ->
+                         s.complete_items.(i).(k) <- set;
+                         s.complete_items)})
   in
 
   let nt_item_ops = { dot_i; dot_nt; dot_k; dot_bs_hd } in  (* FIXME dot_k *)
@@ -208,6 +205,5 @@ let make_earley ~expand_nonterm ~input_length ~input_matches_tm = (
     ~have_we_expanded_nonterm
     ~input_matches_tm
     ~note_complete_item 
-    ~nt_item_ops 
     ~nt_item_ops)
 
