@@ -1,1 +1,2 @@
 PKG tjr_simple_earley tjr_monad
+FLG -short-paths

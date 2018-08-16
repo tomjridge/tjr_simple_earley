@@ -25,6 +25,12 @@ module Set_ops = struct
   }
 end
 
+module Int_set = Set.Make(struct type t = int let compare: t -> t -> int = Pervasives.compare end)
+
+let int_set_ops = 
+  let open Set_ops in
+  Int_set.{ add; mem; empty; is_empty; elements }
+
 
 module Map_ops = struct
   type ('k,'v,'t) map_ops = {
