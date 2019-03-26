@@ -153,6 +153,7 @@ discussion is indexed by these labels
   - em: if k is in js (ie tm matched the empty string) cut bitm with k
 
 *)
+      let (^) = List.map in
 
       let step_at_k k nitm = 
         mark __LINE__;
@@ -175,7 +176,7 @@ discussion is indexed by these labels
                 mark __LINE__;
                 get_bitms (k',_Y) >>= fun bitms ->                  
                 mark __LINE__;
-                add_todos_at_k (List.map (fun bitm -> cut bitm k) bitms) >>= fun _ ->
+                add_todos_at_k ((fun bitm -> cut bitm k) ^ bitms) >>= fun _ ->
                 mark __LINE__; return ()))
         | false -> (                                              (*:ax:*)
             mark __LINE__;
@@ -209,16 +210,16 @@ discussion is indexed by these labels
                   mark __LINE__;
                   find_ktjs tm >>= fun ktjs ->     
                   (match ktjs with
-                   | None ->      
-                     (* we need to process kT *)                  (*:ek:*)
-                     let js = parse_tm ~tm ~input ~k ~input_length in 
-                     add_ktjs tm js >>= fun _ ->  
-                     return js 
+                   | None -> (
+                       (* we need to process kT *)                (*:ek:*)
+                       let js = parse_tm ~tm ~input ~k ~input_length in 
+                       add_ktjs tm js >>= fun _ ->  
+                       return js) 
                    | Some js -> return js) >>= fun js -> 
                   (* there may be a k in js, in which case we have a 
                      new todo at the current stage *)
                   let (xs,js) = List.partition (fun j -> j=k) js in (*:el:*)
-                  add_todos_gt_k (List.map (fun j -> cut bitm j) js) >>= fun _ ->
+                  add_todos_gt_k ((fun j -> cut bitm j) ^ js) >>= fun _ ->
                   match xs with                                   (*:em:*)
                   | [] -> return ()     
                   | _ -> add_todos_at_k [cut bitm k]))
