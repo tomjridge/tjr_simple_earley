@@ -1,0 +1,11 @@
+FROM impfs_base_docker_image
+
+RUN echo edit to rebuild...
+
+RUN git clone https://github.com/tomjridge/tjr_lib.git
+
+# -n means don't build etc
+RUN eval `opam config env` && opam pin add -y -n tjr_lib_core ./tjr_lib
+RUN eval `opam config env` && opam pin add -y -n tjr_lib ./tjr_lib
+RUN eval `opam config env` && opam install -y tjr_lib
+RUN eval `opam config env` && opam list

@@ -1,0 +1,7 @@
+FROM impfs_base_docker_image
+
+RUN echo rebuild from here...
+
+COPY tjr_simple_earley tjr_simple_earley
+RUN sudo chown -R opam:opam tjr_simple_earley
+RUN eval `opam config env` && make -C tjr_simple_earley
