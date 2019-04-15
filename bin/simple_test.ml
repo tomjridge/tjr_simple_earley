@@ -1,10 +1,10 @@
 (* test, represent nt_item as a simple record *)
-
-open Earley_util.Map_ops 
+open Tjr_simple_earley
+open Util.Map_ops 
 
 (* simple test ------------------------------------------------------ *)
 
-open Simple_datastructure_implementations.S
+open Simple_ds.S
 
 (* Encode nonterminals and terminals as ints; nts are even; tms are
    odd *)
@@ -56,11 +56,11 @@ let bitms_lt_k_ops = {
   map_remove=(fun k t -> failwith __LOC__);  (* not used *)
 }
 
-let cut = Simple_datastructure_implementations.S.cut
+let cut = Simple_ds.S.cut
 
 (* Finally, run Earley! *)
 
-open Simple_datastructure_implementations.Earley
+open Simple_ds.Earley
 
 let main () = 
   run_earley 

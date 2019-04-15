@@ -1,9 +1,9 @@
 (* test2, represent nt_item as int *)
 
 (* compared to test, we use lazy enumeration *)
-
-open Earley_util.Map_ops
-open Fast_datastructure_implementations
+open Tjr_simple_earley
+open Util.Map_ops
+open Fast_ds
 
 (* simple test ------------------------------------------------------ *)
 

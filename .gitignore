@@ -10,3 +10,5 @@ _build/
 /tmp/
 tmp/
 /tjr_simple_earley.install
+/bin/.merlin
+/src/.merlin

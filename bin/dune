@@ -1,0 +1,4 @@
+(executables
+  (names simple_test test test2)
+  (flags (:standard -w -27-8-40-32-33-39))
+  (libraries tjr_simple_earley))
