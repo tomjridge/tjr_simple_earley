@@ -1,9 +1,9 @@
 
-open Earley_util
+open Util
 open Set_ops
 open Map_ops
 
-open Tjr_earley
+open Earley
 
 (* Simple map implementation *)
 module Map_make = functor (Ord:Set.OrderedType) -> struct
@@ -103,5 +103,5 @@ module S = struct
 
 end  (* S *)
 
-module Earley = Tjr_earley.Make(S)
+module Earley = Earley.Make(S)
 

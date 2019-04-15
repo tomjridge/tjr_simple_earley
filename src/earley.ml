@@ -32,16 +32,14 @@
 *)
 
 
-open Earley_util.Misc
-
-open Earley_util.Set_ops
-
-open Earley_util.Map_ops
+open Util.Misc
+open Util.Set_ops
+open Util.Map_ops
 
 
 
 (*:nm:*)
-module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
+module Make = functor (X:Util.NEEDED_EXTENDED_INTERFACE) -> struct
   (*:np:*)
   open X
 (*  open Profile *)
@@ -235,7 +233,7 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
                     debug_endline "bitms_empty";
                     assert (mem_ixk_done (k,_Y) s0 = false);
                     new_items ~nt:_Y ~input ~k 
-                    |> Earley_util.List_.with_each_elt 
+                    |> Util.List_.with_each_elt 
                       ~step:(fun ~state:s nitm -> add_todo nitm s) 
                       ~init_state:s0
                     |> fun s -> 
@@ -267,7 +265,7 @@ module Make = functor (X:Earley_util.NEEDED_EXTENDED_INTERFACE) -> struct
                    that gets blocked on kT is immediately processed
                    against items kTj *)
                 js 
-                |> Earley_util.List_.with_each_elt
+                |> Util.List_.with_each_elt
                   ~step:(fun ~state:s j -> add_todo (cut bitm j) s)
                   ~init_state:s0 
                 |> fun s -> 

@@ -1,4 +1,4 @@
-open Earley_util
+open Util
 
 (* Compared to test.ml, we compute int mappings lazily *)
 
@@ -90,7 +90,7 @@ end
 
   (* itms are triples (nt,i,bs_as_int)  *)
 
-open Tjr_earley
+open Earley
 open Set_ops
 open Map_ops
 
@@ -227,4 +227,4 @@ module S = struct
 
 end  (* S *)
 
-module Earley = Tjr_earley.Make(S)
+module Earley = Earley.Make(S)
