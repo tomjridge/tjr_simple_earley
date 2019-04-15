@@ -1,9 +1,10 @@
 (* an experiment to see whether the imperative code (represented using
    a monad) is easier to read; probably it is *)
 
+let dest_Some = function Some x -> x | _ -> (failwith "dest_Some")
 
 let now () = Core.Time_stamp_counter.(
-    now () |> to_int63 |> Core.Int63.to_int |> Tjr_profile.dest_Some)
+    now () |> to_int63 |> Core.Int63.to_int |> dest_Some)
 
 let Tjr_profile.{mark;get_marks} = Tjr_profile.mk_profiler ~now
 open Tjr_profile.P
@@ -274,13 +275,9 @@ end
 
 (* example instance ------------------------------------------------- *)
 
-open Tjr_monad
-open Tjr_monad.Monad
-
-
 module M = struct
-  open Tjr_monad.Imperative_instance
-  type 'a m = ('a,imperative) Monad.m
+  open Tjr_monad.Imperative
+  type 'a m = ('a,imperative) Tjr_monad.Types.m
   let return = monad_ops.return
   let ( >>= ) = monad_ops.bind  
 end
@@ -419,7 +416,7 @@ open State
 
 open Earley
 
-let to_m = Imperative_instance.to_m
+let to_m = Tjr_monad.Imperative.to_m
 
 let run_earley ~state =
   let s = state in
@@ -583,7 +580,7 @@ let () =
     ~new_items
     ~input
     ~parse_tm
-    ~input_length |> Imperative_instance.from_m
+    ~input_length |> Tjr_monad.Imperative.from_m
 
 (* result is the final state *)
 
