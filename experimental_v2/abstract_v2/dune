@@ -1,0 +1,14 @@
+(library
+  (name xxx)
+  (flags (:standard -w -27-8-40-32-39))
+  (wrapped false)
+  (preprocess (pps ppx_jane))
+  (modules Prelude Earley Impl)
+  (libraries ppx_jane tjr_lib tjr_profile tjr_monad core)
+)
+
+(executable
+  (name example)
+  (flags (:standard -w -27-8-40-32-39))
+  (modules Example)
+  (libraries xxx))

@@ -1,7 +1,0 @@
-(library
-  (name yyy)
-  (flags (:standard -w -27-8-40-32-39))
-  (wrapped false)
-  (preprocess (pps ppx_jane))
-  (libraries ppx_jane tjr_monad tjr_profile core)
-)
