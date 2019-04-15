@@ -1,0 +1,7 @@
+(library
+  (public_name tjr_simple_earley)
+  (flags (:standard -w -27-8-40-32-33-39))
+  ; (wrapped false)
+  ; (preprocess (pps ppx_jane))
+  (libraries tjr_lib tjr_profile tjr_monad)
+)

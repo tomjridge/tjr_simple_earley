@@ -9,3 +9,4 @@ _build/
 /docs/tmp.*
 /tmp/
 tmp/
+/tjr_simple_earley.install

@@ -1,9 +1,30 @@
-# NOTE further recipes in src/Makefile
+SHELL:=bash
+DUNE:=dune
+
+build:
+	$(DUNE) build 
+
+# NOTE install and uninstall do not involve opam; to build and install with opam, first pin
+install: 
+	$(DUNE) install
+
+uninstall: 
+	$(DUNE) uninstall
+
+clean: 
+	$(DUNE) clean
 
 all:
-	$(MAKE) -C src 
-	$(MAKE) -C bin
+	$(MAKE) clean
+	$(MAKE) build
+	$(MAKE) install
+	$(MAKE) docs
 
-clean:
-	$(MAKE) -C src clean
-	$(MAKE) -C bin clean
+SRC:=_build/default/_doc/_html
+DST:=docs
+docs: FORCE
+	$(DUNE) build @doc
+	rm -rf $(DST)/*
+	cp -R $(SRC)/* $(DST)
+
+FORCE:
