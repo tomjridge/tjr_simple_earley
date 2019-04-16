@@ -1,0 +1,29 @@
+lib: [
+  "_build/install/default/lib/tjr_simple_earley/META" {"META"}
+  "_build/install/default/lib/tjr_simple_earley/dune-package" {"dune-package"}
+  "_build/install/default/lib/tjr_simple_earley/earley.ml" {"earley.ml"}
+  "_build/install/default/lib/tjr_simple_earley/fast_ds.ml" {"fast_ds.ml"}
+  "_build/install/default/lib/tjr_simple_earley/opam" {"opam"}
+  "_build/install/default/lib/tjr_simple_earley/simple_ds.ml" {"simple_ds.ml"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley.a" {"tjr_simple_earley.a"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley.cma" {"tjr_simple_earley.cma"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley.cmi" {"tjr_simple_earley.cmi"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley.cmt" {"tjr_simple_earley.cmt"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley.cmx" {"tjr_simple_earley.cmx"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley.cmxa" {"tjr_simple_earley.cmxa"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley.cmxs" {"tjr_simple_earley.cmxs"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley.ml" {"tjr_simple_earley.ml"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Earley.cmi" {"tjr_simple_earley__Earley.cmi"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Earley.cmt" {"tjr_simple_earley__Earley.cmt"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Earley.cmx" {"tjr_simple_earley__Earley.cmx"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Fast_ds.cmi" {"tjr_simple_earley__Fast_ds.cmi"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Fast_ds.cmt" {"tjr_simple_earley__Fast_ds.cmt"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Fast_ds.cmx" {"tjr_simple_earley__Fast_ds.cmx"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Simple_ds.cmi" {"tjr_simple_earley__Simple_ds.cmi"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Simple_ds.cmt" {"tjr_simple_earley__Simple_ds.cmt"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Simple_ds.cmx" {"tjr_simple_earley__Simple_ds.cmx"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Util.cmi" {"tjr_simple_earley__Util.cmi"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Util.cmt" {"tjr_simple_earley__Util.cmt"}
+  "_build/install/default/lib/tjr_simple_earley/tjr_simple_earley__Util.cmx" {"tjr_simple_earley__Util.cmx"}
+  "_build/install/default/lib/tjr_simple_earley/util.ml" {"util.ml"}
+]

@@ -1,0 +1,4 @@
+EXCLUDE_QUERY_DIR
+B ../_build/default/src/.tjr_simple_earley.objs/byte
+S .
+FLG -open Tjr_simple_earley -w @a-4-29-40-41-42-44-45-48-58-59-60-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -27-8-40-32-33-39
