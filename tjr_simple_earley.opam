@@ -15,6 +15,7 @@ dev-repo: "https://github.com/tomjridge/tjr_simple_earley.git"
 depends: [
   "ocamlfind"
   "dune"
+  "ppx_jane"
 #  "tjr_lib"
 #  "tjr_profile"
 #  "tjr_monad"

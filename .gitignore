@@ -12,3 +12,4 @@ tmp/
 /tjr_simple_earley.install
 /bin/.merlin
 /src/.merlin
+.dockerfile/tjr_simple_earley/
