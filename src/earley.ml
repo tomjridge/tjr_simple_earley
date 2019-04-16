@@ -1,5 +1,14 @@
-(** An experiment to see whether the imperative code (represented using
-   a monad) is easier to read; probably it is. *)
+(** Earley main implementation. This version of the code tries to
+   assume as little as possible about the representation of the
+   underlying structures.  *)
+
+
+type ('nt,'tm,'nt_item,'input) grammar_etc = {
+  new_items: nt:'nt -> input:'input -> pos:int -> 'nt_item list;
+  parse_tm: tm:'tm -> input:'input -> pos:int -> input_length:int -> int list;
+  input:'input;
+  input_length:int;
+}
 
 module type A = sig
 
@@ -11,26 +20,41 @@ module type A = sig
   type tm
   type sym
 
+  val sym_case: nt:(nt -> 'a) -> tm:(tm -> 'a) -> sym -> 'a
+  val _NT: nt -> sym
+
+
   type nt_item  
+  val dot_nt: nt_item -> nt
+  val dot_i: nt_item -> i_t
+  val dot_k: nt_item -> k_t
+  val dot_bs: nt_item -> sym list
+  val cut: nt_item -> j_t -> nt_item
+
 
   type nt_item_set
+  val elements : nt_item_set -> nt_item list
 
-  (* when we increase k, we need to alter the state significantly;
-     this reveals the structure of the state *)
+
+  (** int -> bitms_at_k  FIXME implement as hashtbl *)
+  type bitms_lt_k  
+
+  (* int -> nt_item_set *)
+  type todo_gt_k 
+  val todo_gt_k_find: int -> todo_gt_k -> nt_item_set
+
+
+  (** NOTE following are per k *)
 
   (** nt -> nt_item_set *)
   type bitms_at_k 
 
-  (** int -> bitms_at_k *)
-  type bitms_lt_k  
-
-  (** NOTE following are per k *)
-
-  (** int*nt set *)
+  (** (int*nt) set *)
   type ixk_done  
 
   (** tm -> j list option *)
   type ktjs  
+
 
 end
 
@@ -38,25 +62,12 @@ end
 
 module Make(A:A) = struct
 
+  (** {2 Provided by user} *)
+
   (* to make doc self-contained *)
   include A
 
-  type item_ops = {
-    sym_case: 'a. nt:(nt -> 'a) -> tm:(tm -> 'a) -> sym -> 'a;
-    _NT: nt -> sym;
-    dot_nt: nt_item -> nt;
-    dot_i: nt_item -> i_t;
-    dot_k: nt_item -> k_t;
-    dot_bs: nt_item -> sym list;
-    cut: nt_item -> j_t -> nt_item;
-    elements : nt_item_set -> nt_item list
-  }
-
-
-  (* NOTE a map from int, so we can implement straightforwardly *)
-  type todo_gt_k = (int,nt_item_set) Hashtbl.t
-
-  let todo_gt_k_find: int -> todo_gt_k -> nt_item_set = failwith "FIXME"
+  (** {2 Content of Make proper starts here} *)
 
   type state = {
     todo: nt_item list;
@@ -81,30 +92,41 @@ module Make(A:A) = struct
     fun s -> ((),f s)
 
   (* FIXME these expose the state type via _ m *)
-  type atomic_operations = {
-    (* FIXME this op is already known now we know 'a m *)
-    pop_todo: unit -> nt_item option m;
+  (** 
+     - pop_todo can be implemented directly
+     - get_bitms_at_k needs bitms_at_k, and a way to map nt_item_set to list (which we have: elements)
+     - add_bitm_at_k is fine
+     - add_todos_at_k is fine
+     - add_todos_gt_k is fine
+     - rest are fine
 
-    (* following three could be implemented as funs t -> t, then lifted to the monad *)
+     NOTE if we use a mutable impl of state, we can avoid having to
+     lookup via nt, update set, and update via nt
+  *)
+  type atomic_operations = {
+    pop_todo: unit -> nt_item option m;
+    (* FIXME this op is already known now we know 'a m *)
+
     get_bitms_at_k: nt -> nt_item list m;  (* or set? *)
     get_bitms_lt_k: int * nt -> nt_item list m;  (* or set? *)
     add_bitm_at_k: nt_item -> nt -> unit m;  (* FIXME don't need nt *)
+    (* these three could be implemented as funs t -> t, then lifted to the monad *)
 
-    (* FIXME following two could be implemented here, since we know the state impl type *)
     add_todos_at_k: nt_item list -> unit m;
     add_todos_gt_k: nt_item list -> unit m;
+    (* FIXME these two could be implemented here, since we know the state impl type *)
 
+    add_ixk_done: int*nt -> unit m;
+    mem_ixk_done: int*nt -> bool m;
     (* FIXME these, and others, could be implemented outside the monad
        as a funtion t->t, then injected into the monad now we know
        what 'a m is *)
-    add_ixk_done: int*nt -> unit m;
-    mem_ixk_done: int*nt -> bool m;
 
     find_ktjs: tm -> int list option m;
     add_ktjs: tm -> int list -> unit m;
   }
 
-
+  (** FIXME naming; perhaps: pure_ops? or just get user to pass in with A *)
   type state_ops = {
     update_bitms_lt_k: int -> bitms_at_k -> bitms_lt_k -> bitms_lt_k; (* FIXME what for? *)
     empty_bitms_at_k: bitms_at_k;
@@ -124,10 +146,10 @@ module Make(A:A) = struct
 
     (* main ------------------------------------------------------------- *)
 
-    let run_earley ~item_ops ~state_ops ~at_ops = 
-      let { sym_case; _NT; dot_nt; dot_i; dot_k; dot_bs; cut; elements } =
+    let run_earley (*~item_ops*) ~state_ops ~at_ops = 
+      (* let { sym_case; _NT; dot_nt; dot_i; dot_k; dot_bs; cut; elements } =
         item_ops 
-      in
+      in*)
       let { update_bitms_lt_k; empty_bitms_at_k;
             empty_ixk_done; empty_ktjs } = state_ops 
       in
@@ -190,7 +212,7 @@ discussion is indexed by these labels
   - em: if k is in js (ie tm matched the empty string) cut bitm with k
 
 *)
-          let (^) = List.map in
+          let image = List.map in
 
           let step_at_k k nitm = 
             mark __LINE__;
@@ -213,7 +235,7 @@ discussion is indexed by these labels
                     mark __LINE__;
                     get_bitms (k',_Y) >>= fun bitms ->                  
                     mark __LINE__;
-                    add_todos_at_k ((fun bitm -> cut bitm k) ^ bitms) >>= fun _ ->
+                    add_todos_at_k (image (fun bitm -> cut bitm k) bitms) >>= fun _ ->
                     mark __LINE__; return ()))
             | false -> (                                              (*:ax:*)
                 mark __LINE__;
@@ -238,7 +260,7 @@ discussion is indexed by these labels
                           | false -> return ())    
                       | true -> (                                     (*:cw:*)
                           mark __LINE__;
-                          let itms = new_items ~nt:_Y ~input ~k in
+                          let itms = new_items ~nt:_Y ~input ~pos:k in
                           add_todos_at_k itms >>= fun _ ->
                           mark __LINE__;
                           return ()
@@ -249,14 +271,14 @@ discussion is indexed by these labels
                       (match ktjs with
                        | None -> (
                            (* we need to process kT *)                (*:ek:*)
-                           let js = parse_tm ~tm ~input ~k ~input_length in 
+                           let js = parse_tm ~tm ~input ~pos:k ~input_length in 
                            add_ktjs tm js >>= fun _ ->  
                            return js) 
                        | Some js -> return js) >>= fun js -> 
                       (* there may be a k in js, in which case we have a 
                          new todo at the current stage *)
                       let (xs,js) = List.partition (fun j -> j=k) js in (*:el:*)
-                      add_todos_gt_k ((fun j -> cut bitm j) ^ js) >>= fun _ ->
+                      add_todos_gt_k (image (fun j -> cut bitm j) js) >>= fun _ ->
                       match xs with                                   (*:em:*)
                       | [] -> return ()     
                       | _ -> add_todos_at_k [cut bitm k]))
@@ -306,66 +328,55 @@ discussion is indexed by these labels
 
     end
 
+  (* type 'input _grammar_etc = (nt,tm,nt_item,'input) grammar_etc *)
+
   module Export : sig
     type earley_parser
     val make_earley_parser: 
-      item_ops:item_ops ->
+      (* item_ops:item_ops -> *)
       state_ops:state_ops ->
       at_ops:atomic_operations ->
       earley_parser
-
+(*
     val _run_earley_parser:
       earley_parser:earley_parser -> 
-      new_items:(nt:nt -> input:'a -> k:i_t -> nt_item list) ->
-      input:'a ->
-      input_length:i_t -> 
-      parse_tm:(tm:tm -> input:'a -> k:i_t -> input_length:i_t -> i_t list) ->
+      grammar_etc:'a _grammar_etc -> 
       unit m
+*)
 
     (** returns the final state *)
     val run_earley_parser:
       earley_parser:earley_parser -> 
-      new_items:(nt:nt -> input:'a -> k:i_t -> nt_item list) ->
-      input:'a ->
-      input_length:i_t -> 
-      parse_tm:(tm:tm -> input:'a -> k:i_t -> input_length:i_t -> i_t list) ->
+      grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
       initial_items:nt_item list ->
       state
   end = struct
     type earley_parser = {
-      run_parser: 'a. new_items:(nt:nt -> input:'a -> k:i_t -> nt_item list) ->
+      run_parser: 'a. new_items:(nt:nt -> input:'a -> pos:i_t -> nt_item list) ->
       input:'a ->
-      parse_tm:(tm:tm -> input:'a -> k:i_t -> input_length:i_t -> i_t list) ->
+      parse_tm:(tm:tm -> input:'a -> pos:i_t -> input_length:i_t -> i_t list) ->
       input_length:i_t -> unit m
     }
 
-    let make_earley_parser ~item_ops ~state_ops ~at_ops =
-      {run_parser=fun ~new_items -> Internal2.run_earley ~item_ops ~state_ops ~at_ops ~new_items}
+    let make_earley_parser (* ~item_ops*) ~state_ops ~at_ops =
+      {run_parser=fun ~new_items -> Internal2.run_earley (*~item_ops*) ~state_ops ~at_ops ~new_items}
 
-    let _run_earley_parser ~earley_parser 
-        ~new_items
-        ~input 
-        ~input_length
-        ~parse_tm
-      = earley_parser.run_parser
+    let _run_earley_parser ~earley_parser ~grammar_etc
+      = 
+      let {new_items; input; input_length; parse_tm} = grammar_etc in
+      earley_parser.run_parser
         ~new_items
         ~input 
         ~input_length
         ~parse_tm
 
-    let run_earley_parser ~earley_parser
-        ~new_items
-        ~input 
-        ~input_length
-        ~parse_tm
-        ~initial_items =
+    (** FIXME we can hide the earley_parser type, and just return a
+       function that takes grammar_etc...; finally, we can return
+       interesting parts of the state separately, so that the
+       functionality does not depend on any types we define above *)
+    let run_earley_parser ~earley_parser ~grammar_etc ~initial_items =
       let initial_state = failwith "" in
-      _run_earley_parser ~earley_parser 
-        ~new_items
-        ~input 
-        ~input_length
-        ~parse_tm
-        initial_state
+      _run_earley_parser ~earley_parser ~grammar_etc initial_state
       |> fun ((),s) -> s
   end
 
