@@ -42,6 +42,11 @@ let input_length = String.length input
 (* Initial nonterminal *)
 let initial_nt = E
 
+let grammar_etc = { new_items; parse_tm; input; input_length }
+
+
+(* record cuts ------------------------------------------------------ *)
+
 (* disable the following to improve timings by about 20% *)
 let record_cuts =
   Sys.getenv_opt "record_cuts" |> function
@@ -57,7 +62,19 @@ let count_cuts cuts =
       | (n,cs::cuts) -> Some(n+List.length cs,cuts))
   |> fun (n,[]) -> n
 
-let grammar_etc = { new_items; parse_tm; input; input_length }
+
+(* timing ----------------------------------------------------------- *)
+
+let now =
+  Core.(fun () ->
+      Time_stamp_counter.(now () |> to_int63)
+      |>Int63.to_int_exn)
+
+let mark =
+  let tbl = Hashtbl.create() in
+  let 
+
+  
   
 
 (* Finally, run Earley! *)
