@@ -196,17 +196,17 @@ module Make(Base_types:BASE_TYPES) = struct
       s.ktjs |> Map_tm.add tm js |> fun ktjs ->
       (),{s with ktjs}
          
-    (* let record_cuts xs s = (),s  (\* FIXME *\) *)
-    let record_cuts xs s = 
-      (),{s with cuts=record_cuts xs s.cuts}
-
-    let at_ops = { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo;
-                   add_todos_at_k; add_todos_gt_k; add_ixk_done;
-                   mem_ixk_done; find_ktjs; add_ktjs; record_cuts }
-
-    let earley_parser = make_earley_parser ~at_ops
-
-    let run_earley_parser ~grammar_etc = run_earley_parser ~earley_parser ~grammar_etc
+    let run_earley_parser ~grammar_etc ~record_cuts = 
+      (* let record_cuts xs s = (),s  (\* FIXME *\) *)
+      let record_cuts xs s = 
+        (),{s with cuts=record_cuts xs s.cuts}
+      in
+      let at_ops = { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo;
+                     add_todos_at_k; add_todos_gt_k; add_ixk_done;
+                     mem_ixk_done; find_ktjs; add_ktjs; record_cuts }
+      in
+      let earley_parser = make_earley_parser ~at_ops in
+      run_earley_parser ~earley_parser ~grammar_etc
 
     (* open Earley_base *)
 
@@ -215,13 +215,14 @@ module Make(Base_types:BASE_TYPES) = struct
       type cuts = (nt_item*int) list list
       val run_earley_parser: 
         grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
+        record_cuts:((nt_item*int)list -> cuts -> cuts) ->
         initial_nt:nt -> 
         cuts
     end = struct
       type cuts = (nt_item*int) list list
-      let run_earley_parser ~grammar_etc ~initial_nt:nt = 
+      let run_earley_parser ~grammar_etc ~record_cuts ~initial_nt:nt = 
         let initial_state = { empty_state with todo=[{nt;i_=0;k_=0;bs=[Nt nt]}] } in
-        run_earley_parser ~grammar_etc ~initial_state |> fun s -> s.cuts
+        run_earley_parser ~grammar_etc ~record_cuts ~initial_state |> fun s -> s.cuts
     end
 
   end
