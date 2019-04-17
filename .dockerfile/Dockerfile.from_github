@@ -3,5 +3,16 @@ FROM impfs_base_docker_image
 RUN echo edit to rebuild...
 
 # -n means don't build etc
+
+# dev branch
+RUN eval `opam config env` && opam pin add -y -n https://github.com/tomjridge/tjr_simple_earley.git#dev
+RUN eval `opam config env` && opam install -y tjr_simple_earley
+RUN eval `opam config env` && opam remove -y tjr_simple_earley
+
+# master branch
 RUN eval `opam config env` && opam pin add -y -n https://github.com/tomjridge/tjr_simple_earley.git
 RUN eval `opam config env` && opam install -y tjr_simple_earley
+RUN eval `opam config env` && opam remove -y tjr_simple_earley
+
+
+
