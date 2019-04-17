@@ -2,13 +2,7 @@
    assume as little as possible about the representation of the
    underlying structures.  *)
 
-
-type ('nt,'tm,'nt_item,'input) grammar_etc = {
-  new_items: nt:'nt -> input:'input -> pos:int -> 'nt_item list;
-  parse_tm: tm:'tm -> input:'input -> pos:int -> input_length:int -> int list;
-  input:'input;
-  input_length:int;
-}
+open Prelude
 
 module type A = sig
 
@@ -33,6 +27,7 @@ module type A = sig
 
 
   type nt_item_set
+  val empty_nt_item_set: nt_item_set
   val elements : nt_item_set -> nt_item list
 
 
@@ -57,12 +52,16 @@ module type A = sig
 
   val todo_gt_k_find: int -> todo_gt_k -> nt_item_set
   val update_bitms_lt_k: int -> bitms_at_k -> bitms_lt_k -> bitms_lt_k (* FIXME what for? *)
+
+  val empty_todo_gt_k: todo_gt_k
+  val empty_bitms_lt_k: bitms_lt_k
   val empty_bitms_at_k: bitms_at_k
   val empty_ixk_done: ixk_done
   val empty_ktjs: ktjs
 
 
   type cuts
+  val empty_cuts: cuts
 
 end
 
@@ -87,6 +86,19 @@ module Make(A:A) = struct
     ktjs:ktjs;
     cuts:cuts
   }
+
+
+  let empty_state = {
+    todo=[];
+    todo_done=empty_nt_item_set;
+    todo_gt_k=empty_todo_gt_k;
+    bitms_lt_k=empty_bitms_lt_k;
+    bitms_at_k=empty_bitms_at_k;
+    ixk_done=empty_ixk_done;
+    ktjs=empty_ktjs;
+    cuts=empty_cuts
+  }
+    
 
   type 'a m = state -> 'a * state
   let ( >>= ) (a:'a m) (ab:'a -> 'b m) : 'b m = 
