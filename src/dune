@@ -3,7 +3,7 @@
   (flags (:standard -w -27-8-40-32-39))
   (wrapped false)
   (preprocess (pps ppx_jane))
-  (modules Earley ) ; Impl
+  ;  (modules Earley_base ) ; Impl
   (libraries ppx_jane)
 )
 

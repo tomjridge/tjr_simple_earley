@@ -41,7 +41,6 @@ module type A = sig
 
   (* int -> nt_item_set *)
   type todo_gt_k 
-  val todo_gt_k_find: int -> todo_gt_k -> nt_item_set
 
 
   (** NOTE following are per k *)
@@ -55,6 +54,15 @@ module type A = sig
   (** tm -> j list option *)
   type ktjs  
 
+
+  val todo_gt_k_find: int -> todo_gt_k -> nt_item_set
+  val update_bitms_lt_k: int -> bitms_at_k -> bitms_lt_k -> bitms_lt_k (* FIXME what for? *)
+  val empty_bitms_at_k: bitms_at_k
+  val empty_ixk_done: ixk_done
+  val empty_ktjs: ktjs
+
+
+  type cuts
 
 end
 
@@ -76,7 +84,8 @@ module Make(A:A) = struct
     bitms_lt_k: bitms_lt_k;
     bitms_at_k: bitms_at_k;
     ixk_done: ixk_done;
-    ktjs:ktjs
+    ktjs:ktjs;
+    cuts:cuts
   }
 
   type 'a m = state -> 'a * state
@@ -87,9 +96,6 @@ module Make(A:A) = struct
   let _ = ( >>= )
   let return a = fun s -> (a,s)
 
-
-  let with_state: (state -> state) -> unit m = fun f -> 
-    fun s -> ((),f s)
 
   (* FIXME these expose the state type via _ m *)
   (** 
@@ -124,15 +130,10 @@ module Make(A:A) = struct
 
     find_ktjs: tm -> int list option m;
     add_ktjs: tm -> int list -> unit m;
+
+    record_cuts: (nt_item * int) list -> unit m;
   }
 
-  (** FIXME naming; perhaps: pure_ops? or just get user to pass in with A *)
-  type state_ops = {
-    update_bitms_lt_k: int -> bitms_at_k -> bitms_lt_k -> bitms_lt_k; (* FIXME what for? *)
-    empty_bitms_at_k: bitms_at_k;
-    empty_ixk_done: ixk_done;
-    empty_ktjs: ktjs;
-  }
 
 
   module Internal2 = struct
@@ -141,28 +142,33 @@ module Make(A:A) = struct
     (* profiling; debugging --------------------------------------------- *)
 
     (* don't want to depend on other libs at this point *)
-    let _mark_ref = ref (fun (i:int) -> ())
-    let mark x = x |> !_mark_ref
+    let _mark_ref = ref (fun (cc:string) -> ())
 
     (* main ------------------------------------------------------------- *)
 
-    let run_earley (*~item_ops*) ~state_ops ~at_ops = 
+    let run_earley (*~item_ops*) ~at_ops = 
       (* let { sym_case; _NT; dot_nt; dot_i; dot_k; dot_bs; cut; elements } =
         item_ops 
       in*)
-      let { update_bitms_lt_k; empty_bitms_at_k;
+      (* let { update_bitms_lt_k; empty_bitms_at_k;
             empty_ixk_done; empty_ktjs } = state_ops 
-      in
+      in *)
       let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo;
             add_todos_at_k; add_todos_gt_k; add_ixk_done;
-            mem_ixk_done; find_ktjs; add_ktjs } = at_ops
+            mem_ixk_done; find_ktjs; add_ktjs; record_cuts } = at_ops
       in
+      let with_state: (state -> state) -> unit m = fun f -> 
+        fun s -> ((),f s)
+      in
+      let image = List.map in
       let is_finished nitm = nitm|>dot_bs = [] in
       let module Let_syntax = struct 
         let bind a ~f = a >>= f 
       end
       in
-      fun ~new_items ~input ~parse_tm ~input_length ->
+      fun ~grammar_etc ->
+        let mark x = x |> !_mark_ref in
+        let { new_items; parse_tm; input; input_length } = grammar_etc in
         begin
 
           (* 
@@ -212,10 +218,9 @@ discussion is indexed by these labels
   - em: if k is in js (ie tm matched the empty string) cut bitm with k
 
 *)
-          let image = List.map in
 
           let step_at_k k nitm = 
-            mark __LINE__;
+            mark "aa";
             let get_bitms (i,x) =
               if i=k then get_bitms_at_k x else
                 get_bitms_lt_k (i,x)
@@ -223,50 +228,50 @@ discussion is indexed by these labels
 
             match is_finished nitm with 
             | true -> (                                               (*:af:*)
-                mark __LINE__;
+                mark "af";
                 let (k',_Y) = (nitm|>dot_i,nitm|>dot_nt) in  
                 let%bind already_done = mem_ixk_done (k',_Y) in           (*:aj:*)
-                mark __LINE__;
+                mark "ak";
                 match already_done with     
-                | true -> mark __LINE__; return ()                                   (*:al:*)
+                | true -> mark "al"; return ()                                   (*:al:*)
                 | false -> (                                          (*:am:*)
-                    mark __LINE__;                
+                    mark "am";                
                     add_ixk_done (k',_Y) >>= fun _ ->                   
-                    mark __LINE__;
+                    mark "ap";
                     get_bitms (k',_Y) >>= fun bitms ->                  
-                    mark __LINE__;
+                    mark "ar";
                     add_todos_at_k (image (fun bitm -> cut bitm k) bitms) >>= fun _ ->
-                    mark __LINE__; return ()))
+                    mark "au"; return ()))
             | false -> (                                              (*:ax:*)
-                mark __LINE__;
+                mark "ax";
                 let bitm = nitm in   
                 let _S = List.hd (bitm|>dot_bs) in 
                 _S |> sym_case  
                   ~nt:(fun _Y ->                                      (*:ce:*)
-                      mark __LINE__;
+                      mark "ce";
                       get_bitms_at_k _Y >>= fun bitms ->     
-                      mark __LINE__;
+                      mark "ch";
                       let bitms_empty = bitms=[] in     
                       add_bitm_at_k bitm _Y >>= fun _ ->     
-                      mark __LINE__;
+                      mark "ck";
                       match bitms_empty with  
                       | false -> (                                    (*:co:*)
-                          mark __LINE__;
+                          mark "co";
                           mem_ixk_done (k,_Y) >>= function    
                           | true -> 
                             add_todos_at_k [cut bitm k] >>= fun _ ->
-                            mark __LINE__;
+                            mark "cr";
                             return ()
                           | false -> return ())    
                       | true -> (                                     (*:cw:*)
-                          mark __LINE__;
+                          mark "cw";
                           let itms = new_items ~nt:_Y ~input ~pos:k in
                           add_todos_at_k itms >>= fun _ ->
-                          mark __LINE__;
+                          mark "cz";
                           return ()
                         ))  
                   ~tm:(fun tm ->                                      (*:ec:*)
-                      mark __LINE__;
+                      mark "ec";
                       find_ktjs tm >>= fun ktjs ->     
                       (match ktjs with
                        | None -> (
@@ -318,6 +323,7 @@ discussion is indexed by these labels
                     bitms_at_k=empty_bitms_at_k;
                     ixk_done=empty_ixk_done;
                     ktjs=empty_ktjs;
+                    cuts=s.cuts;
                   }) >>= fun _ ->
               loop k'
           in
@@ -334,7 +340,6 @@ discussion is indexed by these labels
     type earley_parser
     val make_earley_parser: 
       (* item_ops:item_ops -> *)
-      state_ops:state_ops ->
       at_ops:atomic_operations ->
       earley_parser
 (*
@@ -344,38 +349,29 @@ discussion is indexed by these labels
       unit m
 *)
 
-    (** returns the final state *)
+    (** returns the final state; it is expected that the cuts field is
+       the only one processed further *)
     val run_earley_parser:
       earley_parser:earley_parser -> 
       grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
-      initial_items:nt_item list ->
+      initial_state:state ->
       state
   end = struct
     type earley_parser = {
-      run_parser: 'a. new_items:(nt:nt -> input:'a -> pos:i_t -> nt_item list) ->
-      input:'a ->
-      parse_tm:(tm:tm -> input:'a -> pos:i_t -> input_length:i_t -> i_t list) ->
-      input_length:i_t -> unit m
+      run_parser: 'a. grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> unit m
     }
 
-    let make_earley_parser (* ~item_ops*) ~state_ops ~at_ops =
-      {run_parser=fun ~new_items -> Internal2.run_earley (*~item_ops*) ~state_ops ~at_ops ~new_items}
+    let make_earley_parser ~at_ops =
+      {run_parser=fun ~grammar_etc -> Internal2.run_earley ~at_ops ~grammar_etc}
 
-    let _run_earley_parser ~earley_parser ~grammar_etc
-      = 
-      let {new_items; input; input_length; parse_tm} = grammar_etc in
-      earley_parser.run_parser
-        ~new_items
-        ~input 
-        ~input_length
-        ~parse_tm
+    let _run_earley_parser ~earley_parser ~grammar_etc = 
+      earley_parser.run_parser ~grammar_etc
 
     (** FIXME we can hide the earley_parser type, and just return a
        function that takes grammar_etc...; finally, we can return
        interesting parts of the state separately, so that the
        functionality does not depend on any types we define above *)
-    let run_earley_parser ~earley_parser ~grammar_etc ~initial_items =
-      let initial_state = failwith "" in
+    let run_earley_parser ~earley_parser ~grammar_etc ~initial_state =
       _run_earley_parser ~earley_parser ~grammar_etc initial_state
       |> fun ((),s) -> s
   end
