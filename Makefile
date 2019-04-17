@@ -1,5 +1,5 @@
 SHELL:=bash
-ROOT:=--root=.
+#ROOT:=--root=.
 DUNE:=dune
 
 all:
@@ -8,13 +8,13 @@ all:
 #	dune build src/example.exe
 
 
+# NOTE to promote docs, on command line use: PROMOTE_DOCS=true make
 SRC:=_build/default/_doc/_html
 DST:=docs
 docs: FORCE
 	$(DUNE) build $(ROOT) @doc
-	rm -rf $(DST)/*
-	cp -R $(SRC)/* $(DST)
-	echo "docs built"
+	@if [ ! -z "$$PROMOTE_DOCS" ]; then rm -rf $(DST)/* ; cp -R $(SRC)/* $(DST); echo "docs built and promoted to docs/"; else \
+	  echo "docs built but not promoted to docs/"; fi
 
 
 run_example:
