@@ -1,105 +1,98 @@
 (** A simple implementation of datastructures for {!Earley_base} *)
+open Misc
 
-let iter_opt (f:'a -> 'a option) = 
-  let rec loop x = 
-    match f x with
-    | None -> x
-    | Some x -> loop x
-  in
-  fun x -> loop x
+module Internal = struct
+  (** Used to instantiate {!module: Earley_base.Make} *)
+  module Internal_A = struct
 
-(** Used to instantiate {!module: Earley_base.Make} *)
-module Internal_A = struct
+    type i_t = int
+    type k_t = int
+    type j_t = int
 
-  type i_t = int
-  type k_t = int
-  type j_t = int
-    
 
-  (* NOTE we need to be able to distinguish nonterminals from terminals *)
-  type nt = int (* even, say *)
-  type tm = int (* odd, say *)
-  type sym = int
-  let even x = (x mod 2 = 0)
-  let sym_case ~nt ~tm sym = 
-    if even sym then nt sym else tm sym
+    (* NOTE we need to be able to distinguish nonterminals from terminals *)
+    type nt = int (* even, say *)
+    type tm = int (* odd, say *)
+    type sym = int
+    let even x = (x mod 2 = 0)
+    let sym_case ~nt ~tm sym = 
+      if even sym then nt sym else tm sym
 
-  let _NT: nt -> sym = fun x -> x
+    let _NT: nt -> sym = fun x -> x
 
-  type nt_item = { nt:nt; i_:i_t; k_:k_t; bs:sym list }
+    type nt_item = { nt:nt; i_:i_t; k_:k_t; bs:sym list }
 
-  (* Implement the accessor functions by using simple arithmetic *)
-  let dot_nt nitm = nitm.nt
-  let dot_i nitm = nitm.i_
-  let dot_k nitm = nitm.k_
-  let dot_bs nitm = nitm.bs
+    (* Implement the accessor functions by using simple arithmetic *)
+    let dot_nt nitm = nitm.nt
+    let dot_i nitm = nitm.i_
+    let dot_k nitm = nitm.k_
+    let dot_bs nitm = nitm.bs
 
-  let dot_bs_hd nitm = nitm |> dot_bs |> function
-    | [] -> None
-    | x::xs -> Some x
+    let dot_bs_hd nitm = nitm |> dot_bs |> function
+      | [] -> None
+      | x::xs -> Some x
 
-  let cut : nt_item -> j_t -> nt_item = 
-    fun bitm j0 -> 
+    let cut : nt_item -> j_t -> nt_item = 
+      fun bitm j0 -> 
       assert (bitm.bs <> []);
       { bitm with k_=j0; bs=(List.tl bitm.bs)}
 
 
-  (* The rest of the code is straightforward *)
+    (* The rest of the code is straightforward *)
 
-  module Set_nt_item = Set.Make(
-    struct type t = nt_item let compare : t -> t -> int = Pervasives.compare end)
+    module Set_nt_item = Set.Make(struct 
+        type t = nt_item 
+        let compare : t -> t -> int = Pervasives.compare end)
 
-  type ixk=(i_t*nt)
-  module Set_ixk = Set.Make(
-    struct type t = ixk let compare : t -> t -> int = Pervasives.compare end)
+    type ixk = i_t*nt
+    module Set_ixk = Set.Make(
+      struct type t = ixk let compare : t -> t -> int = Pervasives.compare end)
 
-  module Map_nt = Map.Make(
-    struct type t = nt let compare : t -> t -> int = Pervasives.compare end)
-  type 'a map_nt = 'a Map_nt.t
+    module Map_nt = Map.Make(
+      struct type t = nt let compare : t -> t -> int = Pervasives.compare end)
+    type 'a map_nt = 'a Map_nt.t
 
-  module Map_int = Map.Make(
-    struct type t = int let compare : t -> t -> int = Pervasives.compare end)
-  type 'a map_int = 'a Map_int.t
+    module Map_int = Map.Make(
+      struct type t = int let compare : t -> t -> int = Pervasives.compare end)
+    type 'a map_int = 'a Map_int.t
 
-  module Map_tm = Map.Make(
-    struct type t = tm let compare : t -> t -> int = Pervasives.compare end)
+    module Map_tm = Map.Make(
+      struct type t = tm let compare : t -> t -> int = Pervasives.compare end)
 
-  type nt_item_set = Set_nt_item.t
-  let elements = Set_nt_item.elements
-
-
-  type bitms_lt_k = (nt_item_set map_nt) map_int
-
-  type todo_gt_k = nt_item_set map_int
-
-  type bitms_at_k = nt_item_set map_nt
-
-  type ixk_done = Set_ixk.t
-
-  type ktjs = int list Map_tm.t
-      
-
-  let todo_gt_k_find i t = 
-    Map_int.find_opt i t |> function
-    | None -> Set_nt_item.empty
-    | Some set -> set
+    type nt_item_set = Set_nt_item.t
+    let elements = Set_nt_item.elements
 
 
-  let update_bitms_lt_k i at_k lt_k =
-    lt_k |> Map_int.add i at_k
+    type bitms_lt_k = (nt_item_set map_nt) map_int
 
-  let empty_bitms_at_k = Map_nt.empty
+    type todo_gt_k = nt_item_set map_int
 
-  let empty_ixk_done = Set_ixk.empty
+    type bitms_at_k = nt_item_set map_nt
 
-  let empty_ktjs = Map_tm.empty
+    type ixk_done = Set_ixk.t
 
-  type cuts = Cuts
-end
+    type ktjs = int list Map_tm.t
 
-open Internal_A
 
-module Internal = struct
+    let todo_gt_k_find i t = 
+      Map_int.find_opt i t |> function
+      | None -> Set_nt_item.empty
+      | Some set -> set
+
+
+    let update_bitms_lt_k i at_k lt_k =
+      lt_k |> Map_int.add i at_k
+
+    let empty_bitms_at_k = Map_nt.empty
+
+    let empty_ixk_done = Set_ixk.empty
+
+    let empty_ktjs = Map_tm.empty
+
+    type cuts = Cuts
+  end
+
+  open Internal_A
 
   module Earley_impl = Earley_base.Make(Internal_A)
 
@@ -176,33 +169,36 @@ module Internal = struct
   let earley_parser = make_earley_parser ~at_ops
 
   let run_earley_parser ~grammar_etc = run_earley_parser ~earley_parser ~grammar_etc
+
+  open Earley_base
+
+  module Export : sig 
+
+    (** nts are even ints *)
+    type nt = int
+
+    (** tms are odd ints *)
+    type tm = int
+    type sym = int
+    type nt_item = { nt:nt; i_:int; k_:int; bs:sym list }
+
+    (** FIXME modify run_earley_parser to take a list of items, or a
+       start sym, and return cuts *)
+    val run_earley_parser: 
+      grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
+      initial_state:Earley_impl.state -> 
+      Earley_impl.state
+  end = struct
+    type nt = int
+    type tm = int
+    type sym = int
+    type nt_item = Internal_A.nt_item = { nt:nt; i_:i_t; k_:k_t; bs:sym list }
+
+    let run_earley_parser = run_earley_parser
+  end
+
 end
 
-open Earley_base
 
-module Export : sig 
-
-  (** nts are even ints *)
-  type nt = int
-
-  (** tms are odd ints *)
-  type tm = int
-  type sym = int
-  type nt_item = { nt:nt; i_:int; k_:int; bs:sym list }
-
-  (** FIXME modify run_earley_parser to take a list of items, or a start sym *)
-  val run_earley_parser: 
-    grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
-    initial_state:Internal.Earley_impl.state -> 
-    Internal.Earley_impl.state
-end = struct
-  type nt = int
-  type tm = int
-  type sym = int
-  type nt_item = Internal_A.nt_item = { nt:nt; i_:i_t; k_:k_t; bs:sym list }
-                                      
-  let run_earley_parser = Internal.run_earley_parser
-end
-
-include Export
+include Internal.Export
 
