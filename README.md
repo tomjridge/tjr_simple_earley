@@ -7,12 +7,13 @@ This is an implementation of an Earley-like algorithm, designed for simplicity.
 ## Quick links
 
 * Online **ocamldoc** can be found [here](https://tomjridge.github.io/tjr_simple_earley/index.html).
+* Examples can be found in the [bin](./bin/) directory.
 
 ## Install
 
 To install **from source**, checkout this repository and type: `make all`
 
-To install **via opam**: FIXME todo
+To install **via opam**: `opam pin add ...`; for more details see the relevant file in the [.dockerfile](./.dockerfile) directory
 
 
 ## Examples
