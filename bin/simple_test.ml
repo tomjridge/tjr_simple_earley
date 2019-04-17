@@ -1,4 +1,7 @@
-(* test, represent nt_item as a simple record *)
+(** Simple test of Earley functionality. Set environment variable
+   record_cuts in order to record info about the number of cuts (this
+   doubles the run time). *)
+
 open Tjr_simple_earley
 open Tjr_simple_earley.Prelude
 
@@ -39,7 +42,20 @@ let input_length = String.length input
 (* Initial nonterminal *)
 let initial_nt = E
 
-let record_cuts cs cuts = cuts
+(* disable the following to improve timings by about 20% *)
+let record_cuts =
+  Sys.getenv_opt "record_cuts" |> function
+  | None -> (
+      Printf.printf "%s: NOTE not recording cuts\n%!" __FILE__;
+      fun cs cuts -> cuts)
+  | Some _ -> (fun cs cuts -> cs::cuts)
+
+let count_cuts cuts =
+  (0,cuts)
+  |> Misc.iter_opt (function
+      | (_,[]) -> None
+      | (n,cs::cuts) -> Some(n+List.length cs,cuts))
+  |> fun (n,[]) -> n
 
 let grammar_etc = { new_items; parse_tm; input; input_length }
   
@@ -55,7 +71,7 @@ let main () =
     ~record_cuts
     ~initial_nt
   |> fun cuts -> 
-  Printf.printf "Finished\n%!"
+  Printf.printf "Finished with %d cuts\n%!" (count_cuts cuts)
 
 let _ = main ()
 

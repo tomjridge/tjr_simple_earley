@@ -252,7 +252,9 @@ discussion is indexed by these labels
                     mark "ap";
                     get_bitms (k',_Y) >>= fun bitms ->                  
                     mark "ar";
-                    add_todos_at_k (image (fun bitm -> cut bitm k) bitms) >>= fun _ ->
+                    record_cuts (List.map (fun bitm -> (bitm,k)) bitms) >>= fun _ ->
+                    let new_todos_at_k = image (fun bitm -> cut bitm k) bitms in
+                    add_todos_at_k new_todos_at_k >>= fun _ ->
                     mark "au"; return ()))
             | false -> (                                              (*:ax:*)
                 mark "ax";
@@ -271,6 +273,7 @@ discussion is indexed by these labels
                           mark "co";
                           mem_ixk_done (k,_Y) >>= function    
                           | true -> 
+                            record_cuts [(bitm,k)] >>= fun _ ->
                             add_todos_at_k [cut bitm k] >>= fun _ ->
                             mark "cr";
                             return ()
@@ -295,6 +298,7 @@ discussion is indexed by these labels
                       (* there may be a k in js, in which case we have a 
                          new todo at the current stage *)
                       let (xs,js) = List.partition (fun j -> j=k) js in (*:el:*)
+                      record_cuts (List.map (fun j -> (bitm,j)) js) >>= fun _ -> 
                       add_todos_gt_k (image (fun j -> cut bitm j) js) >>= fun _ ->
                       match xs with                                   (*:em:*)
                       | [] -> return ()     
