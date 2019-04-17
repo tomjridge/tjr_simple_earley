@@ -16,6 +16,8 @@ docs: FORCE
 	@if [ ! -z "$$PROMOTE_DOCS" ]; then rm -rf $(DST)/* ; cp -R $(SRC)/* $(DST); echo "docs built and promoted to docs/"; else \
 	  echo "docs built but not promoted to docs/"; fi
 
+promote_docs: FORCE
+	PROMOTE_DOCS=true $(MAKE) docs
 
 run_example:
 	time dune exec $(ROOT) src/example.exe 400 # should take about 6s?
