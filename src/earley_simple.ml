@@ -8,9 +8,7 @@ let iter_opt (f:'a -> 'a option) =
   in
   fun x -> loop x
 
-(** Used to instantiate {!module: Earley_base.Make} FIXME odoc should
-   render this as a cross-ref to the functor Make in module
-   {!Earley_base} *)
+(** Used to instantiate {!module: Earley_base.Make} *)
 module Internal_A = struct
 
   type i_t = int
@@ -183,9 +181,16 @@ end
 open Earley_base
 
 module Export : sig 
+
+  (** nts are even ints *)
   type nt = int
+
+  (** tms are odd ints *)
   type tm = int
-  type nt_item = { nt:nt; i_:i_t; k_:k_t; bs:sym list }
+  type sym = int
+  type nt_item = { nt:nt; i_:int; k_:int; bs:sym list }
+
+  (** FIXME modify run_earley_parser to take a list of items, or a start sym *)
   val run_earley_parser: 
     grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
     initial_state:Internal.Earley_impl.state -> 
@@ -193,6 +198,7 @@ module Export : sig
 end = struct
   type nt = int
   type tm = int
+  type sym = int
   type nt_item = Internal_A.nt_item = { nt:nt; i_:i_t; k_:k_t; bs:sym list }
                                       
   let run_earley_parser = Internal.run_earley_parser
@@ -200,4 +206,3 @@ end
 
 include Export
 
-(* FIXME modify run_earley_parser to take a list of items, or a start sym *)
