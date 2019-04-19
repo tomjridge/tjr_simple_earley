@@ -10,7 +10,7 @@ all:
 
 # NOTE to promote docs, on command line use: PROMOTE_DOCS=true make
 SRC:=_build/default/_doc/_html
-DST:=docs
+DST:=docs/ocamldoc
 DST2:=/tmp/tjr_simple_earley
 docs: FORCE
 	$(DUNE) build $(ROOT) @doc
