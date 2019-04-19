@@ -165,23 +165,26 @@ span.doc a { color: #8b2252;  font-family: Ubuntu Mono;  font-stretch: normal;  
 
   <span class="governing">include</span> <span class="module">A</span>
 
-  <span class="comment-delimiter">(* </span><span class="comment">todo_done is really a set; we add items to todo providing they
-     are not already in todo_done </span><span class="comment-delimiter">*)</span>
-  <span class="governing">type</span> <span class="type">state</span> <span class="operator">=</span> <span class="operator">{</span>
-    <span class="keyword">mutable</span> todo<span class="operator">:</span>item list<span class="operator">;</span>
-    todo_done<span class="operator">:(</span>item<span class="operator">,</span>unit<span class="operator">)</span> <span class="module">Hashtbl.</span>t
-  <span class="operator">}</span>
-
-  <span class="governing">type</span> <span class="type">'a m</span> <span class="operator">=</span> state <span class="operator">-&gt;</span> 'a <span class="operator">*</span> state
-  <span class="governing">let</span> <span class="operator">(</span> <span class="operator">&gt;&gt;=</span> <span class="operator">)</span> <span class="operator">(</span>a<span class="operator">:</span><span class="type">'a m</span><span class="operator">)</span> <span class="operator">(</span>ab<span class="operator">:</span><span class="type">'a </span><span class="operator">-&gt;</span><span class="type"> 'b m</span><span class="operator">)</span> <span class="operator">:</span> 'b m <span class="operator">=</span> 
-    <span class="keyword">fun</span> <span class="variable-name">s</span> <span class="operator">-&gt;</span>
-    a s <span class="operator">|&gt;</span> <span class="keyword">fun</span> <span class="operator">(</span><span class="variable-name">a</span><span class="operator">,</span><span class="variable-name">s</span><span class="operator">)</span> <span class="operator">-&gt;</span> 
-    ab a s
-  <span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> <span class="operator">(</span> <span class="operator">&gt;&gt;=</span> <span class="operator">)</span>
-  <span class="governing">let</span> <span class="function-name">return</span><span class="variable-name"> a</span> <span class="operator">=</span> <span class="keyword">fun</span> <span class="variable-name">s</span> <span class="operator">-&gt;</span> <span class="operator">(</span>a<span class="operator">,</span>s<span class="operator">)</span>
 
   <span class="governing">module</span> <span class="module">Internal</span> <span class="operator">=</span> <span class="governing">struct</span>
+
+    <span class="comment-delimiter">(* </span><span class="comment">todo_done is really a set; we add items to todo providing they
+       are not already in todo_done </span><span class="comment-delimiter">*)</span>
+    <span class="governing">type</span> <span class="type">state</span> <span class="operator">=</span> <span class="operator">{</span>
+      <span class="keyword">mutable</span> todo<span class="operator">:</span>item list<span class="operator">;</span>
+      todo_done<span class="operator">:(</span>item<span class="operator">,</span>unit<span class="operator">)</span> <span class="module">Hashtbl.</span>t
+    <span class="operator">}</span>
+
+    <span class="governing">type</span> <span class="type">'a m</span> <span class="operator">=</span> state <span class="operator">-&gt;</span> 'a <span class="operator">*</span> state
+    <span class="governing">let</span> <span class="operator">(</span> <span class="operator">&gt;&gt;=</span> <span class="operator">)</span> <span class="operator">(</span>a<span class="operator">:</span><span class="type">'a m</span><span class="operator">)</span> <span class="operator">(</span>ab<span class="operator">:</span><span class="type">'a </span><span class="operator">-&gt;</span><span class="type"> 'b m</span><span class="operator">)</span> <span class="operator">:</span> 'b m <span class="operator">=</span> 
+      <span class="keyword">fun</span> <span class="variable-name">s</span> <span class="operator">-&gt;</span>
+      a s <span class="operator">|&gt;</span> <span class="keyword">fun</span> <span class="operator">(</span><span class="variable-name">a</span><span class="operator">,</span><span class="variable-name">s</span><span class="operator">)</span> <span class="operator">-&gt;</span> 
+      ab a s
+    <span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> <span class="operator">(</span> <span class="operator">&gt;&gt;=</span> <span class="operator">)</span>
+    <span class="governing">let</span> <span class="function-name">return</span><span class="variable-name"> a</span> <span class="operator">=</span> <span class="keyword">fun</span> <span class="variable-name">s</span> <span class="operator">-&gt;</span> <span class="operator">(</span>a<span class="operator">,</span>s<span class="operator">)</span>
+
     <span class="governing">let</span> <span class="variable-name">empty_state</span> <span class="operator">=</span> <span class="operator">{</span> todo<span class="operator">=[];</span> todo_done<span class="operator">=</span><span class="module">Hashtbl.</span>create 100 <span class="operator">}</span>
+
 
     <span class="doc">(** Main Earley routine, parameterized *)</span>
     <span class="governing">let</span> <span class="function-name">_earley</span><span class="variable-name"> 
@@ -238,7 +241,9 @@ span.doc a { color: #8b2252;  font-family: Ubuntu Mono;  font-stretch: normal;  
 
     <span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">=</span> _earley
   <span class="governing">end</span>
-  
+
+  <span class="governing">open </span><span class="module">Internal</span>
+
   <span class="governing">let</span> <span class="function-name">earley</span><span class="variable-name"> </span><span class="operator">~</span><span class="variable-name">expand_nt </span><span class="operator">~</span><span class="variable-name">expand_tm</span> <span class="operator">=</span> 
     <span class="governing">let</span> <span class="function-name">get_blocked_items</span><span class="variable-name"> </span><span class="operator">(</span><span class="variable-name">k</span><span class="operator">,</span><span class="variable-name">_S</span><span class="operator">)</span><span class="variable-name"> s</span> <span class="operator">=</span> 
       <span class="governing">let</span> <span class="variable-name">blocked</span> <span class="operator">=</span> <span class="builtin">ref</span> <span class="operator">[]</span> <span class="governing">in</span>
@@ -295,9 +300,9 @@ span.doc a { color: #8b2252;  font-family: Ubuntu Mono;  font-stretch: normal;  
   <span class="comment-delimiter">(* </span><span class="comment">FIXME expand_nt and expand_tm should be outside the monad </span><span class="comment-delimiter">*)</span>
           
   <span class="governing">let</span> <span class="variable-name">_</span> <span class="operator">:</span><span class="type">
-</span>expand_nt<span class="operator">:(</span>nt <span class="operator">*</span> int <span class="operator">-&gt;</span> nt_item list<span class="operator">)</span> <span class="operator">-&gt;</span>
-expand_tm<span class="operator">:(</span>tm <span class="operator">*</span> int <span class="operator">-&gt;</span> int list<span class="operator">)</span> <span class="operator">-&gt;</span> <span class="label">initial_nt</span><span class="operator">:</span>nt <span class="operator">-&gt;</span> item list
-<span class="operator">=</span> earley
+</span><span class="label">expand_nt</span><span class="operator">:(</span><span class="type">nt </span><span class="operator">*</span><span class="type"> int </span><span class="operator">-&gt;</span><span class="type"> nt_item list</span><span class="operator">)</span><span class="type"> </span><span class="operator">-&gt;</span><span class="type">
+</span><span class="label">expand_tm</span><span class="operator">:(</span><span class="type">tm </span><span class="operator">*</span><span class="type"> int </span><span class="operator">-&gt;</span><span class="type"> int list</span><span class="operator">)</span><span class="type"> </span><span class="operator">-&gt;</span><span class="type"> </span><span class="label">initial_nt</span><span class="operator">:</span><span class="type">nt </span><span class="operator">-&gt;</span><span class="type"> item lis</span><span class="type">t</span><span class="type">
+</span><span class="operator">=</span> earley
 
 <span class="governing">end</span>
 </pre>
