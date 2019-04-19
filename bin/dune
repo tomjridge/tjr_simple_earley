@@ -1,4 +1,4 @@
 (executables
-  (names simple_test)
+  (names simple_test test_spec)
   (flags (:standard -w -27-8-40-32-33-39))
   (libraries tjr_simple_earley tjr_profile core)) ; core for timing

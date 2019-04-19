@@ -5,3 +5,15 @@ let iter_opt (f:'a -> 'a option) =
     | Some x -> loop x
   in
   fun x -> loop x
+
+
+let rev_filter_map f xs =
+  ([],xs) |> iter_opt (function
+      | _,[] -> None
+      | xs',x::xs -> 
+        f x |> function
+        | None -> Some(xs',xs)
+        | Some y -> Some(y::xs',xs))
+  |> fun (xs',[]) -> xs'
+
+let _ = rev_filter_map

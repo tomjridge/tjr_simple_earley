@@ -22,6 +22,7 @@ promote_docs: FORCE
 
 run_tests:
 	time dune exec $(ROOT) bin/simple_test.exe 400 # should take about 6s?
+	time dune exec $(ROOT) bin/test_spec.exe 10
 
 run_examples:
 	$(MAKE) run_tests

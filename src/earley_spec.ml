@@ -17,6 +17,9 @@ module type A = sig
     | Nt_item of nt_item
     | Sym_item of sym_item
     | Sym_at_k of sym_at_k
+
+  (** Following for debugging *)
+  val note_cut: nt_item -> int -> unit
 end
 
 
@@ -59,6 +62,7 @@ module Make(A:A) = struct
         | _S::bs -> (
             let k = nt_item.k_ in
             get_complete_items (k,_S) >>= fun js ->
+            js |> List.iter (fun j -> note_cut nt_item j);
             js |> List.map (fun j -> Nt_item { nt_item with k_=j; bs=bs })
             |> add_items)
       in
@@ -66,6 +70,7 @@ module Make(A:A) = struct
       (* process a complete item *)
       let cut_complete_item {i_;sym;j_} = 
         get_blocked_items (i_,sym) >>= fun itms ->
+        itms |> List.iter (fun itm -> note_cut itm j_);
         itms |> List.map (fun itm -> Nt_item {itm with k_=j_; bs=List.tl itm.bs})
         |> add_items
       in
