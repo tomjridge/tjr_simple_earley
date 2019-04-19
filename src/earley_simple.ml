@@ -158,18 +158,20 @@ module Make(Base_types:BASE_TYPES) = struct
       s.bitms_at_k |> Map_nt.add nt itms |> fun bitms_at_k ->
       (),{s with bitms_at_k}
 
+    (* FIXME this is the one to optimize! *)
     let add_todos_at_k itms s =
-      (* FIXME can we assume that they are all not in s.todo_done? *)
-      (itms,s)
+      let todo_done = s.todo_done in
+      (itms,[])
       |> iter_opt (function 
           | [],_ -> None
-          | itm::itms,s ->
-            Set_nt_item.mem itm s.todo_done |> function
-            | true -> Some(itms,s)
-            | false -> Some(
-                itms, {s with todo=itm::s.todo;
-                              todo_done=Set_nt_item.add itm s.todo_done}))
-      |> fun ([],s) -> (),s
+          | itm::itms,filtered ->
+            Set_nt_item.mem itm todo_done |> function
+            | true -> Some(itms,filtered)
+            | false -> Some(itms, itm::filtered))
+      |> fun ([],itms) -> 
+      Set_nt_item.of_list itms |> fun itms' ->
+      (),{s with todo=itms@s.todo;
+              todo_done=Set_nt_item.union itms' s.todo_done}
 
     let add_todos_gt_k itms s =
       (itms,s.todo_gt_k)

@@ -70,11 +70,9 @@ let now =
       Time_stamp_counter.(now () |> to_int63)
       |>Int63.to_int_exn)
 
-let mark =
-  let tbl = Hashtbl.create() in
-  let 
+let profiler = Tjr_profile.make_string_profiler ~now
 
-  
+let _ = Earley_base._mark_ref := profiler.mark
   
 
 (* Finally, run Earley! *)
@@ -88,7 +86,8 @@ let main () =
     ~record_cuts
     ~initial_nt
   |> fun cuts -> 
-  Printf.printf "Finished with %d cuts\n%!" (count_cuts cuts)
+  Printf.printf "Finished with %d cuts\n%!" (count_cuts cuts);
+  profiler.print_summary ()
 
 let _ = main ()
 

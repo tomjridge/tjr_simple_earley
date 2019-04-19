@@ -4,6 +4,11 @@
 
 open Prelude
 
+(* profiling; debugging --------------------------------------------- *)
+
+(* don't want to depend on other libs at this point *)
+let _mark_ref = ref (fun (cc:string) -> ())
+
 module type A = sig
 
   type i_t = int  
@@ -151,11 +156,6 @@ module Make(A:A) = struct
   module Internal2 = struct
 
 
-    (* profiling; debugging --------------------------------------------- *)
-
-    (* don't want to depend on other libs at this point *)
-    let _mark_ref = ref (fun (cc:string) -> ())
-
     (* main ------------------------------------------------------------- *)
 
     let run_earley (*~item_ops*) ~at_ops = 
@@ -179,7 +179,7 @@ module Make(A:A) = struct
       end
       in
       fun ~grammar_etc ->
-        let mark x = x |> !_mark_ref in
+        let mark = !_mark_ref in
         let { new_items; parse_tm; input; input_length } = grammar_etc in
         begin
 
@@ -239,29 +239,31 @@ discussion is indexed by these labels
             in
 
             match is_finished nitm with 
-            | true -> (                                               (*:af:*)
+            | true -> (                                                       (*:af:*)
                 mark "af";
                 let (k',_Y) = (nitm|>dot_i,nitm|>dot_nt) in  
-                let%bind already_done = mem_ixk_done (k',_Y) in           (*:aj:*)
+                let%bind already_done = mem_ixk_done (k',_Y) in               (*:aj:*)
                 mark "ak";
                 match already_done with     
-                | true -> mark "al"; return ()                                   (*:al:*)
-                | false -> (                                          (*:am:*)
+                | true -> mark "al"; return ()                                (*:al:*)
+                | false -> (                                                  (*:am:*)
                     mark "am";                
                     add_ixk_done (k',_Y) >>= fun _ ->                   
                     mark "ap";
                     get_bitms (k',_Y) >>= fun bitms ->                  
                     mark "ar";
                     record_cuts (List.map (fun bitm -> (bitm,k)) bitms) >>= fun _ ->
+                    mark "as";
                     let new_todos_at_k = image (fun bitm -> cut bitm k) bitms in
+                    mark "at";
                     add_todos_at_k new_todos_at_k >>= fun _ ->
                     mark "au"; return ()))
-            | false -> (                                              (*:ax:*)
+            | false -> (                                                      (*:ax:*)
                 mark "ax";
                 let bitm = nitm in   
                 let _S = List.hd (bitm|>dot_bs) in 
                 _S |> sym_case  
-                  ~nt:(fun _Y ->                                      (*:ce:*)
+                  ~nt:(fun _Y ->                                              (*:ce:*)
                       mark "ce";
                       get_bitms_at_k _Y >>= fun bitms ->     
                       mark "ch";
@@ -269,7 +271,7 @@ discussion is indexed by these labels
                       add_bitm_at_k bitm _Y >>= fun _ ->     
                       mark "ck";
                       match bitms_empty with  
-                      | false -> (                                    (*:co:*)
+                      | false -> (                                            (*:co:*)
                           mark "co";
                           mem_ixk_done (k,_Y) >>= function    
                           | true -> 
@@ -278,29 +280,29 @@ discussion is indexed by these labels
                             mark "cr";
                             return ()
                           | false -> return ())    
-                      | true -> (                                     (*:cw:*)
+                      | true -> (                                             (*:cw:*)
                           mark "cw";
                           let itms = new_items ~nt:_Y ~input ~pos:k in
                           add_todos_at_k itms >>= fun _ ->
                           mark "cz";
                           return ()
                         ))  
-                  ~tm:(fun tm ->                                      (*:ec:*)
+                  ~tm:(fun tm ->                                              (*:ec:*)
                       mark "ec";
                       find_ktjs tm >>= fun ktjs ->     
                       (match ktjs with
                        | None -> (
-                           (* we need to process kT *)                (*:ek:*)
+                           (* we need to process kT *)                        (*:ek:*)
                            let js = parse_tm ~tm ~input ~pos:k ~input_length in 
                            add_ktjs tm js >>= fun _ ->  
                            return js) 
                        | Some js -> return js) >>= fun js -> 
                       (* there may be a k in js, in which case we have a 
                          new todo at the current stage *)
-                      let (xs,js) = List.partition (fun j -> j=k) js in (*:el:*)
+                      let (xs,js) = List.partition (fun j -> j=k) js in       (*:el:*)
                       record_cuts (List.map (fun j -> (bitm,j)) js) >>= fun _ -> 
                       add_todos_gt_k (image (fun j -> cut bitm j) js) >>= fun _ ->
-                      match xs with                                   (*:em:*)
+                      match xs with                                           (*:em:*)
                       | [] -> return ()     
                       | _ -> add_todos_at_k [cut bitm k]))
           in 
