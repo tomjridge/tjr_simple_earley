@@ -37,12 +37,10 @@ let expand_nt (nt,i) =
   [ [_E;_E;_E]; [_1]; [eps] ]
   |> List.map (fun rhs -> { nt; i_=i;k_=i; bs=rhs })
 
-let len = Sys.argv.(1) |> int_of_string
-
-let input = String.make len '1'
-
 let expand_tm (tm,i) = 
   assert(tm="1" || tm="eps");
+  (* let len = !Test_params.input_length in *)
+  let input = !Params.input in
   match tm with
   | _ when tm="1" -> (
       if i<String.length input && String.get input i = '1' then [i+1] else [])

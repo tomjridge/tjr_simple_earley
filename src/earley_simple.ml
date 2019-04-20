@@ -1,11 +1,12 @@
-(** A simple implementation of datastructures for {!Earley_base} *)
+(** A simple implementation of Earley parsing datastructures, based on {!Earley_base} *)
+
 open Misc
 open Prelude
 
-(** The {!Make} functor is parametric over nt and tm. Note that these
-   types should be comparable via Pervasives.compare in order for the
-   datastructure implementations (Set, Map etc) to work. *)
-module type BASE_TYPES = sig
+(** Required by the {!Make} functor. Note that these types should be
+   comparable via Pervasives.compare in order for the datastructure
+   implementations (Set, Map etc) to work. *)
+module type NONTERMINALS_ETC = sig
   type nt 
   type tm 
   type sym = Nt of nt | Tm of tm
@@ -16,8 +17,9 @@ module type BASE_TYPES = sig
   val record_cuts: (nt_item*int) list -> cuts -> cuts *)
 end
 
-module Make(Base_types:BASE_TYPES) = struct
-  open Base_types          
+(** Construct the Earley parsing function *)
+module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
+  open Nonterminals_etc
       
   module Internal = struct
 
@@ -40,10 +42,10 @@ module Make(Base_types:BASE_TYPES) = struct
       if even sym then nt sym else tm sym
 *)
 
-      type tm = Base_types.tm
-      type nt = Base_types.nt
+      type tm = Nonterminals_etc.tm
+      type nt = Nonterminals_etc.nt
 
-      type sym = Base_types.sym
+      type sym = Nonterminals_etc.sym
       let sym_case ~nt ~tm = function
         | Nt x -> nt x
         | Tm y -> tm y
@@ -51,7 +53,7 @@ module Make(Base_types:BASE_TYPES) = struct
       let _NT: nt -> sym = fun x -> Nt x
 
 
-      type nt_item = Base_types.nt_item
+      type nt_item = Nonterminals_etc.nt_item
 
       (* Implement the accessor functions by using simple arithmetic *)
       let dot_nt nitm = nitm.nt
@@ -70,9 +72,9 @@ module Make(Base_types:BASE_TYPES) = struct
 
 
       (* FIXME or include in base_types *)
-      type cuts = (nt_item*int) list list
-      let empty_cuts = []
-      let record_cuts: (nt_item*int) list -> cuts -> cuts = fun cs cuts -> cs::cuts
+      (* type cuts = (nt_item*int) list list *)
+      (* let empty_cuts = [] *)
+      (* let record_cuts: (nt_item*int) list -> cuts -> cuts = fun cs cuts -> cs::cuts *)
 
       (* The rest of the code is straightforward *)
 
@@ -198,14 +200,14 @@ module Make(Base_types:BASE_TYPES) = struct
       s.ktjs |> Map_tm.add tm js |> fun ktjs ->
       (),{s with ktjs}
          
-    let run_earley_parser ~grammar_etc ~record_cuts = 
+    let run_earley_parser ~grammar_etc = 
       (* let record_cuts xs s = (),s  (\* FIXME *\) *)
-      let record_cuts xs s = 
+(*      let record_cuts xs s = 
         (),{s with cuts=record_cuts xs s.cuts}
-      in
+      in*)
       let at_ops = { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo;
                      add_todos_at_k; add_todos_gt_k; add_ixk_done;
-                     mem_ixk_done; find_ktjs; add_ktjs; record_cuts }
+                     mem_ixk_done; find_ktjs; add_ktjs }
       in
       let earley_parser = make_earley_parser ~at_ops in
       run_earley_parser ~earley_parser ~grammar_etc
@@ -213,23 +215,21 @@ module Make(Base_types:BASE_TYPES) = struct
     (* open Earley_base *)
 
     module Export : sig 
-      open Base_types
-      type cuts = (nt_item*int) list list
+      open Nonterminals_etc
       val run_earley_parser: 
         grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
-        record_cuts:((nt_item*int)list -> cuts -> cuts) ->
         initial_nt:nt -> 
-        cuts
+        state
     end = struct
-      type cuts = (nt_item*int) list list
-      let run_earley_parser ~grammar_etc ~record_cuts ~initial_nt:nt = 
+      let run_earley_parser ~grammar_etc ~initial_nt:nt = 
         let initial_state = { empty_state with todo=[{nt;i_=0;k_=0;bs=[Nt nt]}] } in
-        run_earley_parser ~grammar_etc ~record_cuts ~initial_state |> fun s -> s.cuts
+        run_earley_parser ~grammar_etc ~initial_state 
     end
 
   end
-
-  include Internal.Export
+  
+  (** NOTE this exposes the internal state type FIXME? *)
+  let run_earley_parser = Internal.Export.run_earley_parser
 end
 
 

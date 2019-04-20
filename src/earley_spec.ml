@@ -1,5 +1,6 @@
-(** Simple specification of parsing. *)
+(** A simple specification of general parsing (not only Earley). *)
 
+(** Required by the {!Make} functor *)
 module type A = sig
 
   type nt
@@ -23,6 +24,8 @@ module type A = sig
 end
 
 
+(** Construct the parse function. Use
+   {!Earley_spec.earley_spec} to avoid functors. *)
 module Make(A:A) = struct
 
   include A
@@ -129,8 +132,12 @@ module Make(A:A) = struct
 
   open Internal
 
-
-  let earley ~expand_nt ~expand_tm = 
+  (** The (executable) specification of parsing. Returns a list of
+     items (FIXME?). Implementations such as Earley should return an
+     identical set of items (for nt_items at least). NOTE that the
+     parameters are independent of the input (in that the input is not
+     present as an argument). *)
+  let earley_spec ~expand_nt ~expand_tm = 
     let get_blocked_items (k,_S) s = 
       let blocked = ref [] in
       s.todo_done |> Hashtbl.iter (fun itm _ ->
@@ -180,6 +187,39 @@ module Make(A:A) = struct
   let _ :
 expand_nt:(nt * int -> nt_item list) ->
 expand_tm:(tm * int -> int list) -> initial_nt:nt -> item list
-= earley
+= earley_spec
+
 
 end
+
+(** An (executable) parsing specification polymorphic over
+   nonterminals and terminals *)
+let earley_spec (type nt tm) ~expand_nt ~expand_tm  =
+  let module A = struct
+    type nonrec nt = nt
+    type nonrec tm = tm
+    type sym = Nt of nt | Tm of tm
+    type nt_item = { nt:nt; i_:int; k_:int; bs: sym list }
+    type sym_item = { i_:int; sym:sym; j_:int }
+    type sym_at_k = { sym:sym; k_:int } 
+    type item = 
+      | Nt_item of nt_item
+      | Sym_item of sym_item
+      | Sym_at_k of sym_at_k
+
+  end
+  in
+  let module B = Make(A) in
+  let open B in
+  let sym'_to_sym = function `Nt nt -> Nt nt | `Tm tm -> Tm tm in
+  let sym_to_sym' = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in
+  let expand_nt (nt,i) = 
+    expand_nt (nt,i) |> List.map (fun bs ->
+        bs |> List.map sym'_to_sym |> fun bs ->
+        {nt;i_=i;k_=i;bs})
+  in
+  fun ~initial_nt ->
+    let itms = B.earley_spec ~expand_nt ~expand_tm ~initial_nt in
+    itms |> Misc.rev_filter_map (function 
+        | Nt_item {nt;i_;k_;bs} -> Some (`Item(nt,i_,k_,List.map sym_to_sym' bs))
+        | _ -> None)

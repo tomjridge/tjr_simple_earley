@@ -1,6 +1,9 @@
+
 (** Use {!Earley_spec} to produce an efficient O(n^3) parser. *)
+
 open Earley_spec
 
+(** Construct the parse function. *)
 module Make(A:A) = struct
 
   module Internal = struct
@@ -104,7 +107,7 @@ module Make(A:A) = struct
   end
 
   open A
-  let earley : 
+  let earley_unstaged : 
 expand_nt:(nt * int -> nt_item list) ->
 expand_tm:(tm * int -> int list) -> initial_nt:nt -> item list
  = Internal.earley

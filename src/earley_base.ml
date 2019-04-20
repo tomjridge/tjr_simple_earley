@@ -1,14 +1,18 @@
-(** Earley main implementation. This version of the code tries to
-   assume as little as possible about the representation of the
-   underlying structures.  *)
+(** Internal Earley implementation.
+
+    This is the main Earley implementation, based on processing items at
+   index k in the input, before moving to k+1. This version of the
+   code tries to assume as little as possible about the representation
+   of the underlying structures.  *)
 
 open Prelude
 
 (* profiling; debugging --------------------------------------------- *)
 
-(* don't want to depend on other libs at this point *)
+(** Internal profiling function *)
 let _mark_ref = ref (fun (cc:string) -> ())
 
+(** What is required by the [Make] functor *) 
 module type A = sig
 
   type i_t = int  
@@ -64,14 +68,14 @@ module type A = sig
   val empty_ixk_done: ixk_done
   val empty_ktjs: ktjs
 
-
+(*
   type cuts
-  val empty_cuts: cuts
+  val empty_cuts: cuts *)
 
 end
 
 
-
+(** Construct the Earley parsing implementation *)
 module Make(A:A) = struct
 
   (** {2 Provided by user} *)
@@ -89,7 +93,7 @@ module Make(A:A) = struct
     bitms_at_k: bitms_at_k;
     ixk_done: ixk_done;
     ktjs:ktjs;
-    cuts:cuts
+    (* cuts:cuts *)
   }
 
 
@@ -101,7 +105,7 @@ module Make(A:A) = struct
     bitms_at_k=empty_bitms_at_k;
     ixk_done=empty_ixk_done;
     ktjs=empty_ktjs;
-    cuts=empty_cuts
+    (* cuts=empty_cuts *)
   }
     
 
@@ -148,7 +152,7 @@ module Make(A:A) = struct
     find_ktjs: tm -> int list option m;
     add_ktjs: tm -> int list -> unit m;
 
-    record_cuts: (nt_item * int) list -> unit m;
+    (* record_cuts: (nt_item * int) list -> unit m; *)
   }
 
 
@@ -167,7 +171,7 @@ module Make(A:A) = struct
       in *)
       let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo;
             add_todos_at_k; add_todos_gt_k; add_ixk_done;
-            mem_ixk_done; find_ktjs; add_ktjs; record_cuts } = at_ops
+            mem_ixk_done; find_ktjs; add_ktjs } = at_ops
       in
       let with_state: (state -> state) -> unit m = fun f -> 
         fun s -> ((),f s)
@@ -252,8 +256,8 @@ discussion is indexed by these labels
                     mark "ap";
                     get_bitms (k',_Y) >>= fun bitms ->                  
                     mark "ar";
-                    record_cuts (List.map (fun bitm -> (bitm,k)) bitms) >>= fun _ ->
-                    mark "as";
+                    (* record_cuts (List.map (fun bitm -> (bitm,k)) bitms) >>= fun _ -> *)
+                    (* mark "as"; *)
                     let new_todos_at_k = image (fun bitm -> cut bitm k) bitms in
                     mark "at";
                     add_todos_at_k new_todos_at_k >>= fun _ ->
@@ -275,7 +279,7 @@ discussion is indexed by these labels
                           mark "co";
                           mem_ixk_done (k,_Y) >>= function    
                           | true -> 
-                            record_cuts [(bitm,k)] >>= fun _ ->
+                            (* record_cuts [(bitm,k)] >>= fun _ -> *)
                             add_todos_at_k [cut bitm k] >>= fun _ ->
                             mark "cr";
                             return ()
@@ -300,7 +304,7 @@ discussion is indexed by these labels
                       (* there may be a k in js, in which case we have a 
                          new todo at the current stage *)
                       let (xs,js) = List.partition (fun j -> j=k) js in       (*:el:*)
-                      record_cuts (List.map (fun j -> (bitm,j)) js) >>= fun _ -> 
+                      (* record_cuts (List.map (fun j -> (bitm,j)) js) >>= fun _ ->  *)
                       add_todos_gt_k (image (fun j -> cut bitm j) js) >>= fun _ ->
                       match xs with                                           (*:em:*)
                       | [] -> return ()     
@@ -341,7 +345,7 @@ discussion is indexed by these labels
                     bitms_at_k=empty_bitms_at_k;
                     ixk_done=empty_ixk_done;
                     ktjs=empty_ktjs;
-                    cuts=s.cuts;
+                    (* cuts=s.cuts; *)
                   }) >>= fun _ ->
               loop k'
           in
@@ -355,7 +359,11 @@ discussion is indexed by these labels
   (* type 'input _grammar_etc = (nt,tm,nt_item,'input) grammar_etc *)
 
   module Export : sig
+    
+    (** Abstract type of Earley parsers *)
     type earley_parser
+
+    (** Construct a generic Earley parser (independent of grammar) *)
     val make_earley_parser: 
       (* item_ops:item_ops -> *)
       at_ops:atomic_operations ->
@@ -367,8 +375,10 @@ discussion is indexed by these labels
       unit m
 *)
 
-    (** returns the final state; it is expected that the cuts field is
-       the only one processed further *)
+    (** Execute the Earley parser on a given grammar and
+       input. Returns the final state. We don't mind exposing the
+       state type because this is an internal library, intended to be
+       used eg by {!Earley_simple}. *)
     val run_earley_parser:
       earley_parser:earley_parser -> 
       grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
@@ -385,7 +395,7 @@ discussion is indexed by these labels
     let _run_earley_parser ~earley_parser ~grammar_etc = 
       earley_parser.run_parser ~grammar_etc
 
-    (** FIXME we can hide the earley_parser type, and just return a
+    (**FIXME we can hide the earley_parser type, and just return a
        function that takes grammar_etc...; finally, we can return
        interesting parts of the state separately, so that the
        functionality does not depend on any types we define above *)

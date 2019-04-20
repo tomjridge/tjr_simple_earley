@@ -1,6 +1,10 @@
 SHELL:=bash
 #ROOT:=--root=.
 DUNE:=dune
+MAIN:=bin/earley_main.exe
+
+default:
+	$(DUNE) build $(ROOT) @install
 
 all:
 	$(DUNE) build $(ROOT) @all
@@ -21,8 +25,11 @@ promote_docs: FORCE
 	PROMOTE_DOCS=true $(MAKE) docs
 
 run_tests:
-	time dune exec $(ROOT) bin/simple_test.exe 400 # should take about 6s?
-	time dune exec $(ROOT) bin/test_spec.exe 10
+	time dune exec $(ROOT) $(MAIN) spec 10
+	time dune exec $(ROOT) $(MAIN) unstaged 200
+	time dune exec $(ROOT) $(MAIN) simple 200
+
+#	time dune exec $(ROOT) $(MAIN) simple 400 # should take about 6s?
 
 run_examples:
 	$(MAKE) run_tests
