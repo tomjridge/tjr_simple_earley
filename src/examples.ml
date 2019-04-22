@@ -1,13 +1,14 @@
 (** Some examples *)
 
 
-(** Internal: abstract grammmars *)
+(** Internal: grammmars defined abstractly *)
 module Internal = struct
 
   let example_grammars p =
     let ( --> ) = p#make_rule in
     let _1,_2,_3 = p#_1,p#_2,p#_3 in
-    let _E,_S,one,eps,x,a = p#_E,p#_S,p#one,p#eps,p#x,p#a in
+    let _E,_S,a = p#_E,p#_S,p#a in
+    let [one;eps;x] = List.map a ["1";"";"x"] in
     let _EEE = 
       p#grammar 
         ~name:"EEE"
@@ -68,7 +69,8 @@ module Internal = struct
 end
 
 
-(** A named tuple for exporting grammars *)
+(** A named tuple for tagging grammars in a slightly more digestible
+   form than a plain tuple *)
 type 'a grammar = {
   name:string;
   descr:string;
@@ -115,12 +117,14 @@ module Example_instantiation = struct
     in
     Internal.example_grammars p
 
-  let grammar ~name = 
+  let grammar_names = ["EEE";"aho_s";"aho_sml";"brackets";"S_xSx"]
+
+  let get_grammar_by_name name = 
     example_grammars |> List.find (fun g -> g.name = name)
 
   let _ : 
-    name:string -> (sym * sym list) list grammar 
-    = grammar
+    string -> (sym * sym list) list grammar 
+    = get_grammar_by_name
 end
 
 (** Package example grammars as a function from grammar name. Example
@@ -181,4 +185,6 @@ end
 %}
 
 *)
-let grammar = Example_instantiation.grammar
+let get_grammar_by_name = Example_instantiation.get_grammar_by_name
+
+let grammar_names = Example_instantiation.grammar_names
