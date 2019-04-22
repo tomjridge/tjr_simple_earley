@@ -8,7 +8,7 @@ This is an implementation of an Earley-like algorithm, designed for simplicity.
 
 * Online **ocamldoc** can be found [here](https://tomjridge.github.io/tjr_simple_earley/index.html).
 * The main executable (test code and examples) is [bin/earley_main.ml](./bin/earley_main.ml). 
-  * After compiling, you should be able to run by typing eg `dune exec bin/earley_main.exe spec 10`
+  * After compiling, you should be able to run by typing eg `dune exec bin/earley_main.exe spec E_EEE 1111111111`
   * If you have installed via opam, there should be a public executable `earley_main.exe`.
 
 ## Install
