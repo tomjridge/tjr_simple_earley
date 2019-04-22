@@ -13,6 +13,7 @@ module Internal = struct
       p#grammar 
         ~name:"EEE"
         ~descr:"Very ambiguous grammar, for testing Earley"
+        ~initial_nt:_E
         ~rules:[
           _E -->_3 (_E,_E,_E);
           _E -->_1 one;
@@ -23,6 +24,7 @@ module Internal = struct
       p#grammar
         ~name:"aho_s"
         ~descr:"Aho et al. example grammar"
+        ~initial_nt:_S
         ~rules:[
           _S -->_3 (x,_S,_S);
           _S -->_1 eps
@@ -32,6 +34,7 @@ module Internal = struct
       p#grammar
         ~name:"aho_sml"
         ~descr:"Aho et al. example grammar 2"
+        ~initial_nt:_S
         ~rules:[
           _S -->_3 (_S,_S,x);
           _S -->_1 eps
@@ -42,6 +45,7 @@ module Internal = struct
         ~name:"brackets"
         ~descr:
           "Well-bracketed expressions, in a particular nasty form for parsing"
+        ~initial_nt:_E
         ~rules:[
           _E -->_2 (_E,_E);
           _E -->_3 (a"(",_E,a")");
@@ -52,29 +56,23 @@ module Internal = struct
       p#grammar 
         ~name:"S_xSx"
         ~descr:"Unambiguous grammar that favours right-most parsers"
+        ~initial_nt:_S
         ~rules:[
-          _S -->_3 (one,_S,one);
-          _S -->_1 one
+          _S -->_3 (x,_S,x);
+          _S -->_1 x
         ]
     in
     [_EEE;aho_s;aho_sml;brackets;_S_xSx]
-
-  let _ : 
-    < _1 : 'a -> 'b; _2 : 'a * 'a -> 'b; _3 : 'a * 'a * 'a -> 'b; _E : 'a;
-      _S : 'a; a : string -> 'a; eps : 'a;
-      grammar : name:string -> descr:string -> rules:'c list -> 'd;
-      make_rule : 'a -> 'b -> 'c; one : 'a; x : 'a; .. > ->
-    'd list
-    = example_grammars
 end
 
 
 (** A named tuple for tagging grammars in a slightly more digestible
    form than a plain tuple *)
-type 'a grammar = {
+type ('a,'b) grammar = {
   name:string;
   descr:string;
-  rules:'a 
+  initial_nt:'a;
+  rules:'b
 }
 
 (** Example instantiation with strings for symbols *)
@@ -98,7 +96,7 @@ module Example_instantiation = struct
   let one = "1"
   let x = "x"
 
-  let grammar ~name ~descr ~rules = {name;descr;rules}
+  let grammar ~name ~descr ~initial_nt ~rules = {name;descr;initial_nt;rules}
 
   let example_grammars = 
     let p = object
@@ -117,40 +115,47 @@ module Example_instantiation = struct
     in
     Internal.example_grammars p
 
+  let _ = example_grammars
+
   module Export = struct
+
+    (** NOTE nonterminals and terminals are represented by strings *)
 
     let grammar_names = ["EEE";"aho_s";"aho_sml";"brackets";"S_xSx"]
 
     let get_grammar_by_name name = 
       example_grammars |> List.find (fun g -> g.name = name)
 
-    let _ : 
-      string -> (nt * sym list) list grammar 
-      = get_grammar_by_name
-
 
     (** We also want to get grammars with type [grammar_etc] *)
 
     open Prelude
 
-    (** NOTE: this returns a partial [grammar_etc] (input and input_length are dummies), and nt_items are a tuple [(nt,i,k,bs)] *)
-    let get_grammar_etc_by_name name = 
+    (** NOTE this returns a partial [grammar_etc] (input and
+       input_length are dummies), and nt_items are a tuple
+       [(nt,i,k,bs)] *)
+    let _get_grammar_etc_by_name name = 
       get_grammar_by_name name 
       |> fun { rules; _ } ->
       let new_items ~nt ~input ~pos = 
-        rules |> Misc.rev_filter_map (fun (nt',rhs) -> if nt'=nt then Some (nt,pos,pos,rhs) else None)
+        rules |> Misc.rev_filter_map (fun (nt',rhs) -> 
+            if nt'=nt then Some (nt,pos,pos,rhs) else None)
       in
       let parse_tm ~tm ~input ~pos ~input_length =
-        let len_tm = String.length tm in
-        try
-          match String.sub input pos len_tm = tm with
-          | true -> [pos+len_tm]
-          | false -> []
-        with Invalid_argument _ -> []
+        match Misc.string_matches_at ~string:input ~sub:tm ~pos with
+        | true -> [pos+(String.length tm)]
+        | false -> []
       in
       { new_items; parse_tm; input=""; input_length=(-1) }
 
-    (** Hack to determine nt/tm based on string repr starting with a capital letter *)
+    let get_grammar_etc_by_name ~name ~input ~input_length = 
+      _get_grammar_etc_by_name name |> fun g ->
+      { g with input; input_length }
+    (** Returns a non-partial [grammar_etc] *)
+    
+
+    (** Hack to determine nt/tm based on string repr starting with a
+       capital letter *)
     let is_nt nt = nt <> "" && (String.get nt 0 |> function
       | 'A' .. 'Z' -> true
       | _ -> false)

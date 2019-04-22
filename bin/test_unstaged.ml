@@ -8,9 +8,14 @@ module Make() = struct
   module Internal = Earley_unstaged.Make(A)
   open Internal
 
+  let grammar = !Params.grammar
+
+  let initial_nt = grammar.initial_nt
+
+  let expand_nt,expand_tm = grammar_to_expand grammar
 
   let _ = 
-    earley_unstaged ~expand_nt ~expand_tm ~initial_nt:"E"
+    earley_unstaged ~expand_nt ~expand_tm ~initial_nt
     |> Misc.rev_filter_map (function (Nt_item itm) -> Some itm | _ -> None)
     |> fun itms -> 
     let len_itms = List.length itms in

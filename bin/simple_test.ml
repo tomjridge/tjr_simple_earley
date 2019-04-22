@@ -1,6 +1,4 @@
-(** Simple test of Earley functionality. Set environment variable
-   record_cuts in order to record info about the number of cuts (this
-   doubles the run time). *)
+(** Simple test of Earley functionality. *)
 module Make() = struct
   open Tjr_simple_earley
   open Tjr_simple_earley.Prelude

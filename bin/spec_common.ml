@@ -30,6 +30,7 @@ module A = struct
 end
 include A
 
+(*
 let _E,_1,eps = Nt "E",Tm "1", Tm "eps"
 
 let expand_nt (nt,i) =
@@ -37,14 +38,7 @@ let expand_nt (nt,i) =
   [ [_E;_E;_E]; [_1]; [eps] ]
   |> List.map (fun rhs -> { nt; i_=i;k_=i; bs=rhs })
 
-let expand_tm (tm,i) = 
-  assert(tm="1" || tm="eps");
-  (* let len = !Test_params.input_length in *)
-  let input = !Params.input in
-  match tm with
-  | _ when tm="1" -> (
-      if i<String.length input && String.get input i = '1' then [i+1] else [])
-  | _ when tm="eps" -> [i]
+*)
 
 let sym_to_string = function Nt x -> x | Tm x -> x 
 let syms_to_string xs = 
@@ -55,3 +49,22 @@ let itm_to_string {nt;i_;k_;bs} = Printf.sprintf "%s -> %3d,%3d,%s"
     i_
     k_
     (syms_to_string bs)
+
+let grammar_to_expand grammar = 
+  let grammar = 
+    let to_sym s = if Examples.is_nt s then Nt s else Tm s in
+    let Examples.{ rules; _ } = grammar in
+    rules |> List.map (fun (nt,rhs) -> (nt,List.map to_sym rhs))
+  in
+  let expand_nt (nt,i) =
+    grammar |> Misc.rev_filter_map (fun (nt',bs) -> match nt'=nt with
+        | true -> Some { nt; i_=i;k_=i; bs }
+        | false -> None)
+  in
+  let expand_tm (tm,i) = 
+    let input = !Params.input in
+    match Misc.string_matches_at ~string:input ~sub:tm ~pos:i with
+    | true -> [i+(String.length tm)]
+    | false -> []
+  in
+  (expand_nt,expand_tm)

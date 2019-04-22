@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Examples (tjr_simple_earley.Tjr_simple_earley.Examples)</title><link rel="stylesheet" href="../../../odoc.css"/><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../../../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body><div class="content"><header><nav><a href="../index.html">Up</a> – <a href="../../index.html">tjr_simple_earley</a> &#x00BB; <a href="../index.html">Tjr_simple_earley</a> &#x00BB; Examples</nav><h1>Module <code>Tjr_simple_earley.Examples</code></h1></header><aside><p>Some examples</p></aside><dl><dt class="spec module" id="module-Internal"><a href="#module-Internal" class="anchor"></a><code><span class="keyword">module</span> <a href="Internal/index.html">Internal</a> : <span class="keyword">sig</span> ... <span class="keyword">end</span></code></dt><dd><p>Internal: grammmars defined abstractly</p></dd></dl><dl><dt class="spec type" id="type-grammar"><a href="#type-grammar" class="anchor"></a><code><span class="keyword">type</span> ('a, 'b) grammar</code><code> = </code><code>{</code><table class="record"><tr id="type-grammar.name" class="anchored"><td class="def field"><a href="#type-grammar.name" class="anchor"></a><code>name : string;</code></td></tr><tr id="type-grammar.descr" class="anchored"><td class="def field"><a href="#type-grammar.descr" class="anchor"></a><code>descr : string;</code></td></tr><tr id="type-grammar.initial_nt" class="anchored"><td class="def field"><a href="#type-grammar.initial_nt" class="anchor"></a><code>initial_nt : <span class="type-var">'a</span>;</code></td></tr><tr id="type-grammar.rules" class="anchored"><td class="def field"><a href="#type-grammar.rules" class="anchor"></a><code>rules : <span class="type-var">'b</span>;</code></td></tr></table><code>}</code></dt><dd><p>A named tuple for tagging grammars in a slightly more digestible form than a plain tuple</p></dd></dl><dl><dt class="spec module" id="module-Example_instantiation"><a href="#module-Example_instantiation" class="anchor"></a><code><span class="keyword">module</span> <a href="Example_instantiation/index.html">Example_instantiation</a> : <span class="keyword">sig</span> ... <span class="keyword">end</span></code></dt><dd><p>Example instantiation with strings for symbols</p></dd></dl><aside><p>Package example grammars as a function from grammar name. Example names are: EEE, aho_s, aho_sml, brackets, S_xSx</p>
+
+<pre>
+    let _EEE = 
+      p#grammar 
+        ~name:"EEE"
+        ~descr:"Very ambiguous grammar, for testing Earley"
+        ~rules:[
+          _E -->_3 (_E,_E,_E);
+          _E -->_1 one;
+          _E -->_1 eps;
+        ]
+    in
+    let aho_s = 
+      p#grammar
+        ~name:"aho_s"
+        ~descr:"Aho et al. example grammar"
+        ~rules:[
+          _S -->_3 (x,_S,_S);
+          _S -->_1 eps
+        ]
+    in
+    let aho_sml = 
+      p#grammar
+        ~name:"aho_sml"
+        ~descr:"Aho et al. example grammar 2"
+        ~rules:[
+          _S -->_3 (_S,_S,x);
+          _S -->_1 eps
+        ]
+    in
+    let brackets = 
+      p#grammar
+        ~name:"brackets"
+        ~descr:
+          "Well-bracketed expressions, in a particular nasty form for parsing"
+        ~rules:[
+          _E -->_2 (_E,_E);
+          _E -->_3 (a"(",_E,a")");
+          _E -->_1 eps
+        ]
+    in
+    let _S_xSx = 
+      p#grammar 
+        ~name:"S_xSx"
+        ~descr:"Unambiguous grammar that favours right-most parsers"
+        ~rules:[
+          _S -->_3 (one,_S,one);
+          _S -->_1 one
+        ]
+</pre>
+
+</aside><div><div class="spec include"><div class="doc"><details open="open"><summary><span class="def"><code><span class="keyword">include</span> <a href="Example_instantiation/index.html#module-Export">Example_instantiation.Export</a></code></span></summary><aside><p>NOTE nonterminals and terminals are represented by strings</p></aside><dl><dt class="spec value" id="val-grammar_names"><a href="#val-grammar_names" class="anchor"></a><code><span class="keyword">val</span> grammar_names : string list</code></dt><dt class="spec value" id="val-get_grammar_by_name"><a href="#val-get_grammar_by_name" class="anchor"></a><code><span class="keyword">val</span> get_grammar_by_name : string <span>&#45;&gt;</span> (string, (string * string list) list) <a href="index.html#type-grammar">grammar</a></code></dt></dl><aside><p>We also want to get grammars with type <code>grammar_etc</code></p></aside><dl><dt class="spec value" id="val-_get_grammar_etc_by_name"><a href="#val-_get_grammar_etc_by_name" class="anchor"></a><code><span class="keyword">val</span> _get_grammar_etc_by_name : string <span>&#45;&gt;</span> (string, string, string * int * int * string list, string) <a href="../Prelude/index.html#type-grammar_etc">Prelude.grammar_etc</a></code></dt><dd><p>NOTE this returns a partial <code>grammar_etc</code> (input and input_length are dummies), and nt_items are a tuple <code>(nt,i,k,bs)</code></p></dd></dl><dl><dt class="spec value" id="val-get_grammar_etc_by_name"><a href="#val-get_grammar_etc_by_name" class="anchor"></a><code><span class="keyword">val</span> get_grammar_etc_by_name : name:string <span>&#45;&gt;</span> input:string <span>&#45;&gt;</span> input_length:int <span>&#45;&gt;</span> (string, string, string * int * int * string list, string) <a href="../Prelude/index.html#type-grammar_etc">Prelude.grammar_etc</a></code></dt><dd><p>Returns a non-partial <code>grammar_etc</code></p></dd></dl><dl><dt class="spec value" id="val-is_nt"><a href="#val-is_nt" class="anchor"></a><code><span class="keyword">val</span> is_nt : string <span>&#45;&gt;</span> bool</code></dt><dd><p>Hack to determine nt/tm based on string repr starting with a capital letter</p></dd></dl></details></div></div></div></div></body></html>

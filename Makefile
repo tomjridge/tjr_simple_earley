@@ -24,10 +24,13 @@ docs: FORCE
 promote_docs: FORCE
 	PROMOTE_DOCS=true $(MAKE) docs
 
+
 run_tests:
-	time dune exec $(ROOT) $(MAIN) spec 10
-	time dune exec $(ROOT) $(MAIN) unstaged 200
+	time dune exec $(ROOT) $(MAIN) spec EEE 1111111111
+	time dune exec $(ROOT) $(MAIN) unstaged EEE `printf '%*s' 200 | tr ' ' 1` # see NOTE:printf
 	time dune exec $(ROOT) $(MAIN) simple 200
+
+# NOTE:printf https://stackoverflow.com/questions/3211891/creating-string-of-repeated-characters-in-shell-script
 
 #	time dune exec $(ROOT) $(MAIN) simple 400 # should take about 6s?
 

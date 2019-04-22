@@ -10,7 +10,9 @@ open Prelude
 (* profiling; debugging --------------------------------------------- *)
 
 (** Internal profiling function *)
-let _mark_ref = ref (fun (cc:string) -> ())
+let _mark_ref = 
+  Printf.printf "%s: _mark_ref global\n%!" __FILE__;
+  ref (fun (cc:string) -> ())
 
 (** What is required by the [Make] functor *) 
 module type A = sig

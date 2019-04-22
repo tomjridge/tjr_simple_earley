@@ -17,3 +17,11 @@ let rev_filter_map f xs =
   |> fun (xs',[]) -> xs'
 
 let _ = rev_filter_map
+
+
+let string_matches_at ~string ~sub ~pos =
+  let len = String.length sub in
+  try
+    String.sub string pos len = sub 
+  with Invalid_argument _ -> false
+  
