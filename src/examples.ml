@@ -117,14 +117,46 @@ module Example_instantiation = struct
     in
     Internal.example_grammars p
 
-  let grammar_names = ["EEE";"aho_s";"aho_sml";"brackets";"S_xSx"]
+  module Export = struct
 
-  let get_grammar_by_name name = 
-    example_grammars |> List.find (fun g -> g.name = name)
+    let grammar_names = ["EEE";"aho_s";"aho_sml";"brackets";"S_xSx"]
 
-  let _ : 
-    string -> (sym * sym list) list grammar 
-    = get_grammar_by_name
+    let get_grammar_by_name name = 
+      example_grammars |> List.find (fun g -> g.name = name)
+
+    let _ : 
+      string -> (nt * sym list) list grammar 
+      = get_grammar_by_name
+
+
+    (** We also want to get grammars with type [grammar_etc] *)
+
+    open Prelude
+
+    (** NOTE: this returns a partial [grammar_etc] (input and input_length are dummies), and nt_items are a tuple [(nt,i,k,bs)] *)
+    let get_grammar_etc_by_name name = 
+      get_grammar_by_name name 
+      |> fun { rules; _ } ->
+      let new_items ~nt ~input ~pos = 
+        rules |> Misc.rev_filter_map (fun (nt',rhs) -> if nt'=nt then Some (nt,pos,pos,rhs) else None)
+      in
+      let parse_tm ~tm ~input ~pos ~input_length =
+        let len_tm = String.length tm in
+        try
+          match String.sub input pos len_tm = tm with
+          | true -> [pos+len_tm]
+          | false -> []
+        with Invalid_argument _ -> []
+      in
+      { new_items; parse_tm; input=""; input_length=(-1) }
+
+    (** Hack to determine nt/tm based on string repr starting with a capital letter *)
+    let is_nt nt = nt <> "" && (String.get nt 0 |> function
+      | 'A' .. 'Z' -> true
+      | _ -> false)
+
+  end
+  
 end
 
 (** Package example grammars as a function from grammar name. Example
@@ -185,6 +217,5 @@ end
 %}
 
 *)
-let get_grammar_by_name = Example_instantiation.get_grammar_by_name
 
-let grammar_names = Example_instantiation.grammar_names
+include Example_instantiation.Export

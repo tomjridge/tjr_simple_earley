@@ -25,7 +25,7 @@ end
 
 
 (** Construct the parse function. Use
-   {!Earley_spec.earley_spec} to avoid functors. *)
+   {!Internal_example_parse_function} to avoid functors. *)
 module Make(A:A) = struct
 
   include A
@@ -192,6 +192,10 @@ expand_tm:(tm * int -> int list) -> initial_nt:nt -> item list
 
 end
 
+(** An example parse function which is polymorphic over symbols; no
+   functors involved. *)
+module Internal_example_parse_function = struct
+
 (** An (executable) parsing specification polymorphic over
    nonterminals and terminals *)
 let earley_spec (type nt tm) ~expand_nt ~expand_tm  =
@@ -223,3 +227,4 @@ let earley_spec (type nt tm) ~expand_nt ~expand_tm  =
     itms |> Misc.rev_filter_map (function 
         | Nt_item {nt;i_;k_;bs} -> Some (`Item(nt,i_,k_,List.map sym_to_sym' bs))
         | _ -> None)
+end
