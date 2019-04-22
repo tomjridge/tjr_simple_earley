@@ -37,6 +37,16 @@ run_tests:
 run_examples:
 	$(MAKE) run_tests
 
+
+run_regression:
+	(g=EEE; ch=1; export g ch; for len in 100 200 300; do \
+time dune exec $(ROOT) $(MAIN) unstaged $$g `printf '%*s' $$len | tr ' ' $$ch`; done)
+	(g=aho_s; ch=x; export g ch; for len in 100 200 300; do \
+time dune exec $(ROOT) $(MAIN) unstaged $$g `printf '%*s' $$len | tr ' ' $$ch`; done)
+	(g=aho_sml; ch=x; export g ch; for len in 100 200 300; do \
+time dune exec $(ROOT) $(MAIN) unstaged $$g `printf '%*s' $$len | tr ' ' $$ch`; done)
+
+
 clean:
 	dune clean $(ROOT)
 

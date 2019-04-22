@@ -11,9 +11,11 @@ let _ =
     Params.input_length := String.length input;
     Params.input := input;
     Params.grammar:=Examples.get_grammar_by_name grammar;
+    Printf.printf "%s: grammar=%s; input_length=%d\n%!" __FILE__ grammar (String.length input);
     let module M = Test_spec.Make() in ()
   | ["unstaged";grammar;input] -> 
     Params.input_length := String.length input;
     Params.input := input;
     Params.grammar:=Examples.get_grammar_by_name grammar;
+    Printf.printf "%s: grammar=%s; input_length=%d\n%!" __FILE__ grammar (String.length input);
     let module M = Test_unstaged.Make() in ()

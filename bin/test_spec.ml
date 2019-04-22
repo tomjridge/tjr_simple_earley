@@ -17,9 +17,8 @@ module Make() = struct
     |> Misc.rev_filter_map (function (Nt_item itm) -> Some itm | _ -> None)
     |> fun itms -> 
     let _ = 
-      Printf.printf "%s: input length %d; %d nt_items produced\n%!"
+      Printf.printf "%s: %d nt_items produced\n%!"
         __FILE__
-        !Params.input_length
         (List.length itms)
     in
     itms

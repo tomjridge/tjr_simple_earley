@@ -20,9 +20,8 @@ module Make() = struct
     |> fun itms -> 
     let len_itms = List.length itms in
     let _ = 
-      Printf.printf "%s: input length %d; %d nt_items produced\n%!"
+      Printf.printf "%s: %d nt_items produced\n%!"
         __FILE__
-        !Params.input_length
         len_itms
     in
     (* don't print if > 1000 items *)
