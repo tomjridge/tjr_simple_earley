@@ -116,7 +116,7 @@ module Make(A:A) = struct
         |> earley 
           ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
           ~add_item ~add_items ~pop_todo
-        |> fun ((),s) -> [] (* FIXME *)
+        |> fun (_count,s) -> [] (* FIXME *)
           (* s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq *)
 
   end

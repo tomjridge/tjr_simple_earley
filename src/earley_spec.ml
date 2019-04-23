@@ -32,6 +32,7 @@ module Make(A:A) = struct
 
   include A
 
+
   module Internal = struct
 
     (** This is independent of the state type; we can reuse the code for
@@ -55,6 +56,7 @@ module Make(A:A) = struct
         = 
 
         let mark = !spec_mark_ref in
+        let count = ref 0 in
 
         (* process a blocked item *)
         let cut_blocked_item = function
@@ -84,6 +86,7 @@ module Make(A:A) = struct
 
         (* process an item *)
         let step itm =
+          count:=!count+1;
           mark "em";
           match itm with 
           | Nt_item itm -> (
@@ -116,7 +119,7 @@ module Make(A:A) = struct
         (* loop until no items left to process *)
         let rec loop () = 
           pop_todo () >>= function
-          | None -> return ()
+          | None -> return !count
           | Some itm -> step itm >>= fun _ -> loop ()
         in
         loop ()
@@ -204,11 +207,27 @@ module Make(A:A) = struct
       |> earley 
         ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
         ~add_item ~add_items ~pop_todo
-      |> fun ((),s) -> s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq
+      |> fun (count,s) -> 
+      (* let sym_to_sym' = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in  *)
+      let complete = lazy begin
+        fun (i,_S) -> 
+          get_complete_items (i,_S) s |> fun (n,_) -> n
+      end
+      in
+      let items = lazy begin
+        s.todo_done 
+        |> Hashtbl.to_seq_keys
+        |> List.of_seq
+          end
+      in
+      let complete_items = fun (i,_S) -> (Lazy.force complete) (i,_S) in
+      { count;
+        items;
+        complete_items }
 
   let _ :
 expand_nt:(nt * int -> nt_item list) ->
-expand_tm:(tm * int -> int list) -> initial_nt:nt -> item list
+expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c) parse_result
 = earley_spec
 
 
@@ -238,15 +257,28 @@ let earley_spec (type nt tm) ~expand_nt ~expand_tm  =
   let module B = Make(A) in
   let open B in
   let sym'_to_sym = function `Nt nt -> Nt nt | `Tm tm -> Tm tm in
-  let sym_to_sym' = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in
+  let sym_to_sym' = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in 
   let expand_nt (nt,i) = 
     expand_nt (nt,i) |> List.map (fun bs ->
         bs |> List.map sym'_to_sym |> fun bs ->
         {nt;i_=i;k_=i;bs})
   in
   fun ~initial_nt ->
-    let itms = B.earley_spec ~expand_nt ~expand_tm ~initial_nt in
-    itms |> Misc.rev_filter_map (function 
-        | Nt_item {nt;i_;k_;bs} -> Some (`Item(nt,i_,k_,List.map sym_to_sym' bs))
-        | _ -> None)
+    let res = B.earley_spec ~expand_nt ~expand_tm ~initial_nt in
+    res |> fun {count;items;complete_items} -> 
+    let items = 
+      lazy begin
+        Lazy.force items 
+        |> List.map (function
+            | Nt_item {nt;i_;k_;bs} -> 
+              `Nt_item(nt,i_,k_,List.map sym_to_sym' bs)
+            | Sym_item {i_;sym;j_} -> 
+              `Sym_item(i_,sym_to_sym' sym,j_)
+            | Sym_at_k {sym;k_} ->
+              `Sym_at_k(sym_to_sym' sym,k_))
+      end
+    in
+    let complete_items = fun (i,_S) -> complete_items (i,sym'_to_sym _S) in
+    {count;items;complete_items}
+
 end
