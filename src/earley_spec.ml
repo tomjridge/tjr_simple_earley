@@ -1,5 +1,11 @@
 (** A simple specification of general parsing (not only Earley). *)
 
+(** Internal profiling function *)
+let _mark_ref = 
+  Log.log @@ lazy (Printf.printf "%s: _mark_ref global\n%!" __FILE__);
+  ref (fun (cc:string) -> ())
+
+
 (** Required by the {!Make} functor *)
 module type A = sig
 
@@ -52,43 +58,63 @@ module Make(A:A) = struct
           ~add_item ~add_items ~pop_todo
         = 
 
+        let mark = !_mark_ref in
+
         (* process a blocked item *)
         let cut_blocked_item = function
           | { nt; i_; k_; bs=_S::bs } as itm -> 
+            mark "am";
             get_complete_items (k_,_S) >>= fun js ->
+            mark "ap";
             (* js |> List.iter (fun j -> note_cut itm j); *)
             js |> List.map (fun j -> Nt_item { itm with k_=j; bs=bs })
-            |> add_items
+            |> add_items >>= fun _ ->
+            mark "as";
+            return ()              
           | _ -> failwith "impossible"
         in
 
         (* process a complete item *)
         let cut_complete_item {i_;sym;j_} = 
+          mark "bm";
           get_blocked_items (i_,sym) >>= fun itms ->
+          mark "bp";
           (* itms |> List.iter (fun itm -> note_cut itm j_); *)
           itms |> List.map (fun itm -> Nt_item {itm with k_=j_; bs=List.tl itm.bs})
-          |> add_items
+          |> add_items >>= fun _ ->
+          mark "bs";
+          return ()
         in
 
         (* process an item *)
         let step itm =
+          mark "em";
           match itm with 
           | Nt_item itm -> (
               (* note_item itm;                                  (\* tracing *\) *)
               match itm.bs with
               | [] -> 
                 (* item is complete *)
-                add_item (Sym_item {sym=Nt itm.nt; i_=itm.i_; j_=itm.k_})
+                add_item (Sym_item {sym=Nt itm.nt; i_=itm.i_; j_=itm.k_}) >>= fun _ ->
+                mark "ep";
+                return ()
               | _S::bs -> (
                   (* we need to record that we need to expand _S *)
+                  mark "er";
                   add_item (Sym_at_k { sym=_S; k_=itm.k_ }) >>= fun _ ->
+                  mark "eu";
                   (* and we need to process the item against complete items *)
-                  cut_blocked_item itm))
-          | Sym_item itm -> (cut_complete_item itm)
+                  cut_blocked_item itm >>= fun _ ->
+                  mark "ev";
+                  return ()))
+          | Sym_item itm -> (
+              cut_complete_item itm >>= fun _ ->
+              mark "ga";
+              return ())
           | Sym_at_k {sym;k_} -> (
               match sym with
-              | Nt nt -> expand_nt (nt,k_)
-              | Tm tm -> expand_tm (tm,k_))        
+              | Nt nt -> expand_nt (nt,k_) >>= fun _ -> mark "ha"; return ()
+              | Tm tm -> expand_tm (tm,k_) >>= fun _ -> mark "hb"; return ())        
         in
 
         (* loop until no items left to process *)

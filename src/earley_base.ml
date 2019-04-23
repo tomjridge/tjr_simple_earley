@@ -11,7 +11,7 @@ open Prelude
 
 (** Internal profiling function *)
 let _mark_ref = 
-  Printf.printf "%s: _mark_ref global\n%!" __FILE__;
+  Log.log @@ lazy (Printf.printf "%s: _mark_ref global\n%!" __FILE__);
   ref (fun (cc:string) -> ())
 
 (** What is required by the [Make] functor *) 
@@ -40,7 +40,7 @@ module type A = sig
   type nt_item_set
   val empty_nt_item_set: nt_item_set
   val elements : nt_item_set -> nt_item list
-
+  val nt_item_set_of_list: nt_item list -> nt_item_set
 
   (** int -> bitms_at_k  FIXME implement as hashtbl *)
   type bitms_lt_k  
@@ -260,7 +260,10 @@ discussion is indexed by these labels
                     mark "ar";
                     (* record_cuts (List.map (fun bitm -> (bitm,k)) bitms) >>= fun _ -> *)
                     (* mark "as"; *)
+                    (* NOTE the following image is guaranteed not to
+                       contain duplicates... (?) *)
                     let new_todos_at_k = image (fun bitm -> cut bitm k) bitms in
+                    (* Printf.printf "debug: %d %d\n%!" (List.length bitms) (nt_item_set_of_list new_todos_at_k |> elements |> List.length); *)
                     mark "at";
                     add_todos_at_k new_todos_at_k >>= fun _ ->
                     mark "au"; return ()))

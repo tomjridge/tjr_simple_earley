@@ -53,7 +53,7 @@ module Make() = struct
 
   let profiler = Tjr_profile.make_string_profiler ~now
 
-  let _ = Earley_base._mark_ref := profiler.mark
+  (* let _ = Earley_base._mark_ref := profiler.mark *)
 
 
   (* Finally, run Earley! *)
@@ -68,7 +68,7 @@ module Make() = struct
       ~initial_nt
     |> fun cuts -> 
     (* Printf.printf "Finished with %d cuts\n%!" (count_cuts cuts); *)
-    profiler.print_summary ()
+    Log.log @@ lazy (profiler.print_summary ())
 
   let _ = main ()
 

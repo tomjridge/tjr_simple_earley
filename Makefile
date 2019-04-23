@@ -26,28 +26,27 @@ promote_docs: FORCE
 
 
 run_tests:
+	$(MAKE)
 	time dune exec $(ROOT) $(MAIN) spec EEE 1111111111
 	time dune exec $(ROOT) $(MAIN) unstaged EEE `printf '%*s' 200 | tr ' ' 1` # see NOTE:printf
 	time dune exec $(ROOT) $(MAIN) simple 200
 
 # NOTE:printf https://stackoverflow.com/questions/3211891/creating-string-of-repeated-characters-in-shell-script
 
-#	time dune exec $(ROOT) $(MAIN) simple 400 # should take about 6s?
-
 run_examples:
 	$(MAKE) run_tests
 
 
 run_regression:
-	(g=EEE; ch=1; export g ch; for len in 200 400; do \
-time dune exec $(ROOT) $(MAIN) unstaged $$g `printf '%*s' $$len | tr ' ' $$ch`; done)
-	@echo -----------------------------------------------------------------
-	(g=aho_s; ch=x; export g ch; for len in 250 500; do \
-time dune exec $(ROOT) $(MAIN) unstaged $$g `printf '%*s' $$len | tr ' ' $$ch`; done)
-	@echo -----------------------------------------------------------------
-	(g=aho_sml; ch=x; export g ch; for len in 300 600; do \
-time dune exec $(ROOT) $(MAIN) unstaged $$g `printf '%*s' $$len | tr ' ' $$ch`; done)
+	$(MAKE)
+	./run_regression.sh
 
+
+disable_log:
+	echo "let log (x:unit Lazy.t) = ()" >src/log.ml
+
+enable_log:
+	echo "let log (x:unit Lazy.t) = Lazy.force x" >src/log.ml
 
 clean:
 	dune clean $(ROOT)

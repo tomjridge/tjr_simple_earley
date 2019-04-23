@@ -100,6 +100,7 @@ module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
       type nt_item_set = Set_nt_item.t
       let elements = Set_nt_item.elements
       let empty_nt_item_set = Set_nt_item.empty
+      let nt_item_set_of_list = Set_nt_item.of_list
 
       type bitms_lt_k = (nt_item_set map_nt) map_int
 
@@ -162,18 +163,15 @@ module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
 
     (* FIXME this is the one to optimize! *)
     let add_todos_at_k itms s =
-      let todo_done = s.todo_done in
-      (itms,[])
+      (itms,s.todo_done,s.todo)
       |> iter_opt (function 
-          | [],_ -> None
-          | itm::itms,filtered ->
+          | [],_,_ -> None
+          | itm::itms,todo_done,todo ->
             Set_nt_item.mem itm todo_done |> function
-            | true -> Some(itms,filtered)
-            | false -> Some(itms, itm::filtered))
-      |> fun ([],itms) -> 
-      Set_nt_item.of_list itms |> fun itms' ->
-      (),{s with todo=itms@s.todo;
-              todo_done=Set_nt_item.union itms' s.todo_done}
+            | true -> Some(itms,todo_done,todo)
+            | false -> Some(itms, Set_nt_item.add itm todo_done,itm::todo))
+      |> fun ([],todo_done,todo) -> 
+      (),{s with todo; todo_done }
 
     let add_todos_gt_k itms s =
       (itms,s.todo_gt_k)

@@ -3,6 +3,12 @@
 
 open Earley_spec
 
+(** Internal profiling function *)
+let _mark_ref = 
+  Log.log @@ lazy (Printf.printf "%s: _mark_ref global\n%!" __FILE__);
+  ref (fun (cc:string) -> ())
+
+
 (** Construct the parse function. *)
 module Make(A:A) = struct
 
@@ -18,6 +24,9 @@ module Make(A:A) = struct
         blocked:((int*sym),(nt_item,unit)Hashtbl.t) Hashtbl.t;
         complete:((int*sym),(int,unit)Hashtbl.t) Hashtbl.t;
       }
+
+      (* length of array for todo_done *)
+      let array_len = 100
 
       let empty_state = { 
         todo=[]; 
@@ -50,11 +59,18 @@ module Make(A:A) = struct
               Hashtbl.to_seq_keys tbl |> List.of_seq)
         |> fun x -> x,s
       in
-      let _add_item itm s =
-        match Hashtbl.mem s.todo_done itm with
-        | true -> ()
-        | false -> 
-          let _ = Hashtbl.add s.todo_done itm () in
+      let mark = !_mark_ref in
+      (* let mark x = () in *)
+      let _add_item (itm:item) s =
+        mark "xa";
+        let tbl = s.todo_done in
+        mark "xb";
+        match Hashtbl.mem tbl itm with
+        | true -> mark "xc";()
+        | false ->
+          mark "xf";
+          let _ = Hashtbl.add tbl itm () in
+          mark "xg";
           (* update blocked and complete *)
           let _ = 
             match itm with 
@@ -82,7 +98,9 @@ module Make(A:A) = struct
               ()
             | _ -> ()
           in
+          mark "xw";
           let _ = s.todo<-itm::s.todo in
+          mark "xy";
           ()
       in
       let add_items itms s = 
@@ -102,7 +120,8 @@ module Make(A:A) = struct
         |> earley 
           ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
           ~add_item ~add_items ~pop_todo
-        |> fun ((),s) -> s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq
+        |> fun ((),s) -> [] (* FIXME *)
+          (* s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq *)
 
   end
 
