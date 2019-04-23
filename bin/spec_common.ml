@@ -1,12 +1,14 @@
 (** Factor out common code from test_spec.ml and test_unstaged.ml *)
 
 open Tjr_simple_earley
+open Prelude
 
 module A = struct
 
   type nt = string
   type tm = string
 
+(*
   type sym = Nt of nt | Tm of tm
 
   type nt_item = { nt:nt; i_:int; k_:int; bs: sym list }
@@ -19,7 +21,7 @@ module A = struct
     | Nt_item of nt_item
     | Sym_item of sym_item
     | Sym_at_k of sym_at_k
-
+*)
 (*
   let tbl = Hashtbl.create 100
 
@@ -39,6 +41,8 @@ let expand_nt (nt,i) =
   |> List.map (fun rhs -> { nt; i_=i;k_=i; bs=rhs })
 
 *)
+
+open Spec_types
 
 let sym_to_string = function Nt x -> x | Tm x -> x 
 let syms_to_string xs = 

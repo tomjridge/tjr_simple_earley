@@ -8,6 +8,7 @@ module type A = sig
   type nt
   type tm
 
+(*
   type sym = Nt of nt | Tm of tm
 
   type nt_item = { nt:nt; i_:int; k_:int; bs: sym list }
@@ -23,6 +24,7 @@ module type A = sig
 
   (* For debugging *)
   (* val note_item: nt_item -> unit *)
+*)
 end
 
 
@@ -30,7 +32,11 @@ end
    {!Internal_example_parse_function} to avoid functors. *)
 module Make(A:A) = struct
 
+  open Spec_types
+
   include A
+  (* include Make_derived_types(struct type nonrec nt = nt type nonrec tm = tm end) *)
+  include Make_derived_types(A)
 
 
   module Internal = struct
@@ -140,22 +146,18 @@ module Make(A:A) = struct
     end
 
     module State_type = struct
-
+      
       (* todo_done is really a set; we add items to todo providing they
          are not already in todo_done *)
       type state = {
-        mutable todo:item list;
-        todo_done:(item,unit) Hashtbl.t
+        mutable todo: item' list;
+        todo_done:(item',unit) Hashtbl.t
       }
 
       let empty_state = { todo=[]; todo_done=Hashtbl.create 100 }
     end
     include State_type
     include Make_with_state_type(State_type)
-  end
-
-
-  open Internal
 
   (** The (executable) specification of parsing. Returns a list of
      items (FIXME?). Implementations such as Earley should return an
@@ -208,11 +210,9 @@ module Make(A:A) = struct
         ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
         ~add_item ~add_items ~pop_todo
       |> fun (count,s) -> 
-      (* let sym_to_sym' = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in  *)
-      let complete = lazy begin
+      let complete_items = 
         fun (i,_S) -> 
           get_complete_items (i,_S) s |> fun (n,_) -> n
-      end
       in
       let items = lazy begin
         s.todo_done 
@@ -220,15 +220,14 @@ module Make(A:A) = struct
         |> List.of_seq
           end
       in
-      let complete_items = fun (i,_S) -> (Lazy.force complete) (i,_S) in
-      { count;
-        items;
-        complete_items }
+      { count;items;complete_items }
+  end
 
-  let _ :
-expand_nt:(nt * int -> nt_item list) ->
+  (* open Internal *)
+  let earley_spec :
+expand_nt:(nt * int -> nt_item' list) ->
 expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c) parse_result
-= earley_spec
+    = Internal.earley_spec
 
 
 end
@@ -236,49 +235,26 @@ end
 (** An example parse function which is polymorphic over symbols; no
    functors involved. *)
 module Internal_example_parse_function = struct
-
-(** An (executable) parsing specification polymorphic over
-   nonterminals and terminals *)
-let earley_spec (type nt tm) ~expand_nt ~expand_tm  =
-  let module A = struct
-    type nonrec nt = nt
-    type nonrec tm = tm
-    type sym = Nt of nt | Tm of tm
-    type nt_item = { nt:nt; i_:int; k_:int; bs: sym list }
-    type sym_item = { i_:int; sym:sym; j_:int }
-    type sym_at_k = { sym:sym; k_:int } 
-    type item = 
-      | Nt_item of nt_item
-      | Sym_item of sym_item
-      | Sym_at_k of sym_at_k
-
-  end
-  in
-  let module B = Make(A) in
-  let open B in
-  let sym'_to_sym = function `Nt nt -> Nt nt | `Tm tm -> Tm tm in
-  let sym_to_sym' = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in 
-  let expand_nt (nt,i) = 
-    expand_nt (nt,i) |> List.map (fun bs ->
-        bs |> List.map sym'_to_sym |> fun bs ->
-        {nt;i_=i;k_=i;bs})
-  in
-  fun ~initial_nt ->
-    let res = B.earley_spec ~expand_nt ~expand_tm ~initial_nt in
-    res |> fun {count;items;complete_items} -> 
-    let items = 
-      lazy begin
-        Lazy.force items 
-        |> List.map (function
-            | Nt_item {nt;i_;k_;bs} -> 
-              `Nt_item(nt,i_,k_,List.map sym_to_sym' bs)
-            | Sym_item {i_;sym;j_} -> 
-              `Sym_item(i_,sym_to_sym' sym,j_)
-            | Sym_at_k {sym;k_} ->
-              `Sym_at_k(sym_to_sym' sym,k_))
-      end
+  open Spec_types
+  
+  (** An (executable) parsing specification polymorphic over
+      nonterminals and terminals *)
+  let earley_spec (type nt tm) ~expand_nt ~expand_tm  =
+    let module A = struct
+      type nonrec nt = nt
+      type nonrec tm = tm
+    end
     in
-    let complete_items = fun (i,_S) -> complete_items (i,sym'_to_sym _S) in
-    {count;items;complete_items}
-
+    let module B = Make(A) in
+    (* let open B in *)
+    (* let sym'_to_sym = function `Nt nt -> Nt nt | `Tm tm -> Tm tm in *)
+    (* let sym_to_sym' = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in  *)
+    let expand_nt (nt,i) = 
+      expand_nt (nt,i) |> List.map (fun bs ->
+          (* bs |> List.map sym'_to_sym |> fun bs -> *)
+          {nt;i_=i;k_=i;bs})
+    in
+    fun ~initial_nt ->
+      let res = B.earley_spec ~expand_nt ~expand_tm ~initial_nt in
+      res
 end

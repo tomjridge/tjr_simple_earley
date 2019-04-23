@@ -4,21 +4,24 @@
 open Prelude
 open Earley_spec
 
+open Spec_types
 
 (** Construct the parse function. *)
 module Make(A:A) = struct
 
+  include Make_derived_types(A)
+
   module Internal = struct
-    open A
 
     module State_type = struct 
+
       (* todo_done is really a set; we add items to todo providing they
          are not already in todo_done *)
       type state = {
-        mutable todo:item list;
-        todo_done:(item,unit) Hashtbl.t;
-        blocked:((int*sym),(nt_item,unit)Hashtbl.t) Hashtbl.t;
-        complete:((int*sym),(int,unit)Hashtbl.t) Hashtbl.t;
+        mutable todo:item' list;
+        todo_done:(item',unit) Hashtbl.t;
+        blocked:((int*sym'),(nt_item',unit)Hashtbl.t) Hashtbl.t;
+        complete:((int*sym'),(int,unit)Hashtbl.t) Hashtbl.t;
       }
 
       (* length of array for todo_done *)
@@ -57,7 +60,7 @@ module Make(A:A) = struct
       in
       let mark = !unstaged_mark_ref in
       (* let mark x = () in *)
-      let _add_item (itm:item) s =
+      let _add_item (itm:item') s =
         mark "xa";
         let tbl = s.todo_done in
         mark "xb";
@@ -116,15 +119,25 @@ module Make(A:A) = struct
         |> earley 
           ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
           ~add_item ~add_items ~pop_todo
-        |> fun (_count,s) -> [] (* FIXME *)
-          (* s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq *)
+        |> fun (count,s) -> 
+        let items = lazy (
+            s.todo_done 
+            |> Hashtbl.to_seq_keys
+            |> List.of_seq) 
+        in
+        let complete_items =
+          fun (i,_S) -> 
+            get_complete_items (i,_S) s |> fun (n,_) -> n
+        in
+        { count;items;complete_items }
+        (* s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq *)
 
   end
 
   open A
   let earley_unstaged : 
-expand_nt:(nt * int -> nt_item list) ->
-expand_tm:(tm * int -> int list) -> initial_nt:nt -> item list
+expand_nt:(nt * int -> nt_item' list) ->
+expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c)parse_result
  = Internal.earley
 
 end

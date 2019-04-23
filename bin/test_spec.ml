@@ -1,8 +1,11 @@
 open Tjr_simple_earley
+open Prelude
 open Spec_common
 
 module Internal = Earley_spec.Make(A)
 open Internal
+
+open Spec_types
 
 let main () = 
   let grammar = !Params.grammar in
@@ -14,13 +17,8 @@ let main () =
     Printf.printf "%s: %d nt_items produced\n%!"
       __FILE__
       count);
-  Log.log @@ lazy (    
+  Log.log @@ lazy (
     Lazy.force items
-    |> Misc.rev_filter_map (function
-        | Nt_item x -> Some x
-        | _ -> None)
-    |> List.sort (fun itm1 itm2 -> 
-        let f {nt;i_;k_;bs} = nt,i_,k_,List.length bs,bs in
-        Pervasives.compare (f itm1) (f itm2))
+    |> filter_sort_items
     |> List.iter (fun itm -> itm |> itm_to_string |> print_endline))
 

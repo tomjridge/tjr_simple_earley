@@ -10,26 +10,30 @@ let make_input i =
   | false -> i
 
 let _ = 
-  match Array.to_list Sys.argv |> List.tl with
-  | ["simple";input] -> 
-    let input = make_input input in
-    Params.input := input;
-    Simple_test.main()
-  | ["spec";grammar;input] -> 
-    let input = make_input input in
-    Params.input := input;
-    Params.grammar:=Examples.get_grammar_by_name grammar;
-    Printf.printf "%s: parser=spec; grammar=%s; input_length=%d\n%!" 
-      __FILE__ 
-      grammar 
-      (String.length input);
-    Test_spec.main()
-  | ["unstaged";grammar;input] -> 
-    let input = make_input input in
-    Params.input := input;
-    Params.grammar:=Examples.get_grammar_by_name grammar;
-    Printf.printf "%s: parser=unstaged; grammar=%s; input_length=%d\n%!" 
-      __FILE__ 
-      grammar 
-      (String.length input);
-    Test_unstaged.main ()
+  Printf.printf "\n\nbegin -------------------------------------------------\n%!";
+  begin 
+    match Array.to_list Sys.argv |> List.tl with
+    | ["simple";input] -> 
+      let input = make_input input in
+      Params.input := input;
+      Simple_test.main()
+    | ["spec";grammar;input] -> 
+      let input = make_input input in
+      Params.input := input;
+      Params.grammar:=Examples.get_grammar_by_name grammar;
+      Printf.printf "parser=spec; grammar=%s; input_length=%d (%s)\n%!" 
+        grammar 
+        (String.length input)
+        __FILE__;
+      Test_spec.main()
+    | ["unstaged";grammar;input] -> 
+      let input = make_input input in
+      Params.input := input;
+      Params.grammar:=Examples.get_grammar_by_name grammar;
+      Printf.printf "parser=unstaged; grammar=%s; input_length=%d (%s)\n%!" 
+        grammar 
+        (String.length input)
+        __FILE__;
+      Test_unstaged.main ()
+  end;
+  Printf.printf "end ---------------------------------------------------\n\n%!";
