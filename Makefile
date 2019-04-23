@@ -27,11 +27,10 @@ promote_docs: FORCE
 
 run_tests:
 	$(MAKE)
-	time dune exec $(ROOT) $(MAIN) spec EEE 1111111111
-	time dune exec $(ROOT) $(MAIN) unstaged EEE `printf '%*s' 200 | tr ' ' 1` # see NOTE:printf
-	time dune exec $(ROOT) $(MAIN) simple 200
+	time dune exec $(ROOT) $(MAIN) spec EEE :1x10
+	time dune exec $(ROOT) $(MAIN) unstaged EEE :1x400
+	time dune exec $(ROOT) $(MAIN) simple :1x400
 
-# NOTE:printf https://stackoverflow.com/questions/3211891/creating-string-of-repeated-characters-in-shell-script
 
 run_examples:
 	$(MAKE) run_tests

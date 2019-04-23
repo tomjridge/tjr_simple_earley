@@ -1,21 +1,35 @@
 open Tjr_simple_earley
 
+(** Encode input as :CxNNNN where C is a character, and NNNN is a number *)
+let make_input i =
+  match i<>"" && i.[0]=':' && i.[2]='x' with
+  | true -> 
+    let c = i.[1] in
+    let n = int_of_string (String.sub i 3 (String.length i -3)) in
+    String.make n c
+  | false -> i
+
 let _ = 
   match Array.to_list Sys.argv |> List.tl with
-  | ["simple";len] -> 
-    let len = int_of_string len in
-    Params.input_length := len;
-    Params.input := String.make len '1';
-    let module M = Simple_test.Make() in ()
+  | ["simple";input] -> 
+    let input = make_input input in
+    Params.input := input;
+    Simple_test.main()
   | ["spec";grammar;input] -> 
-    Params.input_length := String.length input;
+    let input = make_input input in
     Params.input := input;
     Params.grammar:=Examples.get_grammar_by_name grammar;
-    Printf.printf "%s: grammar=%s; input_length=%d\n%!" __FILE__ grammar (String.length input);
-    let module M = Test_spec.Make() in ()
+    Printf.printf "%s: parser=spec; grammar=%s; input_length=%d\n%!" 
+      __FILE__ 
+      grammar 
+      (String.length input);
+    Test_spec.main()
   | ["unstaged";grammar;input] -> 
-    Params.input_length := String.length input;
+    let input = make_input input in
     Params.input := input;
     Params.grammar:=Examples.get_grammar_by_name grammar;
-    Printf.printf "%s: grammar=%s; input_length=%d\n%!" __FILE__ grammar (String.length input);
-    let module M = Test_unstaged.Make() in ()
+    Printf.printf "%s: parser=unstaged; grammar=%s; input_length=%d\n%!" 
+      __FILE__ 
+      grammar 
+      (String.length input);
+    Test_unstaged.main ()

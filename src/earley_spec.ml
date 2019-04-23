@@ -1,9 +1,5 @@
 (** A simple specification of general parsing (not only Earley). *)
-
-(** Internal profiling function *)
-let _mark_ref = 
-  Log.log @@ lazy (Printf.printf "%s: _mark_ref global\n%!" __FILE__);
-  ref (fun (cc:string) -> ())
+open Prelude
 
 
 (** Required by the {!Make} functor *)
@@ -58,7 +54,7 @@ module Make(A:A) = struct
           ~add_item ~add_items ~pop_todo
         = 
 
-        let mark = !_mark_ref in
+        let mark = !spec_mark_ref in
 
         (* process a blocked item *)
         let cut_blocked_item = function

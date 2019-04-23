@@ -1,3 +1,4 @@
+SHELL:=bash
 NAME:=tjr_simple_earley
 
 all: 
@@ -8,7 +9,7 @@ all:
 local:
 	rm -rf $(NAME)
 	mkdir $(NAME)
-	rsync --exclude='.dockerfile/*' --exclude='.git/*' -vaz ../ ./$(NAME)
+	rsync -vaz ../{Makefile,tjr_simple_earley.opam,src,bin} ./$(NAME)
 	docker build -t $(NAME)_local -f Dockerfile.local .
 
 from_github:

@@ -1,6 +1,8 @@
 FROM impfs_base_docker_image
 
 RUN echo rebuild from here...
+RUN eval `opam config env` && opam pin add -y https://github.com/tomjridge/tjr_profile.git
+
 
 COPY tjr_simple_earley tjr_simple_earley
 RUN sudo chown -R opam:opam tjr_simple_earley

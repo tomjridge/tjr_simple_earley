@@ -1,6 +1,7 @@
 FROM impfs_base_docker_image
 
 RUN echo edit to rebuild...
+RUN eval `opam config env` && opam pin add -y https://github.com/tomjridge/tjr_profile.git
 
 # -n means don't build etc
 

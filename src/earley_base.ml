@@ -9,10 +9,6 @@ open Prelude
 
 (* profiling; debugging --------------------------------------------- *)
 
-(** Internal profiling function *)
-let _mark_ref = 
-  Log.log @@ lazy (Printf.printf "%s: _mark_ref global\n%!" __FILE__);
-  ref (fun (cc:string) -> ())
 
 (** What is required by the [Make] functor *) 
 module type A = sig
@@ -185,7 +181,7 @@ module Make(A:A) = struct
       end
       in
       fun ~grammar_etc ->
-        let mark = !_mark_ref in
+        let mark = !base_mark_ref in
         let { new_items; parse_tm; input; input_length } = grammar_etc in
         begin
 

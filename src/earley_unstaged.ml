@@ -1,12 +1,8 @@
 
 (** Use {!Earley_spec} to produce an efficient O(n^3) parser. *)
 
+open Prelude
 open Earley_spec
-
-(** Internal profiling function *)
-let _mark_ref = 
-  Log.log @@ lazy (Printf.printf "%s: _mark_ref global\n%!" __FILE__);
-  ref (fun (cc:string) -> ())
 
 
 (** Construct the parse function. *)
@@ -59,7 +55,7 @@ module Make(A:A) = struct
               Hashtbl.to_seq_keys tbl |> List.of_seq)
         |> fun x -> x,s
       in
-      let mark = !_mark_ref in
+      let mark = !unstaged_mark_ref in
       (* let mark x = () in *)
       let _add_item (itm:item) s =
         mark "xa";
