@@ -2,7 +2,7 @@ open Tjr_simple_earley
 open Prelude
 open Spec_common
 
-module Internal = Earley_spec.Make(A)
+module Internal = Earley_spec.Internal_with_inefficient_spec_state(A)
 open Internal
 
 open Spec_types

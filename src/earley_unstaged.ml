@@ -2,16 +2,15 @@
 (** Use {!Earley_spec} to produce an efficient O(n^3) parser. *)
 
 open Prelude
-open Earley_spec
+(* open Earley_spec *)
 
 open Spec_types
 
 (** Construct the parse function. *)
-module Make(A:A) = struct
-
-  include Make_derived_types(A)
+module Make(A:NT_TM) = struct
 
   module Internal = struct
+    include Make_derived_types(A) 
 
     module State_type = struct 
 
@@ -36,10 +35,8 @@ module Make(A:A) = struct
     end
     open State_type
 
-    module B = Earley_spec.Make(A)
-    module C = B.Internal.Make_with_state_type(State_type)
-        
-    open C
+    module B = Earley_spec.Internal(struct include A include State_type end)        
+    let earley = B.earley
 
     let earley ~expand_nt ~expand_tm = 
       let get_blocked_items (k,_S) s = 
@@ -116,7 +113,7 @@ module Make(A:A) = struct
       in
       fun ~initial_nt:nt ->
         { empty_state with todo=[Nt_item{nt;i_=0;k_=0;bs=[Nt nt]}] }
-        |> earley 
+        |> earley
           ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
           ~add_item ~add_items ~pop_todo
         |> fun (count,s) -> 
@@ -132,12 +129,12 @@ module Make(A:A) = struct
         { count;items;complete_items }
         (* s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq *)
 
-  end
+  end (* Internal *)
 
   open A
   let earley_unstaged : 
-expand_nt:(nt * int -> nt_item' list) ->
+expand_nt:(nt * int -> 'nt_item list) ->
 expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c)parse_result
- = Internal.earley
+    = Internal.earley
 
 end

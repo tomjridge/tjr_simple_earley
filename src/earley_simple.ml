@@ -3,62 +3,45 @@
 open Misc
 open Prelude
 
-(** Required by the {!Make} functor. Note that these types should be
-   comparable via Pervasives.compare in order for the datastructure
-   implementations (Set, Map etc) to work. *)
-module type NONTERMINALS_ETC = sig
-  type nt 
-  type tm 
-  type sym = Nt of nt | Tm of tm
-  type nt_item = { nt:nt; i_:int; k_:int; bs:sym list }
-(* FIXME uncomment the following to get meaningful output  
-  type cuts
-  val empty_cuts : cuts
-  val record_cuts: (nt_item*int) list -> cuts -> cuts *)
-end
 
 (** Construct the Earley parsing function *)
-module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
-  open Nonterminals_etc
+module Make(Nt_tm:NT_TM) = struct
+  open Nt_tm
       
+  open Spec_types
+
+  module Derived_types = struct
+    type sym = (nt,tm) Spec_types.sym
+    type nt_item = (nt,sym list) Spec_types.nt_item
+  end
+
+  open Derived_types
+
   module Internal = struct
 
-
     (** Used to instantiate {!module: Earley_base.Make} *)
-    module Internal_A = struct
+    module Base_requires = struct
 
       type i_t = int
       type k_t = int
       type j_t = int
 
+      type tm = Nt_tm.tm
+      type nt = Nt_tm.nt
 
-      (* NOTE we need to be able to distinguish nonterminals from terminals *)
-(*
-    type nt = int (* even, say *)
-    type tm = int (* odd, say *)
-    type sym = int
-    let even x = (x mod 2 = 0)
-    let sym_case ~nt ~tm sym = 
-      if even sym then nt sym else tm sym
-*)
-
-      type tm = Nonterminals_etc.tm
-      type nt = Nonterminals_etc.nt
-
-      type sym = Nonterminals_etc.sym
+      type nonrec sym = sym
       let sym_case ~nt ~tm = function
         | Nt x -> nt x
         | Tm y -> tm y
 
       let _NT: nt -> sym = fun x -> Nt x
 
-
-      type nt_item = Nonterminals_etc.nt_item
+      type nonrec nt_item = nt_item
 
       (* Implement the accessor functions by using simple arithmetic *)
       let dot_nt nitm = nitm.nt
-      let dot_i nitm = nitm.i_
-      let dot_k nitm = nitm.k_
+      let dot_i (nitm:nt_item) = nitm.i_
+      let dot_k (nitm:nt_item) = nitm.k_
       let dot_bs nitm = nitm.bs
 
       let dot_bs_hd nitm = nitm |> dot_bs |> function
@@ -70,11 +53,6 @@ module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
         assert (bitm.bs <> []);
         { bitm with k_=j0; bs=(List.tl bitm.bs)}
 
-
-      (* FIXME or include in base_types *)
-      (* type cuts = (nt_item*int) list list *)
-      (* let empty_cuts = [] *)
-      (* let record_cuts: (nt_item*int) list -> cuts -> cuts = fun cs cuts -> cs::cuts *)
 
       (* The rest of the code is straightforward *)
 
@@ -129,13 +107,13 @@ module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
       let empty_ixk_done = Set_ixk.empty
       let empty_ktjs = Map_tm.empty
 
-    end
+    end  (* Base_requires *)
 
-    open Internal_A
+    open Base_requires
 
-    module Earley_impl = Earley_base.Make(Internal_A)
+    module Base_impl = Earley_base.Make(Base_requires)
 
-    open Earley_impl
+    open Base_impl
 
     let pop_todo () s = match s.todo with
       | [] -> None,s
@@ -173,15 +151,16 @@ module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
       |> fun ([],todo_done,todo) -> 
       (),{s with todo; todo_done }
 
-    let add_todos_gt_k itms s =
+    let add_todos_gt_k (itms:nt_item list) s =
+      let dot_k (x:nt_item) = x.k_ in  (* some problems with usign .k_ and ocaml not distinguishing based on types... *)
       (itms,s.todo_gt_k)
       |> iter_opt (function
           | [],_ -> None
           | itm::itms,todo_gt_k -> 
             Some(itms,
-                 todo_gt_k |> Map_int.find_opt itm.k_ |> _or_empty 
-                 |> Set_nt_item.add itm 
-                 |> fun itms -> Map_int.add itm.k_ itms todo_gt_k))
+                 todo_gt_k |> Map_int.find_opt (dot_k itm) |> _or_empty 
+                 |> Set_nt_item.add itm
+                 |> fun itms -> Map_int.add (dot_k itm) itms todo_gt_k))
       |> fun ([],todo_gt_k) -> 
       (),{s with todo_gt_k}
 
@@ -199,10 +178,6 @@ module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
       (),{s with ktjs}
          
     let run_earley_parser ~grammar_etc = 
-      (* let record_cuts xs s = (),s  (\* FIXME *\) *)
-(*      let record_cuts xs s = 
-        (),{s with cuts=record_cuts xs s.cuts}
-      in*)
       let at_ops = { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo;
                      add_todos_at_k; add_todos_gt_k; add_ixk_done;
                      mem_ixk_done; find_ktjs; add_ktjs }
@@ -210,10 +185,8 @@ module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
       let earley_parser = make_earley_parser ~at_ops in
       run_earley_parser ~earley_parser ~grammar_etc
 
-    (* open Earley_base *)
-
     module Export : sig 
-      open Nonterminals_etc
+      open Nt_tm
       val run_earley_parser: 
         grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
         initial_nt:nt -> 
@@ -224,10 +197,10 @@ module Make(Nonterminals_etc:NONTERMINALS_ETC) = struct
         run_earley_parser ~grammar_etc ~initial_state 
     end
 
-  end
+  end  (* Internal *)
   
   (** NOTE this exposes the internal state type FIXME? *)
   let run_earley_parser = Internal.Export.run_earley_parser
-end
+end  (* Make *)
 
 

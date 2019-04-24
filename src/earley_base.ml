@@ -11,7 +11,7 @@ open Prelude
 
 
 (** What is required by the [Make] functor *) 
-module type A = sig
+module type REQUIRED_BY_BASE = sig
 
   type i_t = int  
   type k_t = int
@@ -74,7 +74,7 @@ end
 
 
 (** Construct the Earley parsing implementation *)
-module Make(A:A) = struct
+module Make(A:REQUIRED_BY_BASE) = struct
 
   (** {2 Provided by user} *)
 

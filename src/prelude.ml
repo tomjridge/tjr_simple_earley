@@ -25,7 +25,8 @@ let spec_mark_ref : (string -> unit) ref = ref (fun s -> ())
 
 let unstaged_mark_ref : (string -> unit) ref = ref (fun s -> ())
 
-
+(** We often parameterize over nt,tm *)
+module type NT_TM = sig  type nt type tm end
 
 (** Some types used by the spec *)
 module Spec_types = struct
@@ -39,7 +40,7 @@ module Spec_types = struct
     | Sym_item of 'b
     | Sym_at_k of 'c
 
-  module Make_derived_types(A:sig type nt type tm end) = struct
+  module Make_derived_types(A:NT_TM) = struct
     open A
     type sym' = (nt,tm) sym
     type sym_item' = sym' sym_item
@@ -62,3 +63,5 @@ let filter_sort_items itms =
   |> List.sort (fun itm1 itm2 -> 
       let f {nt;i_;k_;bs} = nt,i_,k_,List.length bs,bs in
       Pervasives.compare (f itm1) (f itm2))
+
+

@@ -1,169 +1,165 @@
 (** A simple specification of general parsing (not only Earley). *)
 open Prelude
+open Spec_types
 
 
-(** Required by the {!Make} functor *)
-module type A = sig
+module Internal(S:sig include NT_TM type state end) = struct
+  (* include B *)
+  open S
+  include Make_derived_types(S)
 
-  type nt
-  type tm
+  module M = struct
+    type 'a m = state -> 'a * state
+    let ( >>= ) (a:'a m) (ab:'a -> 'b m) : 'b m = 
+      fun s ->
+      a s |> fun (a,s) -> 
+      ab a s
+    let _ = ( >>= )
+    let return a = fun s -> (a,s)
+  end
+  open M
 
-(*
-  type sym = Nt of nt | Tm of tm
+  (** Main Earley routine, parameterized *)
+  let _earley 
+      ~(expand_nt:nt*int->unit m) ~(expand_tm:tm*int->unit m) 
+      ~(get_blocked_items:int*sym'->nt_item' list m)
+      ~(get_complete_items:int*sym' -> int list m)
+      ~(add_item:item' -> unit m)
+      ~(add_items:item' list -> unit m)
+      ~(pop_todo: unit-> item' option m)
+    = 
 
-  type nt_item = { nt:nt; i_:int; k_:int; bs: sym list }
+    let mark = !spec_mark_ref in
+    let count = ref 0 in
 
-  type sym_item = { i_:int; sym:sym; j_:int }               (* complete item *)
+    (* process a blocked item *)
+    let cut_blocked_item = function
+      | { nt; i_; k_; bs=_S::bs } as itm -> 
+        mark "am";
+        get_complete_items (k_,_S) >>= fun js ->
+        mark "ap";
+        (* js |> List.iter (fun j -> note_cut itm j); *)
+        js |> List.map (fun j -> Nt_item { itm with k_=j; bs=bs })
+        |> add_items >>= fun _ ->
+        mark "as";
+        return ()              
+      | _ -> failwith "impossible"
+    in
 
-  type sym_at_k = { sym:sym; k_:int } 
+    (* process a complete item *)
+    let cut_complete_item {i_;sym;j_} = 
+      mark "bm";
+      get_blocked_items (i_,sym) >>= fun itms ->
+      mark "bp";
+      (* itms |> List.iter (fun itm -> note_cut itm j_); *)
+      itms |> List.map (fun itm -> Nt_item {itm with k_=j_; bs=List.tl itm.bs})
+      |> add_items >>= fun () ->
+      mark "bs";
+      return ()
+    in
 
-  type item = 
-    | Nt_item of nt_item
-    | Sym_item of sym_item
-    | Sym_at_k of sym_at_k
+    (* process an item *)
+    let step itm =
+      count:=!count+1;
+      mark "em";
+      match itm with 
+      | Nt_item itm -> (
+          (* note_item itm;                                  (\* tracing *\) *)
+          match itm.bs with
+          | [] -> 
+            (* item is complete *)
+            add_item (Sym_item {sym=Nt itm.nt; i_=itm.i_; j_=itm.k_}) >>= fun () ->
+            mark "ep";
+            return ()
+          | _S::bs -> (
+              (* we need to record that we need to expand _S *)
+              mark "er";
+              add_item (Sym_at_k { sym=_S; k_=itm.k_ }) >>= fun () ->
+              mark "eu";
+              (* and we need to process the item against complete items *)
+              cut_blocked_item itm >>= fun _ ->
+              mark "ev";
+              return ()))
+      | Sym_item itm -> (
+          cut_complete_item itm >>= fun _ ->
+          mark "ga";
+          return ())
+      | Sym_at_k {sym;k_} -> (
+          match sym with
+          | Nt nt -> expand_nt (nt,k_) >>= fun () -> mark "ha"; return ()
+          | Tm tm -> expand_tm (tm,k_) >>= fun () -> mark "hb"; return ())        
+    in
 
-  (* For debugging *)
-  (* val note_item: nt_item -> unit *)
-*)
+    (* loop until no items left to process *)
+    let rec loop () = 
+      pop_todo () >>= function
+      | None -> return !count
+      | Some itm -> step itm >>= fun _ -> loop ()
+    in
+    loop ()
+
+  let _ :
+    expand_nt:(nt * int -> unit m) ->
+    expand_tm:(tm * int -> unit m) ->
+    get_blocked_items:(int * sym' -> nt_item' list m) ->
+    get_complete_items:(int * sym' -> int list m) ->
+    add_item:(item' -> unit m) ->
+    add_items:(item' list -> unit m) ->
+    pop_todo:(unit -> item' option m) -> int m
+    = _earley 
+
+  (** expand_... are in the monad; adjust the types of expand_nt and
+     expand_tm so that they return a list of items and a list of ints
+     *)
+  let earley ~expand_nt ~expand_tm ~add_items =
+    let expand_nt (nt,i) = 
+      add_items (expand_nt (nt,i) |> List.map (fun itm -> Nt_item itm))
+    in
+    let expand_tm (tm,i_) =
+      expand_tm (tm,i_) 
+      |> List.map (fun j_ -> Sym_item{i_;sym=Tm tm;j_})
+      |> add_items
+    in
+    _earley ~expand_nt ~expand_tm ~add_items
+
+  let _ : expand_nt:(nt * int -> nt_item' list) ->
+    expand_tm:(tm * int -> int list) ->
+    add_items:(item' list -> unit m) ->
+    get_blocked_items:(int * sym' -> nt_item' list m) ->
+    get_complete_items:(int * sym' -> int list m) ->
+    add_item:(item' -> unit m) -> pop_todo:(unit -> item' option m) -> int m = earley
+
 end
 
+(** Refine the state type; for the spec, we use an extremely
+   inefficient state type (for which the implementation of the util
+   functions are hopefully correct); see {!Earley_unstaged} for an
+   efficient version *)
+module Internal_with_inefficient_spec_state(A:NT_TM) = struct
+  open A
 
-(** Construct the parse function. Use
-   {!Internal_example_parse_function} to avoid functors. *)
-module Make(A:A) = struct
+  module Derived = Make_derived_types(A)
+  open Derived
 
-  open Spec_types
+  module State_type = struct
+    (* todo_done is really a set; we add items to todo providing they
+       are not already in todo_done *)
+    type state = {
+      mutable todo: item' list;
+      todo_done:(item',unit) Hashtbl.t
+    }
+    let empty_state = { todo=[]; todo_done=Hashtbl.create 100 }
+  end
+  open State_type
 
-  include A
-  (* include Make_derived_types(struct type nonrec nt = nt type nonrec tm = tm end) *)
-  include Make_derived_types(A)
-
-
-  module Internal = struct
-
-    (** This is independent of the state type; we can reuse the code for
-        an efficient unstaged version of Earley *)
-    module Make_with_state_type(B:sig type state end) = struct
-
-      open B
-
-      type 'a m = state -> 'a * state
-      let ( >>= ) (a:'a m) (ab:'a -> 'b m) : 'b m = 
-        fun s ->
-        a s |> fun (a,s) -> 
-        ab a s
-      let _ = ( >>= )
-      let return a = fun s -> (a,s)
-
-      (** Main Earley routine, parameterized *)
-      let _earley 
-          ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
-          ~add_item ~add_items ~pop_todo
-        = 
-
-        let mark = !spec_mark_ref in
-        let count = ref 0 in
-
-        (* process a blocked item *)
-        let cut_blocked_item = function
-          | { nt; i_; k_; bs=_S::bs } as itm -> 
-            mark "am";
-            get_complete_items (k_,_S) >>= fun js ->
-            mark "ap";
-            (* js |> List.iter (fun j -> note_cut itm j); *)
-            js |> List.map (fun j -> Nt_item { itm with k_=j; bs=bs })
-            |> add_items >>= fun _ ->
-            mark "as";
-            return ()              
-          | _ -> failwith "impossible"
-        in
-
-        (* process a complete item *)
-        let cut_complete_item {i_;sym;j_} = 
-          mark "bm";
-          get_blocked_items (i_,sym) >>= fun itms ->
-          mark "bp";
-          (* itms |> List.iter (fun itm -> note_cut itm j_); *)
-          itms |> List.map (fun itm -> Nt_item {itm with k_=j_; bs=List.tl itm.bs})
-          |> add_items >>= fun _ ->
-          mark "bs";
-          return ()
-        in
-
-        (* process an item *)
-        let step itm =
-          count:=!count+1;
-          mark "em";
-          match itm with 
-          | Nt_item itm -> (
-              (* note_item itm;                                  (\* tracing *\) *)
-              match itm.bs with
-              | [] -> 
-                (* item is complete *)
-                add_item (Sym_item {sym=Nt itm.nt; i_=itm.i_; j_=itm.k_}) >>= fun _ ->
-                mark "ep";
-                return ()
-              | _S::bs -> (
-                  (* we need to record that we need to expand _S *)
-                  mark "er";
-                  add_item (Sym_at_k { sym=_S; k_=itm.k_ }) >>= fun _ ->
-                  mark "eu";
-                  (* and we need to process the item against complete items *)
-                  cut_blocked_item itm >>= fun _ ->
-                  mark "ev";
-                  return ()))
-          | Sym_item itm -> (
-              cut_complete_item itm >>= fun _ ->
-              mark "ga";
-              return ())
-          | Sym_at_k {sym;k_} -> (
-              match sym with
-              | Nt nt -> expand_nt (nt,k_) >>= fun _ -> mark "ha"; return ()
-              | Tm tm -> expand_tm (tm,k_) >>= fun _ -> mark "hb"; return ())        
-        in
-
-        (* loop until no items left to process *)
-        let rec loop () = 
-          pop_todo () >>= function
-          | None -> return !count
-          | Some itm -> step itm >>= fun _ -> loop ()
-        in
-        loop ()
-
-      let _ = _earley
-
-      (** Adjust the types of expand_nt and expand_tm *)
-      let earley ~expand_nt ~expand_tm ~add_items =
-        let expand_nt (nt,i) = 
-          add_items (expand_nt (nt,i) |> List.map (fun itm -> Nt_item itm))
-        in
-        let expand_tm (tm,i_) =
-          expand_tm (tm,i_) 
-          |> List.map (fun j_ -> Sym_item{i_;sym=Tm tm;j_})
-          |> add_items
-        in
-        _earley ~expand_nt ~expand_tm ~add_items
-    end
-
-    module State_type = struct
-      
-      (* todo_done is really a set; we add items to todo providing they
-         are not already in todo_done *)
-      type state = {
-        mutable todo: item' list;
-        todo_done:(item',unit) Hashtbl.t
-      }
-
-      let empty_state = { todo=[]; todo_done=Hashtbl.create 100 }
-    end
-    include State_type
-    include Make_with_state_type(State_type)
+  module Internal=Internal(struct include A include State_type end)
+  open Internal
 
   (** The (executable) specification of parsing. Returns a list of
-     items (FIXME?). Implementations such as Earley should return an
-     identical set of items (for nt_items at least). NOTE that the
-     parameters are independent of the input (in that the input is not
-     present as an argument). *)
+      items (FIXME?). Implementations such as Earley should return an
+      identical set of items (for nt_items at least). NOTE that the
+      parameters are independent of the input (in that the input is not
+      present as an argument). *)
   let earley_spec ~expand_nt ~expand_tm = 
     let get_blocked_items (k,_S) s = 
       let blocked = ref [] in
@@ -218,19 +214,18 @@ module Make(A:A) = struct
         s.todo_done 
         |> Hashtbl.to_seq_keys
         |> List.of_seq
-          end
+      end
       in
       { count;items;complete_items }
-  end
 
-  (* open Internal *)
-  let earley_spec :
-expand_nt:(nt * int -> nt_item' list) ->
-expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c) parse_result
-    = Internal.earley_spec
-
+  let earley_spec : 
+    expand_nt:(nt * int -> nt_item' list) ->
+    expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c) parse_result
+    = earley_spec
 
 end
+
+
 
 (** An example parse function which is polymorphic over symbols; no
    functors involved. *)
@@ -245,7 +240,7 @@ module Internal_example_parse_function = struct
       type nonrec tm = tm
     end
     in
-    let module B = Make(A) in
+    let module B = Internal_with_inefficient_spec_state(A) in
     (* let open B in *)
     (* let sym'_to_sym = function `Nt nt -> Nt nt | `Tm tm -> Tm tm in *)
     (* let sym_to_sym' = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in  *)

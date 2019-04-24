@@ -2,6 +2,7 @@
 
 open Tjr_simple_earley
 open Tjr_simple_earley.Prelude
+open Spec_types
 open Profiler
 
 (* simple test ------------------------------------------------------ *)
@@ -9,8 +10,8 @@ open Profiler
 module Base_types = struct
   type nt = E
   type tm = Eps | One
-  type sym = Nt of nt | Tm of tm
-  type nt_item = { nt:nt; i_:int; k_:int; bs:sym list }
+(*  type sym = Nt of nt | Tm of tm
+  type nt_item = { nt:nt; i_:int; k_:int; bs:sym list } *)
 end
 
 open Base_types
