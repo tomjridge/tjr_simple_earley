@@ -9,7 +9,7 @@ all:
 local:
 	rm -rf $(NAME)
 	mkdir $(NAME)
-	rsync -vaz ../{Makefile,tjr_simple_earley.opam,src,bin} ./$(NAME)
+	rsync -vaz ../{Makefile,tjr_simple_earley.opam,bash_env.sh,src,bin} ./$(NAME)
 	docker build -t $(NAME)_local -f Dockerfile.local .
 
 from_github:

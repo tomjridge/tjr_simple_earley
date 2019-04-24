@@ -1,6 +1,6 @@
 SHELL:=bash
 BASH_ENV:=bash_env.sh
-export BASH_ENV
+export # exports all vars
 
 default:
 	$$dune_build @install
