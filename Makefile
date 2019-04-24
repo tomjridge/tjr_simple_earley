@@ -2,10 +2,6 @@ SHELL:=bash
 BASH_ENV:=bash_env.sh
 export BASH_ENV
 
-#ROOT:=--root=.
-DUNE:=dune
-MAIN:=bin/earley_main.exe
-
 default:
 	$$dune_build @install
 
@@ -59,7 +55,7 @@ enable_log:
 	echo "let log (x:unit Lazy.t) = Lazy.force x" >src/log.ml
 
 clean:
-	dune clean $(ROOT)
+	dune clean 
 	rm -rf docs/ocamldoc/*
 
 FORCE:
