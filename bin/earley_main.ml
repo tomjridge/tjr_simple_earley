@@ -10,7 +10,7 @@ let make_input i =
   | false -> i
 
 let _ = 
-  Printf.printf "\n\nbegin -------------------------------------------------\n%!";
+  Printf.printf "begin -------------------------------------------------\n%!";
   begin 
     match Array.to_list Sys.argv |> List.tl with
     | ["simple";input] -> 
@@ -36,4 +36,4 @@ let _ =
         __FILE__;
       Test_unstaged.main ()
   end;
-  Printf.printf "end ---------------------------------------------------\n\n%!";
+  Printf.printf "end ---------------------------------------------------\n%!";

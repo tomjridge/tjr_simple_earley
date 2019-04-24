@@ -28,8 +28,12 @@ promote_docs: FORCE
 run_tests:
 	$(MAKE)
 	time dune exec $(ROOT) $(MAIN) spec EEE :1x10
-	time dune exec $(ROOT) $(MAIN) unstaged EEE :1x400
-	time dune exec $(ROOT) $(MAIN) simple :1x400
+	@echo
+	time dune exec $(ROOT) $(MAIN) unstaged EEE :1x10	
+	@echo
+	time dune exec $(ROOT) $(MAIN) simple :1x10	
+#	time dune exec $(ROOT) $(MAIN) unstaged EEE :1x400
+#	time dune exec $(ROOT) $(MAIN) simple :1x400
 
 
 run_examples:

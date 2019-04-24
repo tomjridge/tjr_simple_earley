@@ -13,12 +13,16 @@ let main () =
   let expand_nt,expand_tm = grammar_to_expand grammar in
   earley_spec ~expand_nt ~expand_tm ~initial_nt
   |> fun { count; items; _ } -> 
-  Log.log @@ lazy (
-    Printf.printf "%s: %d nt_items produced\n%!"
-      __FILE__
-      count);
-  Log.log @@ lazy (
+  Printf.printf "%d nt_items produced (%s)\n%!"
+    count
+    __FILE__;
+  Log.log @@ lazy (    
+    let filename = "/tmp/spec.items" in
     Lazy.force items
     |> filter_sort_items
-    |> List.iter (fun itm -> itm |> itm_to_string |> print_endline))
+    |> List.map (fun itm -> itm |> itm_to_string)
+    |> String.concat "\n"
+    |> fun text -> ExtLib.output_file ~filename ~text;
+    Printf.printf "Spec items written to %s (%s)\n%!" filename __FILE__
+  )
 

@@ -14,15 +14,19 @@ let main () =
   let expand_nt,expand_tm = grammar_to_expand grammar in
   earley_unstaged ~expand_nt ~expand_tm ~initial_nt
   |> fun { count; items; _ } -> 
-  Log.log @@ lazy (
-    Printf.printf "%d nt_items produced (%s)\n%!"
-      count __FILE__);
+  Printf.printf "%d nt_items produced (%s)\n%!"
+    count __FILE__;
   Log.log @@ lazy (
     (* don't print if > 1000 items *)
     match count > 1000 with
     | true -> ()
     | false -> 
+      let filename = "/tmp/unstaged.items" in
       Lazy.force items
       |> filter_sort_items
-      |> List.iter (fun itm -> itm |> itm_to_string |> print_endline));
+      |> List.map (fun itm -> itm |> itm_to_string)
+      |> String.concat "\n"
+      |> fun text -> ExtLib.output_file ~filename ~text;
+      Printf.printf "Spec items written to %s (%s)\n%!" filename __FILE__
+  );
   Log.log @@ lazy (profiler.print_summary ())

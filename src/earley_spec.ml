@@ -1,8 +1,11 @@
-(** A simple specification of general parsing (not only Earley). *)
+(** A simple specification of general parsing (not only Earley). For
+   the implementation, see {!Earley_unstaged}. *)
+
 open Prelude
 open Spec_types
 
 
+(** Internal implementation *)
 module Internal(S:sig include NT_TM type state end) = struct
   (* include B *)
   open S
@@ -60,10 +63,10 @@ module Internal(S:sig include NT_TM type state end) = struct
 
     (* process an item *)
     let step itm =
-      count:=!count+1;
       mark "em";
       match itm with 
       | Nt_item itm -> (
+          count:=!count+1;
           (* note_item itm;                                  (\* tracing *\) *)
           match itm.bs with
           | [] -> 

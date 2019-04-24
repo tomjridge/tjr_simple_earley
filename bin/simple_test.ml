@@ -33,7 +33,7 @@ let parse_tm ~tm ~input ~pos:k ~input_length =
   | Eps -> [k]
   | One ->
     (* print_endline (string_of_int k); *)
-    if String.get input k = '1' then [k+1] else []
+    if String.length input > k && String.get input k = '1' then [k+1] else []
 
 (* Initial nonterminal *)
 let initial_nt = E
@@ -54,8 +54,8 @@ let main () =
     ~grammar_etc
     (* ~record_cuts *)
     ~initial_nt
-  |> fun cuts -> 
-  (* Printf.printf "Finished with %d cuts\n%!" (count_cuts cuts); *)
+  |> fun state -> 
+  Printf.printf "Finished with %d items (%s)\n%!" state.count __FILE__;
   Log.log @@ lazy (profiler.print_summary ())
 
 (*

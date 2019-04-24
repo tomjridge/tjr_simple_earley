@@ -10,14 +10,14 @@ module Make(Nt_tm:NT_TM) = struct
       
   open Spec_types
 
-  module Derived_types = struct
-    type sym = (nt,tm) Spec_types.sym
-    type nt_item = (nt,sym list) Spec_types.nt_item
-  end
-
-  open Derived_types
-
   module Internal = struct
+
+    module Derived_types = struct
+      type sym = (nt,tm) Spec_types.sym
+      type nt_item = (nt,sym list) Spec_types.nt_item
+    end
+
+    open Derived_types
 
     (** Used to instantiate {!module: Earley_base.Make} *)
     module Base_requires = struct
@@ -117,7 +117,7 @@ module Make(Nt_tm:NT_TM) = struct
 
     let pop_todo () s = match s.todo with
       | [] -> None,s
-      | x::todo -> Some x,{s with todo}
+      | x::todo -> Some x,{s with todo; count=s.count+1}
 
     let _or_empty = function
       | None -> Set_nt_item.empty
@@ -199,7 +199,9 @@ module Make(Nt_tm:NT_TM) = struct
 
   end  (* Internal *)
   
-  (** NOTE this exposes the internal state type FIXME? *)
+  (** NOTE this exposes the internal types for nt_item, but this is
+     just an alias for a type known outside Internal, so we can export
+     it. This also exposes the state type FIXME? *)
   let run_earley_parser = Internal.Export.run_earley_parser
 end  (* Make *)
 

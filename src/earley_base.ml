@@ -1,13 +1,12 @@
-(** Internal Earley implementation.
+(** Internal Earley implementation; see {!Earley_unstaged} for the
+    external usable version.
 
-    This is the main Earley implementation, based on processing items at
-   index k in the input, before moving to k+1. This version of the
-   code tries to assume as little as possible about the representation
-   of the underlying structures.  *)
+    This is the main (internal) Earley implementation, based on
+   processing items at index k in the input, before moving to
+   k+1. This version of the code tries to assume as little as possible
+   about the representation of the underlying structures.  *)
 
 open Prelude
-
-(* profiling; debugging --------------------------------------------- *)
 
 
 (** What is required by the [Make] functor *) 
@@ -66,11 +65,7 @@ module type REQUIRED_BY_BASE = sig
   val empty_ixk_done: ixk_done
   val empty_ktjs: ktjs
 
-(*
-  type cuts
-  val empty_cuts: cuts *)
-
-end
+end  (* REQUIRED_BY_BASE *)
 
 
 (** Construct the Earley parsing implementation *)
@@ -84,6 +79,7 @@ module Make(A:REQUIRED_BY_BASE) = struct
   (** {2 Content of Make proper starts here} *)
 
   type state = {
+    count: int;
     todo: nt_item list;
     todo_done: nt_item_set;
     todo_gt_k: todo_gt_k;
@@ -96,6 +92,7 @@ module Make(A:REQUIRED_BY_BASE) = struct
 
 
   let empty_state = {
+    count=0;
     todo=[];
     todo_done=empty_nt_item_set;
     todo_gt_k=empty_todo_gt_k;
@@ -154,19 +151,10 @@ module Make(A:REQUIRED_BY_BASE) = struct
   }
 
 
-
+  (** Hide the following defns from the user *)
   module Internal2 = struct
 
-
-    (* main ------------------------------------------------------------- *)
-
     let run_earley (*~item_ops*) ~at_ops = 
-      (* let { sym_case; _NT; dot_nt; dot_i; dot_k; dot_bs; cut; elements } =
-        item_ops 
-      in*)
-      (* let { update_bitms_lt_k; empty_bitms_at_k;
-            empty_ixk_done; empty_ktjs } = state_ops 
-      in *)
       let { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo;
             add_todos_at_k; add_todos_gt_k; add_ixk_done;
             mem_ixk_done; find_ktjs; add_ktjs } = at_ops
@@ -323,8 +311,7 @@ discussion is indexed by these labels
 
           let rec loop k = 
             (* Printf.printf "loop %d\n" k; *)
-            match k >= input_length with  
-            (* correct? FIXME don't we have to go one further? *)
+            match k > input_length with  
             | true -> return ()
             | false -> 
               (* process items *)
@@ -339,7 +326,8 @@ discussion is indexed by these labels
                   let todo' = todo_gt_k_find k' s.todo_gt_k in
                   let todo = elements todo' in
                   (* Printf.printf "elements: %d" (List.length todo); *)
-                  { todo;
+                  { count=s.count;
+                    todo;
                     todo_done=todo';
                     todo_gt_k=s.todo_gt_k;
                     bitms_lt_k=(update_bitms_lt_k k s.bitms_at_k s.bitms_lt_k);
@@ -355,9 +343,8 @@ discussion is indexed by these labels
           loop 0
         end (* run_earley *)
 
-    end
+  end  (* Internal2 *)
 
-  (* type 'input _grammar_etc = (nt,tm,nt_item,'input) grammar_etc *)
 
   module Export : sig
     
@@ -366,15 +353,8 @@ discussion is indexed by these labels
 
     (** Construct a generic Earley parser (independent of grammar) *)
     val make_earley_parser: 
-      (* item_ops:item_ops -> *)
       at_ops:atomic_operations ->
       earley_parser
-(*
-    val _run_earley_parser:
-      earley_parser:earley_parser -> 
-      grammar_etc:'a _grammar_etc -> 
-      unit m
-*)
 
     (** Execute the Earley parser on a given grammar and
        input. Returns the final state. We don't mind exposing the
