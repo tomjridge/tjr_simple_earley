@@ -1,4 +1,4 @@
-(** Internal Earley implementation; see {!Earley_unstaged} for the
+(** Internal Earley implementation; see {!Earley_simple} for the
     external usable version.
 
     This is the main (internal) Earley implementation, based on
