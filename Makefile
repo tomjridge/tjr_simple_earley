@@ -29,13 +29,13 @@ run_tests:
 	@echo
 	time $$run_main unstaged EEE :1x100
 	@echo
-	time $$run_main simple :1x100
+	time $$run_main simple EEE :1x100
 
 run_longer_tests:
 	$(MAKE)
 	time $$run_main unstaged EEE :1x400
 	@echo
-	time $$run_main simple :1x400
+	time $$run_main simple EEE :1x400
 	@echo
 
 tmp:
@@ -56,6 +56,8 @@ enable_log:
 
 clean:
 	dune clean 
+
+clean_docs:
 	rm -rf docs/ocamldoc/*
 
 FORCE:

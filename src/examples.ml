@@ -131,6 +131,17 @@ module Example_instantiation = struct
 
     open Prelude
 
+    (** Hack to determine nt/tm based on string repr starting with a
+       capital letter *)
+    let is_nt nt = nt <> "" && (String.get nt 0 |> function
+      | 'A' .. 'Z' -> true
+      | _ -> false)
+      
+    open Spec_types
+    let string_to_sym s = match is_nt s with 
+      | true -> Nt s
+      | false -> Tm s
+
     (** NOTE this returns a partial [grammar_etc] (input and
        input_length are dummies), and nt_items are a tuple
        [(nt,i,k,bs)] *)
@@ -138,8 +149,12 @@ module Example_instantiation = struct
       get_grammar_by_name name 
       |> fun { rules; _ } ->
       let new_items ~nt ~input ~pos = 
-        rules |> Misc.rev_filter_map (fun (nt',rhs) -> 
-            if nt'=nt then Some (nt,pos,pos,rhs) else None)
+        rules |> Misc.rev_filter_map (function (nt',rhs) ->
+            match nt'=nt with
+            | false -> None
+            | true -> 
+              let bs = List.map string_to_sym rhs in
+              Some {nt;i_=pos;k_=pos;bs});
       in
       let parse_tm ~tm ~input ~pos ~input_length =
         match Misc.string_matches_at ~string:input ~sub:tm ~pos with
@@ -154,11 +169,6 @@ module Example_instantiation = struct
     (** Returns a non-partial [grammar_etc] *)
     
 
-    (** Hack to determine nt/tm based on string repr starting with a
-       capital letter *)
-    let is_nt nt = nt <> "" && (String.get nt 0 |> function
-      | 'A' .. 'Z' -> true
-      | _ -> false)
 
   end
   

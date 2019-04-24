@@ -13,14 +13,19 @@ let _ =
   Printf.printf "begin -------------------------------------------------\n%!";
   begin 
     match Array.to_list Sys.argv |> List.tl with
-    | ["simple";input] -> 
+    | ["simple";grammar;input] -> 
       let input = make_input input in
       Params.input := input;
+      Params.grammar:=grammar;
+      Printf.printf "parser=simple; grammar=%s; input_length=%d (%s)\n%!" 
+        grammar 
+        (String.length input)
+        __FILE__;
       Simple_test.main()
     | ["spec";grammar;input] -> 
       let input = make_input input in
       Params.input := input;
-      Params.grammar:=Examples.get_grammar_by_name grammar;
+      Params.grammar:=grammar;
       Printf.printf "parser=spec; grammar=%s; input_length=%d (%s)\n%!" 
         grammar 
         (String.length input)
@@ -29,7 +34,7 @@ let _ =
     | ["unstaged";grammar;input] -> 
       let input = make_input input in
       Params.input := input;
-      Params.grammar:=Examples.get_grammar_by_name grammar;
+      Params.grammar:=grammar;
       Printf.printf "parser=unstaged; grammar=%s; input_length=%d (%s)\n%!" 
         grammar 
         (String.length input)

@@ -8,7 +8,7 @@ open Internal
 open Spec_types
 
 let main () = 
-  let grammar = !Params.grammar in
+  let grammar = Examples.get_grammar_by_name !Params.grammar in
   let initial_nt = grammar.initial_nt in
   let expand_nt,expand_tm = grammar_to_expand grammar in
   earley_spec ~expand_nt ~expand_tm ~initial_nt
