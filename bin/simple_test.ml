@@ -55,7 +55,7 @@ let main () =
     (* ~record_cuts *)
     ~initial_nt
   |> fun state -> 
-  Printf.printf "Finished with %d items (%s)\n%!" state.count __FILE__;
+  Printf.printf "%d nt_items produced (%s)\n%!" state.count __FILE__;
   Log.log @@ lazy (profiler.print_summary ())
 
 (*
