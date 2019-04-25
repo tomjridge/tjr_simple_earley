@@ -31,3 +31,5 @@ for g in aho_s aho_sml; do
     done
 done
 
+
+time $run_main actions :1x400

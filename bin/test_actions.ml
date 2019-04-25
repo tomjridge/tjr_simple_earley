@@ -64,9 +64,4 @@ let main () =
   | None -> ()
   | Some i -> Printf.printf "Result was %d\n%!" i
 
-let _ = main
-
-let _ = 
-  Params.input := String.make 10 '1';
-  main ()    
   

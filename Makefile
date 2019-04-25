@@ -38,6 +38,9 @@ run_longer_tests:
 	time $$run_main simple EEE :1x400
 	@echo
 
+run_actions:
+	time $$run_main actions :1x200
+
 tmp:
 	OCAMLRUNPARAM="O=1000000,a=1,s=1000000,i=100,o=99" time $$run_main simple :1x400
 	OCAMLRUNPARAM="O=1000000,a=1,s=1000000,i=100,o=99" time $$run_main unstaged EEE :1x400
