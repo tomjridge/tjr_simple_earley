@@ -19,10 +19,10 @@ let main () =
     count
     __FILE__;
   (* what we need from the parse; implement via (i,j) -> int set *)
-  let find_max_j_leq (i:int) (sym,syms) (j:int) : int option = 
+  (*let find_max_j_leq (i:int) (sym,syms) (j:int) : int option = 
     complete_items (i,sym,syms) |> fun set -> 
     Int_set.find_last_opt (fun j' -> j' <= j) set 
-  in
+  in*)
   let get_rhss ~nt = 
     assert(nt="E");
     let rhss = 
@@ -34,9 +34,12 @@ let main () =
     rhss |> List.map (fun rhs ->
         (rhs,fun vs -> List.fold_left (fun a b -> a+b) 0 vs))
   in
-  let cut ~dont_return_j i (sym,syms) j = 
-    (* assert(syms<>[]); NOTE no longer true *)
-    find_max_j_leq i (sym,syms) (if dont_return_j then j-1 else j)
+  let cut i (sym,syms) j = 
+    assert(syms<>[]);
+    complete_items (i,sym,syms) |> fun set -> 
+    (* get elts leq j *)
+    Int_set.split (j+1) set |> fun (set,_,_) -> 
+    Int_set.elements set |> List.rev  (* reverse order *)
   in
   let apply_tm ~tm ~i ~j = 
     (* just return the length (0 or 1) of the string parsed *)
@@ -52,10 +55,11 @@ let main () =
     ~get_rhss
     ~cut
     ~apply_tm
-    ~nt_to_string:(fun x -> x)
+    (* ~nt_to_string:(fun x -> x) *)
     ~nt:initial_nt
     ~i:0
     ~j:(String.length !Params.input)
+    []
   |> function
   | None -> ()
   | Some i -> Printf.printf "Result was %d\n%!" i

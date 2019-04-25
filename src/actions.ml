@@ -15,25 +15,13 @@ end) = struct
       (* (type nt tm sym uni_val) *)
       ~is_nt ~dest_nt ~dest_tm ~get_rhss
       ~cut ~apply_tm 
-      ~nt_to_string
+      (* ~nt_to_string *)
     =
-    (* track apply_actions in progress *)
-    let tbl : (int*nt*int,unit) Hashtbl.t = Hashtbl.create 100 in 
-    (* NOTE following also marks that we are about to start a parse for (i,sym,j) *)
-    let parse_in_progress ~i ~sym ~j = 
+    let rec for_sym ~(sym:sym) ~i ~j ctxt =
       match is_nt sym with
-      | false -> false
-      | true -> 
-        dest_nt sym |> fun nt ->
-        Hashtbl.find_opt tbl (i,nt,j) |> function
-        | Some () -> true
-        | None -> false
-    in
-    let rec for_sym ~(sym:sym) ~i ~j =
-      match is_nt sym with
-      | true -> for_nt ~nt:(dest_nt sym) ~i ~j
-      | false -> for_tm ~tm:(dest_tm sym) ~i ~j
-    and for_tm ~(tm:tm) ~i ~j : uni_val option = 
+      | true -> for_nt ~nt:(dest_nt sym) ~i ~j ctxt
+      | false -> for_tm ~tm:(dest_tm sym) ~i ~j ctxt
+    and for_tm ~(tm:tm) ~i ~j ctxt : uni_val option = 
       let r = apply_tm ~tm ~i ~j in
       (* assert (r<>None);  *)
       (* NOTE r may be None in the case that we have a rule like X ->
@@ -45,53 +33,44 @@ end) = struct
          complicate the Earley code, but make this code quicker and
          possibly simpler *)
       r
-    and for_nt ~(nt:nt) ~i ~j : uni_val option =
-      Hashtbl.find_opt tbl (i,nt,j) |> function
-      | Some () -> 
-        Log.log @@ lazy (
-          Printf.printf "for_nt called with nt=%s, i=%d, j=%d\n%!" (nt_to_string nt) i j);
-        None
-      | None -> begin
-          Hashtbl.add tbl (i,nt,j) ();
+    and for_nt ~(nt:nt) ~i ~j ctxt : uni_val option =
+      (* (ctxt |> List.map (fun (i,_,j) -> (string_of_int i,string_of_int j) |> fun (x,y) -> x^","^y) |> String.concat ";" |> print_endline); *)
+      match List.mem (i,nt,j) ctxt with 
+      | true -> None
+      | false -> begin
+          let ctxt = (i,nt,j)::(ctxt |> List.filter (fun (i',_,j') -> (i,j)=(i',j'))) in
           (* get a list (sequence?) of rhs for the nt *)
           get_rhss ~nt |> fun rhss -> 
           (* now find the first one that parses i,j exactly *)
           rhss |> Misc.iter_till_some (fun (rhs,act) ->
-              for_syms ~syms:rhs ~i ~j |> function
+              for_syms ~syms:rhs ~i ~j ctxt |> function
               | None -> None
               | Some vs -> Some (act(vs)))
         end
-    and for_syms ~syms ~i ~j : uni_val list option = 
+    and for_syms ~syms ~i ~j ctxt : uni_val list option = 
       match syms with
       | [] -> None
       (* NOTE by special casing the [sym] case, we can ensure cut is
          never called with empty syms *)
       | [sym] -> (
-          match parse_in_progress ~i ~sym ~j with
-          | true -> None
-          | false -> (
-              for_sym ~sym ~i ~j |> function
-              | None -> None
-              | Some v -> Some[v]))
+          for_sym ~sym ~i ~j ctxt |> function
+          | None -> None
+          | Some v -> Some[v])
       | sym::syms -> 
         (* NOTE cut (E,syms) should not return k=j if there is already
            a parse for i,E,j "in progress" *)
-        (* if sym is a nt, then parse_in_progress indicates that cut
-           should NOT return j *)
-        let dont_return_j = parse_in_progress ~i ~sym ~j in
-        cut ~dont_return_j (i:int) (sym,syms) (j:int) |> function
-        | None -> None
-        | Some (k:int) -> 
-          assert (if dont_return_j then k < j else true);
-          for_sym ~sym ~i ~j:k |> function
-          | None -> failwith __LOC__
-          | Some (v:uni_val) ->
-            (* FIXME have to take care if syms is [] *)
-            for_syms ~syms ~i:k ~j |> function
-            | None -> failwith __LOC__
-            | Some vs -> Some (v::vs)
+        cut (i:int) (sym,syms) (j:int) |> fun ks -> 
+        ks |> Misc.iter_till_some (fun k -> 
+            for_sym ~sym ~i ~j:k ctxt |> function
+            | None -> None
+            | Some (v:uni_val) ->
+              (* FIXME have to take care if syms is [] *)
+              assert(syms<>[]);
+              for_syms ~syms ~i:k ~j ctxt |> function
+              | None -> None
+              | Some vs -> Some (v::vs))
     in
-    (for_nt : nt:nt -> i:'a -> j:'a -> uni_val option)
+    (for_nt : nt:nt -> i:'a -> j:'a -> (int*nt*int) list -> uni_val option)
 
   let _ = apply_actions
 
@@ -101,10 +80,10 @@ is_nt:(sym -> bool) ->
 dest_nt:(sym -> nt) ->
 dest_tm:(sym -> tm) ->
 get_rhss:(nt:nt -> (sym list * (uni_val list -> uni_val)) list) ->
-cut:(dont_return_j:bool -> int -> sym * sym list -> int -> int option) ->
+cut:(int -> sym * sym list -> int -> int list) ->
 apply_tm:(tm:tm -> i:int -> j:int -> uni_val option) ->
-nt_to_string:(nt -> string) -> 
-nt:nt -> i:int -> j:int -> uni_val option
+(* nt_to_string:'a -> *)
+nt:nt -> i:int -> j:int -> (int * nt * int) list -> uni_val option
     = apply_actions
 
   (** 
