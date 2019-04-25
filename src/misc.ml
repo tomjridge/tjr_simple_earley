@@ -24,4 +24,21 @@ let string_matches_at ~string ~sub ~pos =
   try
     String.sub string pos len = sub 
   with Invalid_argument _ -> false
-  
+
+
+
+(* iterate over a list until the first Some x; return this (or None if no such elt *)
+let iter_till_some (f: 'a -> 'b option) xs =
+  (None,xs) |> iter_opt (fun (ret,xs) ->
+      match ret with 
+      | Some x -> None
+      | None -> (
+          match xs with 
+          | [] -> None
+          | x::xs -> 
+            f x |> function
+            | None -> Some (None,xs)
+            | Some ret -> Some(Some ret,[])))
+  |> function (ret,_) -> ret
+
+let _ : ('a -> 'b option) -> 'a list -> 'b option = iter_till_some
