@@ -1,4 +1,4 @@
 (executables
-  (public_names earley_main)
+  (public_names earley_main test_actions)
   (flags (:standard -w -27-8-40-32-33-39))
   (libraries tjr_simple_earley tjr_profile core extlib)) ; core for timing

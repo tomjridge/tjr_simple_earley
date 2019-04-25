@@ -6,11 +6,11 @@ type ('nt,'tm,'nt_item,'input) grammar_etc = {
   input_length:int;
 }
 
-(** Result of parse *)
+(** Result of parse; complete items is something like (i,sym) -> j set *)
 type ('b,'c) parse_result = {
   count: int;
   items:'b;
-  complete_items:'c
+  complete_items:'c  
 }
 
 

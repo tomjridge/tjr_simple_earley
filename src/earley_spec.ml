@@ -30,6 +30,8 @@ module Internal(S:sig include NT_TM type state end) = struct
       ~(add_item:item' -> unit m)
       ~(add_items:item' list -> unit m)
       ~(pop_todo: unit-> item' option m)
+      ~(note_blocked_cuts: nt_item' -> int list -> unit m)
+      ~(note_complete_cuts: nt_item' list -> int -> unit m)
     = 
 
     let mark = !spec_mark_ref in
@@ -41,6 +43,7 @@ module Internal(S:sig include NT_TM type state end) = struct
         mark "am";
         get_complete_items (k_,_S) >>= fun js ->
         mark "ap";
+        note_blocked_cuts itm js >>= fun () ->
         (* js |> List.iter (fun j -> note_cut itm j); *)
         js |> List.map (fun j -> Nt_item { itm with k_=j; bs=bs })
         |> add_items >>= fun _ ->
@@ -54,7 +57,7 @@ module Internal(S:sig include NT_TM type state end) = struct
       mark "bm";
       get_blocked_items (i_,sym) >>= fun itms ->
       mark "bp";
-      (* itms |> List.iter (fun itm -> note_cut itm j_); *)
+      note_complete_cuts itms j_ >>= fun () ->
       itms |> List.map (fun itm -> Nt_item {itm with k_=j_; bs=List.tl itm.bs})
       |> add_items >>= fun () ->
       mark "bs";
@@ -108,7 +111,10 @@ module Internal(S:sig include NT_TM type state end) = struct
     get_complete_items:(int * sym' -> int list m) ->
     add_item:(item' -> unit m) ->
     add_items:(item' list -> unit m) ->
-    pop_todo:(unit -> item' option m) -> int m
+    pop_todo:(unit -> item' option m) -> 
+    note_blocked_cuts:(nt_item' -> int list -> unit m) ->
+    note_complete_cuts:(nt_item' list -> int -> unit m) ->
+    int m
     = _earley 
 
   (** expand_... are in the monad; adjust the types of expand_nt and
@@ -130,7 +136,10 @@ module Internal(S:sig include NT_TM type state end) = struct
     add_items:(item' list -> unit m) ->
     get_blocked_items:(int * sym' -> nt_item' list m) ->
     get_complete_items:(int * sym' -> int list m) ->
-    add_item:(item' -> unit m) -> pop_todo:(unit -> item' option m) -> int m = earley
+    add_item:(item' -> unit m) -> pop_todo:(unit -> item' option m) -> 
+    note_blocked_cuts:(nt_item' -> int list -> unit m) ->
+    note_complete_cuts:(nt_item' list -> int -> unit m) ->
+    int m = earley
 
 end
 
@@ -203,11 +212,14 @@ module Internal_with_inefficient_spec_state(A:NT_TM) = struct
       | [] -> None,s
       | x::todo -> Some x,{s with todo}
     in
+    let note_blocked_cuts itm js s = (),s in
+    let note_complete_cuts itms j s = (),s in
     fun ~initial_nt:nt ->
       { empty_state with todo=[Nt_item{nt;i_=0;k_=0;bs=[Nt nt]}] }
       |> earley 
         ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
         ~add_item ~add_items ~pop_todo
+        ~note_blocked_cuts ~note_complete_cuts
       |> fun (count,s) -> 
       let complete_items = 
         fun (i,_S) -> 

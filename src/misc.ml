@@ -42,3 +42,7 @@ let iter_till_some (f: 'a -> 'b option) xs =
   |> function (ret,_) -> ret
 
 let _ : ('a -> 'b option) -> 'a list -> 'b option = iter_till_some
+
+
+module Int_set = Set.Make(
+  struct type t = int let compare: t -> t -> int = Pervasives.compare end)
