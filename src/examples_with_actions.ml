@@ -1,9 +1,17 @@
 (** Some examples, with actions *)
 
+module type DEFINED_SYMS = sig
+  type 'a nt
+  type 'a sym
+  type 'a tm
+  val _E : int nt
+  val _S : string nt
+  val a: string -> string tm
+end
+
 (** Internal *)
 module type A = sig 
-  type 'a nt 
-  type 'a sym 
+  include DEFINED_SYMS
   type 'a rhs 
   type rule 
   val _1: 'a sym -> ('a -> 'b) -> 'b rhs
@@ -12,11 +20,13 @@ module type A = sig
 
   val ( --> ) : 'a nt -> 'a rhs -> rule
   val nt : 'a nt -> 'a sym
+  val tm : 'a tm -> 'a sym
 
   (* type u_nt  (\* untyped nt *\) *)
 
   type 'a grammar 
-  val grammar: name:string -> descr:string -> initial_nt:'a nt -> rules:rule list -> 'a grammar
+  val grammar: name:string -> descr:string -> initial_nt:'a nt ->
+    rules:rule list -> 'a grammar
 end
 
 (** Internal: grammmars defined abstractly *)
@@ -24,11 +34,8 @@ module Internal(A:A) = struct
 
   open A
 
-  let example_grammars p =
-    let _E : int nt = p#_E in
-    let _S : string nt = p#_S in
-    let a s = p#a s in
-    let [one;eps;x] : string sym list = List.map a ["1";"";"x"] in
+  let example_grammars =
+    let [one;eps;x] : string sym list = List.map a ["1";"";"x"] |> List.map tm in
     let _EEE = 
       grammar 
         ~name:"EEE"
@@ -55,7 +62,7 @@ module Internal(A:A) = struct
   let _ = example_grammars
 end
 
-module Internal2(B:sig 
+module type B = sig 
     type 'a nt 
     type u_nt
     val nt2u : 'a nt -> u_nt
@@ -63,7 +70,9 @@ module Internal2(B:sig
     type u_sym
     val sym2u : 'a sym -> u_sym
     type uni_val 
-end) = struct
+end
+
+module Internal2(B:B) = struct
   open B
 
   type u_rhs = u_sym list * (uni_val list -> uni_val)
@@ -111,29 +120,68 @@ end
 
 module Internal3 = struct
 
-  module B = struct
+  module type B2 = sig
+    include B
+    val u_nt2string: u_nt -> string
+    val u_sym2string: u_sym -> string
+      
+    (* from A ; FIXME *)
+    (* val nt: 'a nt -> 'a sym *)
+  end
+
+  module B2 : sig
+    type 'a nt
+    type u_nt = string
+    val nt2u : 'a nt -> u_nt
+
+    type 'a tm
+    type u_tm
+
+
+    type 'a sym
+    type u_sym = string
+    val sym2u : 'a sym -> u_sym
+    type uni_val
+    val nt : 'a nt -> 'a sym
+    val tm: 'a tm -> 'a sym
+    val _E : int nt
+    val _S : string nt
+    val a : string -> string tm
+  end = struct
     type 'a nt = string
     type u_nt = string
     let nt2u : 'a nt -> u_nt = fun x -> x
+
+    type 'a tm = string
+    type u_tm = string
+
     type 'a sym = string
     type u_sym = string
     let sym2u : 'a sym -> u_sym = fun x -> x
     type uni_val
 
+    let u_nt2string x = x
+    let u_sym2string x = x
+
     (* from A ; FIXME *)
     let nt : 'a nt -> 'a sym = fun x -> x
+    let tm : 'a tm -> 'a sym = fun x -> x
+
+    let _E : int nt ="E"
+    let _S : string nt = "S"
+    let a s = s
   end
 
-  module C = Internal2(B)
+  module C = Internal2(B2)
 
-  module E = struct
-    include B
+  module A2 = struct
+    include B2
     include C
   end
 
-  module D : A = E
+  module D : A = A2
 
-  module F = Internal(E)
+  module F = Internal(A2)
 
   module Export : sig
     type 'a grammar = 'a C.grammar
@@ -145,17 +193,12 @@ module Internal3 = struct
   end = struct
     type 'a grammar = 'a C.grammar
     let example_grammars = F.example_grammars
-    let _EEE,aho_s = 
-      let p = object 
-        method _E="E"
-        method _S="S"
-        method a=fun s -> s
-      end
-      in
-      example_grammars p
+    let _EEE,aho_s = example_grammars
   end
   
 end
+
+include Internal3.B2
 
 include Internal3.Export
 

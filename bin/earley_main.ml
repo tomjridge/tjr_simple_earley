@@ -46,6 +46,7 @@ let _ =
       Printf.printf "actions; grammar=EEE; input_length=%d (%s)\n%!" 
         (String.length input)
         __FILE__;
-      Test_actions.main ()      
+      (* Test_actions.main ()       *)
+      ()
   end;
   Printf.printf "end ---------------------------------------------------\n%!";

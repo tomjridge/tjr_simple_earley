@@ -1,3 +1,4 @@
+(*
 (** An experiment to test applying actions to the result of an Earley
    parse. *)
 
@@ -10,9 +11,21 @@ open Test_unstaged
 open Test_unstaged.Internal
        
 let main () = 
-  let grammar = Examples.get_grammar_by_name !Params.grammar in
+  (* let grammar = Examples.get_grammar_by_name !Params.grammar in *)
+  let grammar = Examples_with_actions._EEE in
   let initial_nt = grammar.initial_nt in
-  let expand_nt,expand_tm = grammar_to_expand grammar in
+  let _ = initial_nt in
+  let expand_nt (nt,i) = 
+    grammar.rules nt |> fun rhss ->
+    rhss |> List.map (fun (rhs,act) -> { nt; i_=i; k_=i; bs=rhs })
+  in
+  (* FIXME prefer to get expand_tm from the defn site of grammar *)
+  let expand_tm (tm,i) =     
+    let input = !Params.input in
+    match Misc.string_matches_at ~string:input ~sub:tm ~pos:i with
+    | true -> [i+(String.length tm)]
+    | false -> []
+  in
   earley_unstaged ~expand_nt ~expand_tm ~initial_nt
   |> fun { count; items; complete_items } -> 
   Printf.printf "%d nt_items produced (%s)\n%!"
@@ -65,3 +78,4 @@ let main () =
   | Some i -> Printf.printf "Result was %d\n%!" i
 
   
+*)
