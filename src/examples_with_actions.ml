@@ -1,27 +1,36 @@
 (** Some examples, with actions *)
 
+(** Internal *)
+module type A = sig 
+  type 'a nt 
+  type 'a sym 
+  type 'a rhs 
+  type rule 
+  val _1: 'a sym -> ('a -> 'b) -> 'b rhs
+  val _2: ('a sym * 'b sym) -> ('a * 'b -> 'c) -> 'c rhs
+  val _3: ('a sym * 'b sym * 'c sym) -> ('a * 'b * 'c -> 'd) -> 'd rhs
+
+  val ( --> ) : 'a nt -> 'a rhs -> rule
+  val nt : 'a nt -> 'a sym
+
+  (* type u_nt  (\* untyped nt *\) *)
+
+  type 'a grammar 
+  val grammar: name:string -> descr:string -> initial_nt:'a nt -> rules:rule list -> 'a grammar
+end
 
 (** Internal: grammmars defined abstractly *)
-module Internal(A: sig type 'a nt type 'a sym type 'a rhs type 'a rule end) = struct
+module Internal(A:A) = struct
 
   open A
 
-  type rhs' = {
-    _1: 'a 'b. 'a sym -> ('a -> 'b) -> 'b rhs;
-    _2: 'a 'b 'c. ('a sym * 'b sym) -> ('a * 'b -> 'c) -> 'c rhs;
-    _3: 'a 'b 'c 'd. ('a sym * 'b sym * 'c sym) -> ('a * 'b * 'c -> 'd) -> 'd rhs;
-  }
-
   let example_grammars p =
-    let ( --> ) (nt:'a nt) (rhs:'a rhs) : 'a rule = p#make_rule nt rhs in
-    let nt (x:'a nt) : 'a sym = p#nt x in
-    let {_1;_2;_3} = p#rhs' in
     let _E : int nt = p#_E in
-    let _S = p#_S in
+    let _S : string nt = p#_S in
     let a s = p#a s in
-    let [(one:string sym);eps;x] = List.map a ["1";"";"x"] in
+    let [one;eps;x] : string sym list = List.map a ["1";"";"x"] in
     let _EEE = 
-      p#grammar 
+      grammar 
         ~name:"EEE"
         ~descr:"Very ambiguous grammar, for testing Earley"
         ~initial_nt:_E
@@ -32,29 +41,124 @@ module Internal(A: sig type 'a nt type 'a sym type 'a rhs type 'a rule end) = st
         ]
     in
     let aho_s = 
-      p#grammar
+      grammar
         ~name:"aho_s"
         ~descr:"Aho et al. example grammar"
         ~initial_nt:_S
         ~rules:[
-          _S -->_3 (x,nt _S,nt _S) (fun (x,y,z) -> 1+y+z);
-          _S -->_1 eps (fun _ -> 0)
+          _S -->_3 (x,nt _S,nt _S) (fun (x,y,z) -> "x"^y^z);
+          _S -->_1 eps (fun _ -> "")
         ]
     in
-    [_EEE;aho_s]
+    (_EEE,aho_s)
 
   let _ = example_grammars
 end
 
+module Internal2(B:sig 
+    type 'a nt 
+    type u_nt
+    val nt2u : 'a nt -> u_nt
+    type 'a sym 
+    type u_sym
+    val sym2u : 'a sym -> u_sym
+    type uni_val 
+end) = struct
+  open B
 
-(** A named tuple for tagging grammars in a slightly more digestible
-   form than a plain tuple *)
-type ('a,'b) grammar = {
-  name:string;
-  descr:string;
-  initial_nt:'a;
-  rules:'b
-}
+  type u_rhs = u_sym list * (uni_val list -> uni_val)
+  type rule = u_nt * u_rhs
+
+  type 'a rhs = u_rhs
+
+  let _1 (_S:'a sym) (f:'a -> 'b) : 'b rhs = 
+    ([sym2u _S], fun [v] -> Obj.magic (f (Obj.magic v)))
+
+  let _2: ('a sym * 'b sym) -> ('a * 'b -> 'c) -> 'c rhs = 
+    fun (s1,s2) f ->
+    ([sym2u s1; sym2u s2], fun[v1;v2] -> Obj.magic (f (Obj.magic v1, Obj.magic v2)))
+
+  let _3: ('a sym * 'b sym * 'c sym) -> ('a * 'b * 'c -> 'd) -> 'd rhs =
+    fun (s1,s2,s3) f ->
+    [sym2u s1; sym2u s2; sym2u s3],
+    fun [v1;v2;v3] -> Obj.magic (f (Obj.magic v1, Obj.magic v2, Obj.magic v3))
+
+  let mk_rule : 'a nt -> 'a rhs -> rule = fun nt rhs -> (nt2u nt,rhs)
+  let ( --> ) = mk_rule
+
+  type 'a grammar = {
+    name:string;
+    descr:string;
+    initial_nt:'a nt;
+    rules:u_nt -> u_rhs list
+  } 
+
+  let grammar: name:string -> descr:string -> initial_nt:'a nt ->
+    rules:rule list -> 'a grammar 
+    =
+    fun ~name ~descr ~initial_nt ~rules -> 
+    let tbl = Hashtbl.create 100 in
+    List.rev rules |> List.iter (fun (nt,rhs) -> 
+        Hashtbl.find_opt tbl nt |> function
+        | None -> Hashtbl.replace tbl nt [rhs]
+        | Some rhss -> Hashtbl.replace tbl nt (rhs::rhss));
+    let rules nt = Hashtbl.find_opt tbl nt |> function
+      | None -> []
+      | Some rhss -> rhss
+    in
+    { name; descr; initial_nt; rules }
+end
+
+module Internal3 = struct
+
+  module B = struct
+    type 'a nt = string
+    type u_nt = string
+    let nt2u : 'a nt -> u_nt = fun x -> x
+    type 'a sym = string
+    type u_sym = string
+    let sym2u : 'a sym -> u_sym = fun x -> x
+    type uni_val
+
+    (* from A ; FIXME *)
+    let nt : 'a nt -> 'a sym = fun x -> x
+  end
+
+  module C = Internal2(B)
+
+  module E = struct
+    include B
+    include C
+  end
+
+  module D : A = E
+
+  module F = Internal(E)
+
+  module Export : sig
+    type 'a grammar = 'a C.grammar
+    (*val example_grammars : 
+      < _E : string; _S : string; a : string -> string; .. > ->
+      int grammar * string grammar*)
+    val _EEE : int grammar
+    val aho_s : string grammar
+  end = struct
+    type 'a grammar = 'a C.grammar
+    let example_grammars = F.example_grammars
+    let _EEE,aho_s = 
+      let p = object 
+        method _E="E"
+        method _S="S"
+        method a=fun s -> s
+      end
+      in
+      example_grammars p
+  end
+  
+end
+
+include Internal3.Export
+
 
 (*
 
@@ -67,7 +171,7 @@ module Example_instantiation = struct
   type rule = nt * sym list
 
   let make_rule nt rhs = (nt,rhs)
-                         
+
   type u
   let u (x:'a) : u = Obj.magic x
 
@@ -130,7 +234,7 @@ module Example_instantiation = struct
     let is_nt nt = nt <> "" && (String.get nt 0 |> function
       | 'A' .. 'Z' -> true
       | _ -> false)
-      
+
     open Spec_types
     let string_to_sym s = match is_nt s with 
       | true -> Nt s
@@ -161,11 +265,11 @@ module Example_instantiation = struct
       _get_grammar_etc_by_name name |> fun g ->
       { g with input; input_length }
     (** Returns a non-partial [grammar_etc] *)
-    
+
 
 
   end
-  
+
 end
 
 include Example_instantiation.Export
