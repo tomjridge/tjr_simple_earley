@@ -3,34 +3,15 @@
 open Tjr_simple_earley
 open Prelude
 
-module A = struct
+module Nt_tm = struct
 
   type nt = string
   type tm = string
 
-(*
-  type sym = Nt of nt | Tm of tm
-
-  type nt_item = { nt:nt; i_:int; k_:int; bs: sym list }
-
-  type sym_item = { i_:int; sym:sym; j_:int }
-
-  type sym_at_k = { sym:sym; k_:int } 
-
-  type item = 
-    | Nt_item of nt_item
-    | Sym_item of sym_item
-    | Sym_at_k of sym_at_k
-*)
-(*
-  let tbl = Hashtbl.create 100
-
-  let note_item (itm:nt_item) : unit = 
-    Hashtbl.replace tbl itm ()
-*)
-
 end
-include A
+include Nt_tm
+
+include Simple_items(Nt_tm)
 
 (*
 let _E,_1,eps = Nt "E",Tm "1", Tm "eps"
@@ -42,8 +23,6 @@ let expand_nt (nt,i) =
 
 *)
 
-open Spec_types
-
 let sym_to_string = function Nt x -> x | Tm x -> x 
 let syms_to_string xs = 
   String.concat ";" (List.map sym_to_string xs) 
@@ -54,12 +33,12 @@ let itm_to_string {nt;i_;k_;bs} = Printf.sprintf "%s -> %3d,%3d,%s"
     k_
     (syms_to_string bs)
 
-let grammar_to_expand grammar = 
-  let grammar = 
-    let to_sym s = if Examples.is_nt s then Nt s else Tm s in
+let grammar_to_expand (grammar:(string * (string,string)Prelude.generic_sym list) list) = 
+(*  let grammar = 
+    (* let to_sym s = if Examples.is_nt s then Nt s else Tm s in *)
     let Examples.{ rules; _ } = grammar in
     rules |> List.map (fun (nt,rhs) -> (nt,List.map to_sym rhs))
-  in
+  in*)
   let expand_nt (nt,i) =
     grammar |> Misc.rev_filter_map (fun (nt',bs) -> match nt'=nt with
         | true -> Some { nt; i_=i;k_=i; bs }
@@ -72,7 +51,6 @@ let grammar_to_expand grammar =
     | false -> []
   in
   (expand_nt,expand_tm)
-
 
 
 let now =

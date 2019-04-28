@@ -1,6 +1,7 @@
 (** Some examples *)
 
-(** Internal: grammmars defined abstractly *)
+(** Internal: grammmars defined abstractly. NOTE the following assumes
+   nt, tm and sym are all the same type. *)
 module Internal = struct
 
   let example_grammars p =
@@ -79,12 +80,24 @@ type ('a,'b) grammar = {
 (** Example instantiation with strings for symbols *)
 module Example_instantiation = struct
 
+  open Prelude
+
   type nt = string
   type tm = string
   type sym = (nt,tm) Prelude.generic_sym
   type rule = nt * sym list
 
-  let make_rule nt rhs = (nt,rhs)
+  (** Hack to determine nt/tm based on string repr starting with a
+      capital letter *)
+  let is_nt nt = nt <> "" && (String.get nt 0 |> function
+    | 'A' .. 'Z' -> true
+    | _ -> false)
+
+  let string_to_sym s = match is_nt s with 
+    | true -> Nt s
+    | false -> Tm s
+
+  let make_rule nt rhs = (nt,rhs|>List.map string_to_sym)
 
   let _1 s = [s]
   let _2 (s1,s2) = [s1;s2]
@@ -128,23 +141,10 @@ module Example_instantiation = struct
       example_grammars |> List.find (fun g -> g.name = name)
 
 
+(*
     (** We also want to get grammars with type [grammar_etc] *)
 
     open Prelude
-
-(*
-    (** Hack to determine nt/tm based on string repr starting with a
-       capital letter *)
-    let is_nt nt = nt <> "" && (String.get nt 0 |> function
-      | 'A' .. 'Z' -> true
-      | _ -> false)
-      
-    (* open Spec_types *)
-    (* open Item_types *)
-    let string_to_sym s = match is_nt s with 
-      | true -> Nt s
-      | false -> Tm s
-*)
         
     (** NOTE this returns a partial [grammar_etc] (input and
        input_length are dummies), and nt_items are a tuple
@@ -171,7 +171,7 @@ module Example_instantiation = struct
       _get_grammar_etc_by_name name |> fun g ->
       { g with input; input_length }
     (** Returns a non-partial [grammar_etc] *)
-    
+*)    
 
 
   end

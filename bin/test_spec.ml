@@ -2,15 +2,14 @@ open Tjr_simple_earley
 open Prelude
 open Spec_common
 
-module Internal = Earley_spec.Internal_with_inefficient_spec_state(A)
+module Internal = Earley_spec.Internal_example_parse_function
 open Internal
 
-open Spec_types
 
 let main () = 
   let grammar = Examples.get_grammar_by_name !Params.grammar in
   let initial_nt = grammar.initial_nt in
-  let expand_nt,expand_tm = grammar_to_expand grammar in
+  let expand_nt,expand_tm = grammar_to_expand grammar.rules in
   earley_spec ~expand_nt ~expand_tm ~initial_nt
   |> fun { count; items; _ } -> 
   Printf.printf "%d nt_items produced (%s)\n%!"
