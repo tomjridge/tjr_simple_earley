@@ -28,48 +28,6 @@ let unstaged_mark_ref : (string -> unit) ref = ref (fun s -> ())
 (** We often parameterize over nt,tm *)
 module type NT_TM = sig  type nt type tm end
 
-(** Some types used by the spec *)
-module Spec_types = struct
-
-  type ('nt,'tm) sym = Nt of 'nt | Tm of 'tm
-
-  module Item_types = struct
-    type ('nt,'bs) nt_item = { nt:'nt; i_:int; k_:int; bs:'bs }
-    type 'sym sym_item = { i_:int; sym:'sym; j_:int }
-    type 'sym sym_at_k = { sym:'sym; k_:int } 
-    type ('a,'b,'c) item = 
-      | Nt_item of 'a
-      | Sym_item of 'b
-      | Sym_at_k of 'c
-  end
-
-  module Make_derived_types(A:NT_TM) = struct
-    open A
-    open Item_types
-    type sym' = (nt,tm) sym
-    type sym_item' = sym' sym_item
-    type sym_at_k' = sym' sym_at_k
-    type nt_item' = (nt,sym' list) nt_item
-    type item' = (
-      nt_item',
-      sym_item',
-      sym_at_k') item
-  end
-
-end
-
-let filter_sort_items itms = 
-  let open Spec_types.Item_types in
-  itms
-  |> Misc.rev_filter_map (function
-      | Nt_item x -> Some x
-      | _ -> None)
-  |> List.sort (fun itm1 itm2 -> 
-      let f {nt;i_;k_;bs} = nt,i_,k_,List.length bs,bs in
-      Pervasives.compare (f itm1) (f itm2))
-
-
-
 (** {2 Common required interface} *)
 
 (** What is required by the [Make] functor *) 
@@ -86,20 +44,69 @@ module type REQUIRED = sig
   val _TM: tm -> sym
 
   type sym_list
+  val syms_nil: sym_list -> bool
+  val syms_hd: sym_list -> sym
+  val syms_tl: sym_list -> sym_list
 
   type nt_item  
-
   val dot_nt: nt_item -> nt
   val dot_i: nt_item -> int
   val dot_k: nt_item -> int
   val dot_bs: nt_item -> sym_list
 
-  val syms_nil: sym_list -> bool
-  val syms_hd: sym_list -> sym
-  val syms_tl: sym_list -> sym_list
-
   val cut: nt_item -> int -> nt_item
 
-  type 'input grammar_etc' = (nt,tm,nt_item,'input) grammar_etc
+  (* type 'input grammar_etc' = (nt,tm,nt_item,'input) grammar_etc *)
 end  (* REQUIRED *)
+
+(** In the interface to Earley, the user has to know the structure of
+   the sym type; so it is useful to have this known outside *)
+type ('nt,'tm) generic_sym = Nt of 'nt | Tm of 'tm
+
+(** Simple instantiation of basic types *)
+module Simple_items(A:sig type nt type tm end) = struct
+  open A
+
+  type sym = (nt,tm)generic_sym
+  let is_nt = function Nt x -> true | Tm x -> false
+  let dest_nt = function Nt x -> x | _ -> failwith "dest_nt"
+  let dest_tm = function Tm x -> x | _ -> failwith "dest_tm"
+  let _NT (x:nt) = Nt x
+  let _TM (x:tm) = Tm x
+
+  type sym_list = sym list
+  let syms_nil (xs:sym_list) = match xs with [] -> true | _ -> false
+  let syms_hd (xs:sym_list) = List.hd xs
+  let syms_tl (xs:sym_list) = List.tl xs
+
+  type nt_item = { nt:nt; i_:int; k_:int; bs:sym_list }
+  let dot_nt x = x.nt
+  let dot_i x = x.i_
+  let dot_k x = x.k_
+  let dot_bs x = x.bs
+
+  let cut itm j = {itm with k_=j; bs=List.tl itm.bs}
+
+  (* type sym_item = { i_:int; sym:sym; j_:int } *)
+  (* type sym_at_k = { sym:sym; k_:int }  *)
+end
+
+(*
+(** Generic type of items (for spec?) *)
+type ('a,'b,'c) generic_item = 
+  | Nt_item of 'a
+  | Sym_item of 'b
+  | Sym_at_k of 'c
+*)
+
+(*
+  let filter_sort_items itms = 
+    itms
+    |> Misc.rev_filter_map (function
+        | Nt_item x -> Some x
+        | _ -> None)
+    |> List.sort (fun itm1 itm2 -> 
+        let f {nt;i_;k_;bs} = nt,i_,k_,List.length bs,bs in
+        Pervasives.compare (f itm1) (f itm2))
+*)
 

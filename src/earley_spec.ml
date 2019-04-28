@@ -3,6 +3,8 @@
 
 open Prelude
 open Spec_types
+open Item_types
+
 
 
 (** Internal implementation *)
@@ -245,7 +247,7 @@ end
 (** An example parse function which is polymorphic over symbols; no
    functors involved. *)
 module Internal_example_parse_function = struct
-  open Spec_types
+  (* open Spec_types *)
   
   (** An (executable) parsing specification polymorphic over
       nonterminals and terminals *)

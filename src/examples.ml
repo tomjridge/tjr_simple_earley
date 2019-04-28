@@ -138,6 +138,7 @@ module Example_instantiation = struct
       | _ -> false)
       
     open Spec_types
+    open Item_types
     let string_to_sym s = match is_nt s with 
       | true -> Nt s
       | false -> Tm s

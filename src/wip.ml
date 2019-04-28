@@ -3,19 +3,31 @@
 
 open Prelude
 
-module IT = Spec_types.Item_types
-
 module type REQUIRED = sig
   include Prelude.REQUIRED
-  type state
+  type sym_item = { i_:int; sym:sym; j_:int }
+  type sym_at_k = { sym:sym; k_:int } 
+
+  type item = 
+    | Nt_item of nt_item
+    | Sym_item of sym_item
+    | Sym_at_k of sym_at_k
+end
+
+module Make_extra_items(A:sig type sym type nt_item end) = struct
+  open A
+  type sym_item = { i_:int; sym:sym; j_:int }
+  type sym_at_k = { sym:sym; k_:int } 
+
+  type item = 
+    | Nt_item of nt_item
+    | Sym_item of sym_item
+    | Sym_at_k of sym_at_k
 end
 
 (** Internal implementation *)
-module Internal(S:REQUIRED) = struct
-  (* include B *)
+module Internal(S:sig include REQUIRED type state end) = struct
   open S
-      
-  type item = (nt_item,sym IT.sym_item,sym IT.sym_at_k) IT.item
 
   module M = struct
     type 'a m = state -> 'a * state
@@ -31,6 +43,7 @@ module Internal(S:REQUIRED) = struct
   (** Main Earley routine, parameterized *)
   let _earley 
       ~(expand_nt:nt*int->unit m) ~(expand_tm:tm*int->unit m) 
+      ~incr_count
       ~(get_blocked_items:int*sym->nt_item list m)
       ~(get_complete_items:int*sym -> int list m)
       ~(add_item:item -> unit m)
@@ -41,7 +54,6 @@ module Internal(S:REQUIRED) = struct
     = 
 
     let mark = !spec_mark_ref in
-    let count = ref 0 in
 
     (* process a blocked item *)
     let cut_blocked_item = fun itm -> 
@@ -50,7 +62,7 @@ module Internal(S:REQUIRED) = struct
       get_complete_items (k_,_S) >>= fun js ->
       mark "ap";
       note_blocked_cuts itm js >>= fun () ->
-      js |> List.map (fun j -> IT.Nt_item (cut itm j))
+      js |> List.map (fun j -> Nt_item (cut itm j))
       |> add_items >>= fun _ ->
       mark "as";
       return ()              
@@ -58,7 +70,6 @@ module Internal(S:REQUIRED) = struct
 
     (* process a complete item *)
     let cut_complete_item =
-      let open IT in
       fun {i_;sym;j_} -> 
         mark "bm";
         get_blocked_items (i_,sym) >>= fun itms ->
@@ -72,11 +83,10 @@ module Internal(S:REQUIRED) = struct
 
     (* process an item *)
     let step itm =
-      let open IT in
       mark "em";
       match itm with 
       | Nt_item itm -> (
-          count:=!count+1;
+          incr_count() >>= fun () -> 
           let bs = itm|>dot_bs in
           match bs|>syms_nil with
           | true -> 
@@ -110,7 +120,7 @@ module Internal(S:REQUIRED) = struct
     (* loop until no items left to process *)
     let rec loop () = 
       pop_todo () >>= function
-      | None -> return !count
+      | None -> return ()
       | Some itm -> step itm >>= fun _ -> loop ()
     in
     loop ()
@@ -118,6 +128,7 @@ module Internal(S:REQUIRED) = struct
   let _ :
     expand_nt:(nt * int -> unit m) ->
     expand_tm:(tm * int -> unit m) ->
+    incr_count:(unit -> unit m) ->
     get_blocked_items:(int * sym -> nt_item list m) ->
     get_complete_items:(int * sym -> int list m) ->
     add_item:(item -> unit m) ->
@@ -125,32 +136,34 @@ module Internal(S:REQUIRED) = struct
     pop_todo:(unit -> item option m) -> 
     note_blocked_cuts:(nt_item -> int list -> unit m) ->
     note_complete_cuts:(nt_item list -> int -> unit m) ->
-    int m
-    = _earley 
+    unit m
+    = _earley
 
   (** expand_... are in the monad; adjust the types of expand_nt and
      expand_tm so that they return a list of items and a list of ints
      *)
   let earley ~expand_nt ~expand_tm ~add_items =
     let expand_nt (nt,i) = 
-      add_items (expand_nt (nt,i) |> List.map (fun itm -> IT.Nt_item itm))
+      add_items (expand_nt (nt,i) |> List.map (fun itm -> Nt_item itm))
     in
     let expand_tm (tm,i_) =
       expand_tm (tm,i_) 
-      |> List.map (fun j_ -> IT.(Sym_item{i_;sym=_TM tm;j_}))
+      |> List.map (fun j_ -> (Sym_item{i_;sym=_TM tm;j_}))
       |> add_items
     in
     _earley ~expand_nt ~expand_tm ~add_items
 
-  let _ : expand_nt:(nt * int -> nt_item list) ->
+  let _ : 
+    expand_nt:(nt * int -> nt_item list) ->
     expand_tm:(tm * int -> int list) ->
     add_items:(item list -> unit m) ->
+    incr_count:(unit -> unit m) ->
     get_blocked_items:(int * sym -> nt_item list m) ->
     get_complete_items:(int * sym -> int list m) ->
     add_item:(item -> unit m) -> pop_todo:(unit -> item option m) -> 
     note_blocked_cuts:(nt_item -> int list -> unit m) ->
     note_complete_cuts:(nt_item list -> int -> unit m) ->
-    int m = earley
+    unit m = earley
 
 end
 
@@ -158,26 +171,24 @@ end
    inefficient state type (for which the implementation of the util
    functions are hopefully correct); see {!Earley_unstaged} for an
    efficient version *)
-module Internal_with_inefficient_spec_state(A:Prelude.REQUIRED) = struct
-  open A
+module Internal_with_inefficient_spec_state(Req:REQUIRED) = struct
+  open Req
 
   module State_type = struct
-    type item = (nt_item,sym IT.sym_item,sym IT.sym_at_k) IT.item
 
     (* todo_done is really a set; we add items to todo providing they
        are not already in todo_done *)
     type state = {
+      count:int;
       mutable todo: item list;
       todo_done:(item,unit) Hashtbl.t
     }
-    let empty_state = { todo=[]; todo_done=Hashtbl.create 100 }
+    let empty_state = { count=0; todo=[]; todo_done=Hashtbl.create 100 }
   end
   open State_type
 
-  module Internal=Internal(struct include A include State_type end)
+  module Internal=Internal(struct include Req include State_type end)
   open Internal
-
-  open IT
 
   (** The (executable) specification of parsing. Returns a list of
       items (FIXME?). Implementations such as Earley should return an
@@ -185,6 +196,7 @@ module Internal_with_inefficient_spec_state(A:Prelude.REQUIRED) = struct
       parameters are independent of the input (in that the input is not
       present as an argument). *)
   let earley_spec ~expand_nt ~expand_tm = 
+    let incr_count () s = (),{s with count=s.count+1} in
     let get_blocked_items (k,_S) s = 
       let blocked = ref [] in
       s.todo_done |> Hashtbl.iter (fun itm _ ->
@@ -228,13 +240,13 @@ module Internal_with_inefficient_spec_state(A:Prelude.REQUIRED) = struct
     in
     let note_blocked_cuts itm js s = (),s in
     let note_complete_cuts itms j s = (),s in
-    fun ~nt_to_initial_item ~initial_nt:(nt:A.nt) ->
-      { empty_state with todo=[Nt_item(nt_to_initial_item nt)] }
-      |> earley 
-        ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
+    fun ~initial_nt:(nt:Req.nt) ->
+      { empty_state with todo=(expand_nt (nt,0)|>List.map (fun x -> Nt_item x)) }
+      |> earley
+        ~expand_nt ~expand_tm ~incr_count ~get_blocked_items ~get_complete_items
         ~add_item ~add_items ~pop_todo
         ~note_blocked_cuts ~note_complete_cuts
-      |> fun (count,s) -> 
+      |> fun ((),s) -> 
       let complete_items = 
         fun (i,_S) -> 
           get_complete_items (i,_S) s |> fun (n,_) -> n
@@ -245,12 +257,12 @@ module Internal_with_inefficient_spec_state(A:Prelude.REQUIRED) = struct
         |> List.of_seq
       end
       in
-      { count;items;complete_items }
+      { count=s.count;items;complete_items }
 
+  (* This exposes the nt_item type to the user; might prefer to use rhs list *)
   let earley_spec : 
-    expand_nt:(nt * int -> A.nt_item list) ->
+    expand_nt:(nt * int -> Req.nt_item list) ->
     expand_tm:(tm * int -> int list) -> 
-    nt_to_initial_item:(nt -> A.nt_item) ->
     initial_nt:nt -> ('b,'c) parse_result
     = earley_spec
 
@@ -261,16 +273,24 @@ end
 (** An example parse function which is polymorphic over symbols; no
    functors involved. *)
 module Internal_example_parse_function = struct
-  open IT
   
   (** An (executable) parsing specification polymorphic over
       nonterminals and terminals *)
   let earley_spec (type nt tm) ~expand_nt ~expand_tm  =
     let module A = struct
       type nonrec nt = nt
-      type nonrec tm = tm
+      type nonrec tm = tm      
+      include Prelude.Simple_items(struct 
+          type nonrec nt = nt
+          type nonrec tm = tm
+        end)
+      include Make_extra_items(struct
+          type nonrec sym = sym
+          type nonrec nt_item = nt_item
+        end)
     end
     in
+    let open A in
     let module B = Internal_with_inefficient_spec_state(A) in
     (* let open B in *)
     (* let sym_to_sym = function `Nt nt -> Nt nt | `Tm tm -> Tm tm in *)
@@ -282,5 +302,5 @@ module Internal_example_parse_function = struct
     in
     fun ~initial_nt ->
       let res = B.earley_spec ~expand_nt ~expand_tm ~initial_nt in
-      res
+      {res with items=()}  (* can't expose general items *)
 end

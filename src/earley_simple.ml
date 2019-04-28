@@ -9,12 +9,13 @@ module Make(Nt_tm:NT_TM) = struct
   open Nt_tm
       
   open Spec_types
+  open Item_types
 
   module Internal = struct
 
     module Derived_types = struct
       type sym = (nt,tm) Spec_types.sym
-      type nt_item = (nt,sym list) Spec_types.nt_item
+      type nt_item = (nt,sym list) Item_types.nt_item
     end
 
     open Derived_types
