@@ -2,28 +2,40 @@
 (** Use {!Earley_spec} to produce an efficient O(n^3) parser. *)
 
 open Prelude
-(* open Earley_spec *)
 open Misc
 
-open Spec_types
 
 (** Construct the parse function. *)
-module Make(A:NT_TM) = struct
+module Make(Nt_tm:Prelude.NT_TM) = struct
 
   module Internal = struct
-    include Make_derived_types(A) 
+
+    
+    module Simple_items = Prelude.Simple_items(Nt_tm)
+    open Simple_items
+
+    module Extended_items = struct 
+      type sym_item = { i_:int; sym:sym; j_:int }
+      type sym_at_k = { sym:sym; k_:int } 
+                      
+      type item = 
+        | Nt_item of nt_item
+        | Sym_item of sym_item
+        | Sym_at_k of sym_at_k
+    end
+    open Extended_items
 
     module State_type = struct 
-
       (* todo_done is really a set; we add items to todo providing they
          are not already in todo_done *)
       type state = {
-        mutable todo:item' list;
-        todo_done:(item',unit) Hashtbl.t;
-        blocked:((int*sym'),(nt_item',unit)Hashtbl.t) Hashtbl.t;
-        (* complete:((int*sym'),(int,unit)Hashtbl.t) Hashtbl.t; *)
-        complete:((int*sym'),Int_set.t) Hashtbl.t;  
-        complete2: ((int * sym' * sym' list), Int_set.t) Hashtbl.t
+        count:int;
+        mutable todo:item list;
+        todo_done:(item,unit) Hashtbl.t;
+        blocked:((int*sym),(nt_item,unit)Hashtbl.t) Hashtbl.t;
+        (* complete:((int*sym),(int,unit)Hashtbl.t) Hashtbl.t; *)
+        complete:((int*sym),Int_set.t) Hashtbl.t;  
+        complete2: ((int * sym * sym list), Int_set.t) Hashtbl.t
       }
       (* prefer to use an Int_set for complete so that we interact
          nicely with actions; FIXME now using complete2, so complete
@@ -34,6 +46,7 @@ module Make(A:NT_TM) = struct
       let array_len = 100
 
       let empty_state = { 
+        count=0;
         todo=[]; 
         todo_done=Hashtbl.create 100;
         blocked=Hashtbl.create 100;
@@ -43,10 +56,20 @@ module Make(A:NT_TM) = struct
     end
     open State_type
 
-    module B = Earley_spec.Internal(struct include A include State_type end)        
-    let earley = B.earley
+
+    module Assembly = struct 
+      include Nt_tm
+      include Simple_items 
+      include Extended_items 
+      include State_type 
+    end
+
+    module Earley_spec' = Earley_spec.Internal(Assembly) 
+
+    let earley = Earley_spec'.earley
 
     let earley ~expand_nt ~expand_tm = 
+      let incr_count () s = (),{s with count=s.count+1 } in
       let get_blocked_items (k,_S) s = 
         Hashtbl.find_opt s.blocked (k,_S) 
         |> (function
@@ -65,7 +88,7 @@ module Make(A:NT_TM) = struct
       in
       let mark = !unstaged_mark_ref in
       (* let mark x = () in *)
-      let _add_item (itm:item') s =
+      let _add_item (itm:item) s =
         mark "xa";
         let tbl = s.todo_done in
         mark "xb";
@@ -116,7 +139,7 @@ module Make(A:NT_TM) = struct
         | [] -> None,s
         | x::todo -> Some x,{s with todo}
       in
-      let note_blocked_cuts (itm:nt_item') js s = 
+      let note_blocked_cuts (itm:nt_item) js s = 
         match itm with 
         | {nt;i_;k_;bs=_S::bs} -> (
             let set = 
@@ -143,10 +166,10 @@ module Make(A:NT_TM) = struct
       fun ~initial_nt:nt ->
         { empty_state with todo=[Nt_item{nt;i_=0;k_=0;bs=[Nt nt]}] }
         |> earley
-          ~expand_nt ~expand_tm ~get_blocked_items ~get_complete_items
+          ~expand_nt ~expand_tm ~incr_count ~get_blocked_items ~get_complete_items
           ~add_item ~add_items ~pop_todo
           ~note_blocked_cuts ~note_complete_cuts
-        |> fun (count,s) -> 
+        |> fun ((),s) -> 
         let items = lazy (
             s.todo_done 
             |> Hashtbl.to_seq_keys
@@ -159,12 +182,12 @@ module Make(A:NT_TM) = struct
           | None -> Int_set.empty
           | Some set -> set
         in
-        { count;items;complete_items }
+        { count=s.count;items;complete_items }
         (* s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq *)
 
   end (* Internal *)
 
-  open A
+  open Nt_tm
   let earley_unstaged : 
 expand_nt:(nt * int -> 'nt_item list) ->
 expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c)parse_result

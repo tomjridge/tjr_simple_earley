@@ -6,16 +6,10 @@ open Prelude
 
 (** Construct the Earley parsing function *)
 module Make(Nt_tm:NT_TM) = struct
-  open Nt_tm
-      
-  open Spec_types
-  open Item_types
-
   module Internal = struct
 
     module Derived_types = struct
-      type sym = (nt,tm) Spec_types.sym
-      type nt_item = (nt,sym list) Item_types.nt_item
+      include Simple_items(Nt_tm)
     end
 
     open Derived_types

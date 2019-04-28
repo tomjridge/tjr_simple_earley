@@ -1,6 +1,5 @@
 (** Some examples *)
 
-
 (** Internal: grammmars defined abstractly *)
 module Internal = struct
 
@@ -63,6 +62,8 @@ module Internal = struct
         ]
     in
     [_EEE;aho_s;aho_sml;brackets;_S_xSx]
+
+  let _ = example_grammars
 end
 
 
@@ -80,7 +81,7 @@ module Example_instantiation = struct
 
   type nt = string
   type tm = string
-  type sym = string
+  type sym = (nt,tm) Prelude.generic_sym
   type rule = nt * sym list
 
   let make_rule nt rhs = (nt,rhs)
@@ -131,18 +132,20 @@ module Example_instantiation = struct
 
     open Prelude
 
+(*
     (** Hack to determine nt/tm based on string repr starting with a
        capital letter *)
     let is_nt nt = nt <> "" && (String.get nt 0 |> function
       | 'A' .. 'Z' -> true
       | _ -> false)
       
-    open Spec_types
-    open Item_types
+    (* open Spec_types *)
+    (* open Item_types *)
     let string_to_sym s = match is_nt s with 
       | true -> Nt s
       | false -> Tm s
-
+*)
+        
     (** NOTE this returns a partial [grammar_etc] (input and
        input_length are dummies), and nt_items are a tuple
        [(nt,i,k,bs)] *)
@@ -154,8 +157,8 @@ module Example_instantiation = struct
             match nt'=nt with
             | false -> None
             | true -> 
-              let bs = List.map string_to_sym rhs in
-              Some {nt;i_=pos;k_=pos;bs});
+              (* let bs = List.map string_to_sym rhs in *)
+              Some (nt,pos,rhs))
       in
       let parse_tm ~tm ~input ~pos ~input_length =
         match Misc.string_matches_at ~string:input ~sub:tm ~pos with
