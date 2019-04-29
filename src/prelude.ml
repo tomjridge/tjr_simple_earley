@@ -26,14 +26,17 @@ type ('nt,'tm) generic_sym = Nt of 'nt | Tm of 'tm
 
 (** A simple representation of a grammar. We might want to generalize this. *)
 type ('nt,'tm) simple_grammar = {
-  nt_to_rhss: nt:'nt -> ('nt,'tm) generic_sym list list
+  nt_to_rhss: 'nt -> ('nt,'tm) generic_sym list list
 }
 
 type ('nt,'tm,'a) input_dependent_grammar = {
   nt_input_to_rhss: nt:'nt -> input:'a input -> pos:int -> ('nt,'tm)generic_sym list list
 }
 
-
+let simple_to_input_dependent_grammar { nt_to_rhss } = {
+  nt_input_to_rhss=fun ~nt ~input ~pos ->
+    nt_to_rhss nt |> fun syms_list -> syms_list
+}
 
 
 (** {2 Types for terminal parsers} *)

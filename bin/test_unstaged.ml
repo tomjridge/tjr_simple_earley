@@ -3,14 +3,11 @@ open Tjr_simple_earley
 open Prelude
 open Spec_common
 
-module Internal = Earley_unstaged.Make(A)
+module Internal = Earley_unstaged.Make(Nt_tm)
 open Internal
 
-open Spec_types
-
 let main () = 
-  let grammar = Examples.get_grammar_by_name !Params.grammar in
-  let initial_nt = grammar.initial_nt in
+  let grammar,initial_nt = Examples.get_grammar_by_name !Params.grammar in
   let expand_nt,expand_tm = grammar_to_expand grammar in
   earley_unstaged ~expand_nt ~expand_tm ~initial_nt
   |> fun { count; items; _ } -> 
@@ -23,7 +20,12 @@ let main () =
     | false -> 
       let filename = "/tmp/unstaged.items" in
       Lazy.force items
-      |> filter_sort_items
+      |> Misc.rev_filter_map (function 
+        |Internal.Extended_items.Nt_item itm -> Some itm 
+        | _ -> None)
+      |> List.sort (fun itm1 itm2 -> 
+        let f {nt;i_;k_;bs} = nt,i_,k_,List.length bs,bs in
+        Pervasives.compare (f itm1) (f itm2))
       |> List.map (fun itm -> itm |> itm_to_string)
       |> String.concat "\n"
       |> fun text -> ExtLib.output_file ~filename ~text;

@@ -33,16 +33,14 @@ let itm_to_string {nt;i_;k_;bs} = Printf.sprintf "%s -> %3d,%3d,%s"
     k_
     (syms_to_string bs)
 
-let grammar_to_expand (grammar:(string * (string,string)Prelude.generic_sym list) list) = 
+let grammar_to_expand { nt_to_rhss } =
 (*  let grammar = 
     (* let to_sym s = if Examples.is_nt s then Nt s else Tm s in *)
     let Examples.{ rules; _ } = grammar in
     rules |> List.map (fun (nt,rhs) -> (nt,List.map to_sym rhs))
   in*)
   let expand_nt (nt,i) =
-    grammar |> Misc.rev_filter_map (fun (nt',bs) -> match nt'=nt with
-        | true -> Some { nt; i_=i;k_=i; bs }
-        | false -> None)
+    nt_to_rhss nt |> List.map (fun bs -> { nt; i_=i;k_=i; bs })
   in
   let expand_tm (tm,i) = 
     let input = !Params.input in

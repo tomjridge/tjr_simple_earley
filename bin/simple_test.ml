@@ -21,30 +21,17 @@ let main () =
   let input = !Params.input in
   let input_length = String.length input in
   let grammar = !Params.grammar in
-  let grammar_etc = 
-    Examples.get_grammar_by_name grammar |> fun g ->
-    let tbl = Hashtbl.create 100 in
-    g.rules |> List.iter (fun (nt,rhs) -> 
-        let rhss = Hashtbl.find_opt tbl nt |> function
-          | None -> (Hashtbl.add tbl nt []; [])
-          | Some rhss -> rhss
-        in
-        Hashtbl.replace tbl nt (rhs::rhss));
-    Hashtbl.filter_map_inplace (fun _ rhss -> Some(List.rev rhss)) tbl;
-    let new_items ~nt ~input ~pos = Hashtbl.find_opt tbl nt |> function
-      | None -> []
-      | Some rhss -> rhss |> List.map (fun rhs -> {nt;i_=pos;k_=pos;bs=rhs})
-    in
-    let parse_tm ~tm ~input ~pos ~input_length = 
-        match Misc.string_matches_at ~string:input ~sub:tm ~pos with
-        | true -> [pos+(String.length tm)]
-        | false -> []
-    in
-    { new_items; parse_tm; input; input_length }
+  let g1,initial_nt = Examples.get_grammar_by_name grammar in
+  let g2 = g1 |> Prelude.simple_to_input_dependent_grammar in
+  let parse_tm ~tm ~input ~pos = 
+    match Misc.string_matches_at ~string:input.input ~sub:tm ~pos with
+    | true -> [pos+(String.length tm)]
+    | false -> []
   in
-  let initial_nt = (Examples.get_grammar_by_name grammar).initial_nt in
   run_earley_parser
-    ~grammar_etc
+    ~grammar:g2
+    ~parse_tm:{parse_tm}
+    ~input:{input;input_length}
     ~initial_nt
   |> fun state -> 
   Printf.printf "%d nt_items produced (%s)\n%!" state.count __FILE__;

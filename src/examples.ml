@@ -206,18 +206,18 @@ module Internal_example_instantiation = struct
 
     let grammar_names = ["EEE";"aho_s";"aho_sml";"brackets";"S_xSx"]
 
-    let get_grammar_by_name name : (nt,tm) Prelude.simple_grammar = 
+    let get_grammar_by_name name : (nt,tm) Prelude.simple_grammar * nt = 
       let g = example_grammars |> List.find (fun g -> g.name = name) in
       let tbl = Hashtbl.create 100 in
       List.rev g.rules |> List.iter (fun (nt,rhs) -> 
         Hashtbl.find_opt tbl nt |> function
         | None -> Hashtbl.replace tbl nt [rhs]
         | Some rhss -> Hashtbl.replace tbl nt (rhs::rhss));
-      let nt_to_rhss ~nt = Hashtbl.find_opt tbl nt |> function
+      let nt_to_rhss nt = Hashtbl.find_opt tbl nt |> function
       | None -> []
       | Some rhss -> rhss
       in
-      Prelude.({nt_to_rhss})
+      Prelude.({nt_to_rhss},g.initial_nt)
 
 
   end

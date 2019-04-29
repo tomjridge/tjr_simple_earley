@@ -1,5 +1,36 @@
 (** Some examples, with actions *)
 
+(**
+
+{%html:
+
+<pre>
+    let _EEE = 
+      grammar 
+        ~name:"EEE"
+        ~descr:"Very ambiguous grammar, for testing Earley"
+        ~initial_nt:_E
+        ~rules:[
+          _E -->_3 (nt _E,nt _E,nt _E) (fun (x,y,z) -> x+y+z);
+          _E -->_1 one (fun _ -> 1);
+          _E -->_1 eps (fun _ -> 0);
+        ]
+    in
+    let aho_s = 
+      grammar
+        ~name:"aho_s"
+        ~descr:"Aho et al. example grammar"
+        ~initial_nt:_S
+        ~rules:[
+          _S -->_3 (x,nt _S,nt _S) (fun (x,y,z) -> "x"^y^z);
+          _S -->_1 eps (fun _ -> "")
+        ]
+    in
+</pre>
+
+%}
+*)
+
 module Internal0 = struct
   module type INTERNAL_TYPED_SYMS = sig
     type 'a nt
