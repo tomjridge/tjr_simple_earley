@@ -138,15 +138,17 @@ module Internal3 = struct
   (* Implementation of INTERNAL2_REQS *)
   module Internal2_reqs : sig
     type 'a nt
-    type u_nt = string
+
+    (** For debugging, make u_nt a string *)
+    type u_nt = string 
     val nt2u : 'a nt -> u_nt
 
     type 'a tm
-    type u_tm
+    type u_tm = string
 
 
     type 'a sym
-    type u_sym = string
+    type u_sym = (u_nt,u_tm)Prelude.generic_sym
     val sym2u : 'a sym -> u_sym
     type uni_val
     val nt : 'a nt -> 'a sym
@@ -163,8 +165,8 @@ module Internal3 = struct
     type u_tm = string
 
     type 'a sym = string
-    type u_sym = string
-    let sym2u : 'a sym -> u_sym = fun x -> x
+    type u_sym = (u_nt,u_tm)Prelude.generic_sym
+    let sym2u : 'a sym -> u_sym = fun x -> Nt x
     type uni_val
 
     let u_nt2string x = x
@@ -192,7 +194,7 @@ module Internal3 = struct
   (** NOTE use Internal *)
   module F = Internal(A2)
 
-  (** Export abstract interface *)
+  (** Export abstract interface. *)
   module Export : sig
     type 'a grammar = 'a C.grammar
     val _EEE : int grammar
@@ -205,7 +207,29 @@ module Internal3 = struct
   
 end
 
-include Internal3.Internal2_reqs
+open Internal3
 
-include Internal3.Export
+(* include Internal3.Internal2_reqs *)
+
+(** NOTE following types are present in the ['a grammar] type *)
+
+(** Just a string *)
+type u_nt = Internal3.Internal2_reqs.u_nt 
+
+(** Just a string *)
+type u_tm = Internal3.Internal2_reqs.u_tm 
+
+(** A [generic_sym] over u_nt and u_tm *)
+type u_sym = Internal2_reqs.u_sym
+
+(** A list of u_sym, and an action *)
+type u_rhs = Internal3.C.u_rhs
+
+
+type 'a grammar = 'a Internal3.C.grammar
+
+
+let _EEE : int grammar = Internal3.Export._EEE
+let aho_s : string grammar = Internal3.Export.aho_s
+
 
