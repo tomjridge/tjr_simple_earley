@@ -22,7 +22,7 @@ module type REQUIRED_BY_BASE = sig
 
   val sym_case: nt:(nt -> 'a) -> tm:(tm -> 'a) -> sym -> 'a
   val _NT: nt -> sym
-
+  val _TM: tm -> sym
 
   type nt_item  
   val dot_nt: nt_item -> nt
@@ -30,7 +30,7 @@ module type REQUIRED_BY_BASE = sig
   val dot_k: nt_item -> k_t
   val dot_bs: nt_item -> sym list
   val cut: nt_item -> j_t -> nt_item
-
+  val mk_nt_item : nt -> int -> sym list -> nt_item
 
   type nt_item_set
   val empty_nt_item_set: nt_item_set
@@ -168,9 +168,16 @@ module Make(A:REQUIRED_BY_BASE) = struct
         let bind a ~f = a >>= f 
       end
       in
-      fun ~grammar_etc ->
+      fun ~grammar ~parse_tm ~input ->
         let mark = !base_mark_ref in
-        let { new_items; parse_tm; input; input_length } = grammar_etc in
+        let {parse_tm}=parse_tm in
+        let {nt_input_to_rhss}=grammar in
+        let new_items ~nt ~input ~pos = 
+          nt_input_to_rhss ~nt ~input ~pos |> fun rhss -> 
+          rhss |> List.map (fun rhs -> 
+              let rhs = rhs |> List.map (function Nt nt -> _NT nt | Tm tm -> _TM tm) in
+              mk_nt_item nt pos rhs)
+        in
         begin
 
           (* 
@@ -286,7 +293,7 @@ discussion is indexed by these labels
                       (match ktjs with
                        | None -> (
                            (* we need to process kT *)                        (*:ek:*)
-                           let js = parse_tm ~tm ~input ~pos:k ~input_length in 
+                           let js = parse_tm ~tm ~input ~pos:k in 
                            add_ktjs tm js >>= fun _ ->  
                            return js) 
                        | Some js -> return js) >>= fun js -> 
@@ -311,7 +318,7 @@ discussion is indexed by these labels
 
           let rec loop k = 
             (* Printf.printf "loop %d\n" k; *)
-            match k > input_length with  
+            match k > input.input_length with  
             | true -> return ()
             | false -> 
               (* process items *)
@@ -343,6 +350,12 @@ discussion is indexed by these labels
           loop 0
         end (* run_earley *)
 
+    let _ : 
+at_ops:atomic_operations ->
+grammar:(nt, tm, 'a) input_dependent_grammar ->
+parse_tm:(tm, 'a) terminal_input_matcher -> input:'a input -> unit m
+= run_earley
+
   end  (* Internal2 *)
 
 
@@ -362,26 +375,33 @@ discussion is indexed by these labels
        used eg by {!Earley_simple}. *)
     val run_earley_parser:
       earley_parser:earley_parser -> 
-      grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
+      grammar:(nt, tm, 'a) input_dependent_grammar ->
+      parse_tm:(tm, 'a) terminal_input_matcher -> 
+      input:'a input -> 
       initial_state:state ->
       state
   end = struct
     type earley_parser = {
-      run_parser: 'a. grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> unit m
+      run_parser: 
+        'a. grammar:(nt, tm, 'a) input_dependent_grammar ->
+        parse_tm:(tm, 'a) terminal_input_matcher -> 
+        input:'a input -> 
+        unit m
     }
 
     let make_earley_parser ~at_ops =
-      {run_parser=fun ~grammar_etc -> Internal2.run_earley ~at_ops ~grammar_etc}
+      {run_parser=(fun ~grammar ~parse_tm ~input -> 
+           Internal2.run_earley ~at_ops ~grammar ~parse_tm ~input)}
 
-    let _run_earley_parser ~earley_parser ~grammar_etc = 
-      earley_parser.run_parser ~grammar_etc
+    let _run_earley_parser ~earley_parser ~grammar ~parse_tm ~input = 
+      earley_parser.run_parser ~grammar ~parse_tm ~input
 
     (**FIXME we can hide the earley_parser type, and just return a
        function that takes grammar_etc...; finally, we can return
        interesting parts of the state separately, so that the
        functionality does not depend on any types we define above *)
-    let run_earley_parser ~earley_parser ~grammar_etc ~initial_state =
-      _run_earley_parser ~earley_parser ~grammar_etc initial_state
+    let run_earley_parser ~earley_parser ~grammar ~parse_tm ~input ~initial_state =
+      _run_earley_parser ~earley_parser ~grammar ~parse_tm ~input initial_state
       |> fun ((),s) -> s
   end
 

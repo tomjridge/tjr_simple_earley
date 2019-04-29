@@ -276,7 +276,7 @@ module Internal_example_parse_function = struct
   
   (** An (executable) parsing specification polymorphic over
       nonterminals and terminals *)
-  let earley_spec (type nt tm) ~expand_nt ~expand_tm  =
+  let earley_spec (type nt tm) ~expand_nt ~(expand_tm:tm*int -> int list)  =
     let module A = struct
       type nonrec nt = nt
       type nonrec tm = tm      
@@ -296,7 +296,7 @@ module Internal_example_parse_function = struct
     (* let sym_to_sym = function `Nt nt -> Nt nt | `Tm tm -> Tm tm in *)
     (* let sym_to_sym = function Nt nt -> `Nt nt | Tm tm -> `Tm tm in  *)
     let expand_nt (nt,i) = 
-      expand_nt (nt,i) |> List.map (fun bs ->
+      expand_nt nt |> List.map (fun bs ->
           (* bs |> List.map sym_to_sym |> fun bs -> *)
           {nt;i_=i;k_=i;bs})
     in

@@ -1,21 +1,3 @@
-(** Provided by user; NOTE that this exposes the [nt_item] type, but
-   we could instead go for a list of sym. Then we might also just
-   require a map from nt to rhs list *)
-type ('nt,'tm,'nt_item,'input) grammar_etc = {
-  new_items: nt:'nt -> input:'input -> pos:int -> 'nt_item list;
-  parse_tm: tm:'tm -> input:'input -> pos:int -> input_length:int -> int list;
-  input:'input;
-  input_length:int;
-}
-
-(** Result of parse; complete items is something like (i,sym) -> j set *)
-type ('b,'c) parse_result = {
-  count: int;
-  items:'b;
-  complete_items:'c  
-}
-
-
 
 (** {2 Some profiling parameters, set later in bin/} *)
 
@@ -27,12 +9,69 @@ let spec_mark_ref : (string -> unit) ref = ref (fun s -> ())
 
 let unstaged_mark_ref : (string -> unit) ref = ref (fun s -> ())
 
-(** We often parameterize over nt,tm *)
-module type NT_TM = sig  type nt type tm end
+
+(** {2 Type for inputs} *)
+
+type 'a input = {
+  input:'a;
+  input_length: int
+}
+
+
+(** {2 Type for grammars} *)
+
+(** In the interface to Earley, the user has to know the structure of
+   the sym type; so it is useful to have this known outside *)
+type ('nt,'tm) generic_sym = Nt of 'nt | Tm of 'tm
+
+(** A simple representation of a grammar. We might want to generalize this. *)
+type ('nt,'tm) simple_grammar = {
+  nt_to_rhss: nt:'nt -> ('nt,'tm) generic_sym list
+}
+
+type ('nt,'tm,'a) input_dependent_grammar = {
+  nt_input_to_rhss: nt:'nt -> input:'a input -> pos:int -> ('nt,'tm)generic_sym list list
+}
+
+
+
+
+(** {2 Types for terminal parsers} *)
+
+type ('tm,'a) terminal_input_matcher = {
+  parse_tm: tm:'tm -> input:'a input -> pos:int -> int list
+}
+
+(*
+(** Provided by user; NOTE that this exposes the [nt_item] type, but
+   we could instead go for a list of sym. Then we might also just
+   require a map from nt to rhs list *)
+type ('nt,'tm,'nt_item,'input) grammar_etc = {
+  new_items: nt:'nt -> input:'input -> pos:int -> 'nt_item list;
+  parse_tm: tm:'tm -> input:'input -> pos:int -> input_length:int -> int list;
+  input:'input;
+  input_length:int;
+}
+*)
+
+
+(** {2 Parsing result type} *)
+
+(** Result of parse; complete items is something like (i,sym) -> j set *)
+type ('b,'c) parse_result = {
+  count: int;
+  items:'b;
+  complete_items:'c  
+}
+
+
 
 (** {2 Common required interface} *)
 
-(** What is required by the [Make] functor *) 
+(** We often parameterize over nt,tm *)
+module type NT_TM = sig  type nt type tm end
+
+(** What is often required by the [Make] functor *) 
 module type REQUIRED = sig
 
   type nt
@@ -61,10 +100,6 @@ module type REQUIRED = sig
   (* type 'input grammar_etc' = (nt,tm,nt_item,'input) grammar_etc *)
 end  (* REQUIRED *)
 
-(** In the interface to Earley, the user has to know the structure of
-   the sym type; so it is useful to have this known outside *)
-type ('nt,'tm) generic_sym = Nt of 'nt | Tm of 'tm
-
 (** Simple instantiation of basic types *)
 module Simple_items(A:sig type nt type tm end) = struct
   open A
@@ -92,6 +127,8 @@ module Simple_items(A:sig type nt type tm end) = struct
   (* type sym_item = { i_:int; sym:sym; j_:int } *)
   (* type sym_at_k = { sym:sym; k_:int }  *)
 end
+
+
 
 (*
 (** Generic type of items (for spec?) *)
