@@ -26,7 +26,7 @@ type ('nt,'tm) generic_sym = Nt of 'nt | Tm of 'tm
 
 (** A simple representation of a grammar. We might want to generalize this. *)
 type ('nt,'tm) simple_grammar = {
-  nt_to_rhss: nt:'nt -> ('nt,'tm) generic_sym list
+  nt_to_rhss: nt:'nt -> ('nt,'tm) generic_sym list list
 }
 
 type ('nt,'tm,'a) input_dependent_grammar = {
@@ -111,6 +111,10 @@ module Simple_items(A:sig type nt type tm end) = struct
   let _NT (x:nt) = Nt x
   let _TM (x:tm) = Tm x
 
+  let sym_case ~nt ~tm = function
+    | Nt x -> nt x
+    | Tm y -> tm y
+
   type sym_list = sym list
   let syms_nil (xs:sym_list) = match xs with [] -> true | _ -> false
   let syms_hd (xs:sym_list) = List.hd xs
@@ -121,6 +125,7 @@ module Simple_items(A:sig type nt type tm end) = struct
   let dot_i x = x.i_
   let dot_k x = x.k_
   let dot_bs x = x.bs
+  let mk_nt_item nt i bs = { nt; i_=i; k_=i; bs }
 
   let cut itm j = {itm with k_=j; bs=List.tl itm.bs}
 

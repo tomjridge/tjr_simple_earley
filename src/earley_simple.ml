@@ -1,18 +1,17 @@
-(** A simple implementation of Earley parsing datastructures, based on {!Earley_base} *)
+(** A simple implementation of Earley parsing datastructures, based on
+   {!Earley_base}. A more efficient version would not use {!Prelude.Simple_items}. FIXME *)
 
 open Misc
 open Prelude
 
 
-(** Construct the Earley parsing function *)
+(** Construct the Earley parsing function.  *)
 module Make(Nt_tm:NT_TM) = struct
   module Internal = struct
 
     module Derived_types = struct
-      include Simple_items(Nt_tm)
+      include Prelude.Simple_items(Nt_tm)
     end
-
-    open Derived_types
 
     (** Used to instantiate {!module: Earley_base.Make} *)
     module Base_requires = struct
@@ -24,30 +23,11 @@ module Make(Nt_tm:NT_TM) = struct
       type tm = Nt_tm.tm
       type nt = Nt_tm.nt
 
-      type nonrec sym = sym
-      let sym_case ~nt ~tm = function
-        | Nt x -> nt x
-        | Tm y -> tm y
-
-      let _NT: nt -> sym = fun x -> Nt x
-
-      type nonrec nt_item = nt_item
-
-      (* Implement the accessor functions by using simple arithmetic *)
-      let dot_nt nitm = nitm.nt
-      let dot_i (nitm:nt_item) = nitm.i_
-      let dot_k (nitm:nt_item) = nitm.k_
-      let dot_bs nitm = nitm.bs
+      include Derived_types
 
       let dot_bs_hd nitm = nitm |> dot_bs |> function
         | [] -> None
         | x::xs -> Some x
-
-      let cut : nt_item -> j_t -> nt_item = 
-        fun bitm j0 -> 
-        assert (bitm.bs <> []);
-        { bitm with k_=j0; bs=(List.tl bitm.bs)}
-
 
       (* The rest of the code is straightforward *)
 
@@ -172,24 +152,26 @@ module Make(Nt_tm:NT_TM) = struct
       s.ktjs |> Map_tm.add tm js |> fun ktjs ->
       (),{s with ktjs}
          
-    let run_earley_parser ~grammar_etc = 
+    let run_earley_parser ~grammar ~parse_tm ~input = 
       let at_ops = { get_bitms_at_k; get_bitms_lt_k; add_bitm_at_k; pop_todo;
                      add_todos_at_k; add_todos_gt_k; add_ixk_done;
                      mem_ixk_done; find_ktjs; add_ktjs }
       in
       let earley_parser = make_earley_parser ~at_ops in
-      run_earley_parser ~earley_parser ~grammar_etc
+      run_earley_parser ~earley_parser ~grammar ~parse_tm ~input
 
     module Export : sig 
       open Nt_tm
       val run_earley_parser: 
-        grammar_etc:(nt,tm,nt_item,'a) grammar_etc -> 
+        grammar:(nt, tm, 'a) input_dependent_grammar ->
+        parse_tm:(tm, 'a) terminal_input_matcher ->
+        input:'a input -> 
         initial_nt:nt -> 
         state
     end = struct
-      let run_earley_parser ~grammar_etc ~initial_nt:nt = 
+      let run_earley_parser ~grammar ~parse_tm ~input ~initial_nt:nt = 
         let initial_state = { empty_state with todo=[{nt;i_=0;k_=0;bs=[Nt nt]}] } in
-        run_earley_parser ~grammar_etc ~initial_state 
+        run_earley_parser ~grammar ~parse_tm ~input ~initial_state 
     end
 
   end  (* Internal *)

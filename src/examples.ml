@@ -1,5 +1,72 @@
 (** Some examples *)
 
+
+(** Example grammar
+   names are: EEE, aho_s, aho_sml, brackets, S_xSx 
+
+{%html:
+
+<pre>
+    let _EEE = 
+      p#grammar 
+        ~name:"EEE"
+        ~descr:"Very ambiguous grammar, for testing Earley"
+        ~initial_nt:_E
+        ~rules:[
+          _E -->_3 (_E,_E,_E);
+          _E -->_1 one;
+          _E -->_1 eps;
+        ]
+    in
+    let aho_s = 
+      p#grammar
+        ~name:"aho_s"
+        ~descr:"Aho et al. example grammar"
+        ~initial_nt:_S
+        ~rules:[
+          _S -->_3 (x,_S,_S);
+          _S -->_1 eps
+        ]
+    in
+    let aho_sml = 
+      p#grammar
+        ~name:"aho_sml"
+        ~descr:"Aho et al. example grammar 2"
+        ~initial_nt:_S
+        ~rules:[
+          _S -->_3 (_S,_S,x);
+          _S -->_1 eps
+        ]
+    in
+    let brackets = 
+      p#grammar
+        ~name:"brackets"
+        ~descr:
+          "Well-bracketed expressions, in a particular nasty form for parsing"
+        ~initial_nt:_E
+        ~rules:[
+          _E -->_2 (_E,_E);
+          _E -->_3 (a"(",_E,a")");
+          _E -->_1 eps
+        ]
+    in
+    let _S_xSx = 
+      p#grammar 
+        ~name:"S_xSx"
+        ~descr:"Unambiguous grammar that favours right-most parsers"
+        ~initial_nt:_S
+        ~rules:[
+          _S -->_3 (x,_S,x);
+          _S -->_1 x
+        ]
+    in
+</pre>
+
+%}
+
+*)
+
+
 (** Internal: grammmars defined abstractly. NOTE the following assumes
    nt, tm and sym are all the same type. *)
 module Internal = struct
@@ -68,17 +135,19 @@ module Internal = struct
 end
 
 
-(** A named tuple for tagging grammars in a slightly more digestible
-   form than a plain tuple *)
-type ('a,'b) grammar = {
-  name:string;
-  descr:string;
-  initial_nt:'a;
-  rules:'b
-}
 
 (** Example instantiation with strings for symbols *)
-module Example_instantiation = struct
+module Internal_example_instantiation = struct
+
+  (** A named tuple for tagging grammars in a slightly more digestible
+      form than a plain tuple *)
+  type ('a,'b) grammar = {
+    name:string;
+    descr:string;
+    initial_nt:'a;
+    rules:'b
+  }
+
 
   open Prelude
 
@@ -137,104 +206,22 @@ module Example_instantiation = struct
 
     let grammar_names = ["EEE";"aho_s";"aho_sml";"brackets";"S_xSx"]
 
-    let get_grammar_by_name name = 
-      example_grammars |> List.find (fun g -> g.name = name)
-
-
-(*
-    (** We also want to get grammars with type [grammar_etc] *)
-
-    open Prelude
-        
-    (** NOTE this returns a partial [grammar_etc] (input and
-       input_length are dummies), and nt_items are a tuple
-       [(nt,i,k,bs)] *)
-    let _get_grammar_etc_by_name name = 
-      get_grammar_by_name name 
-      |> fun { rules; _ } ->
-      let new_items ~nt ~input ~pos = 
-        rules |> Misc.rev_filter_map (function (nt',rhs) ->
-            match nt'=nt with
-            | false -> None
-            | true -> 
-              (* let bs = List.map string_to_sym rhs in *)
-              Some (nt,pos,rhs))
+    let get_grammar_by_name name : (nt,tm) Prelude.simple_grammar = 
+      let g = example_grammars |> List.find (fun g -> g.name = name) in
+      let tbl = Hashtbl.create 100 in
+      List.rev g.rules |> List.iter (fun (nt,rhs) -> 
+        Hashtbl.find_opt tbl nt |> function
+        | None -> Hashtbl.replace tbl nt [rhs]
+        | Some rhss -> Hashtbl.replace tbl nt (rhs::rhss));
+      let nt_to_rhss ~nt = Hashtbl.find_opt tbl nt |> function
+      | None -> []
+      | Some rhss -> rhss
       in
-      let parse_tm ~tm ~input ~pos ~input_length =
-        match Misc.string_matches_at ~string:input ~sub:tm ~pos with
-        | true -> [pos+(String.length tm)]
-        | false -> []
-      in
-      { new_items; parse_tm; input=""; input_length=(-1) }
-
-    let get_grammar_etc_by_name ~name ~input ~input_length = 
-      _get_grammar_etc_by_name name |> fun g ->
-      { g with input; input_length }
-    (** Returns a non-partial [grammar_etc] *)
-*)    
+      Prelude.({nt_to_rhss})
 
 
   end
   
 end
 
-(** Package example grammars as a function from grammar name. Example
-   names are: EEE, aho_s, aho_sml, brackets, S_xSx 
-
-{%html:
-
-<pre>
-    let _EEE = 
-      p#grammar 
-        ~name:"EEE"
-        ~descr:"Very ambiguous grammar, for testing Earley"
-        ~rules:[
-          _E -->_3 (_E,_E,_E);
-          _E -->_1 one;
-          _E -->_1 eps;
-        ]
-    in
-    let aho_s = 
-      p#grammar
-        ~name:"aho_s"
-        ~descr:"Aho et al. example grammar"
-        ~rules:[
-          _S -->_3 (x,_S,_S);
-          _S -->_1 eps
-        ]
-    in
-    let aho_sml = 
-      p#grammar
-        ~name:"aho_sml"
-        ~descr:"Aho et al. example grammar 2"
-        ~rules:[
-          _S -->_3 (_S,_S,x);
-          _S -->_1 eps
-        ]
-    in
-    let brackets = 
-      p#grammar
-        ~name:"brackets"
-        ~descr:
-          "Well-bracketed expressions, in a particular nasty form for parsing"
-        ~rules:[
-          _E -->_2 (_E,_E);
-          _E -->_3 (a"(",_E,a")");
-          _E -->_1 eps
-        ]
-    in
-    let _S_xSx = 
-      p#grammar 
-        ~name:"S_xSx"
-        ~descr:"Unambiguous grammar that favours right-most parsers"
-        ~rules:[
-          _S -->_3 (one,_S,one);
-          _S -->_1 one
-        ]
-</pre>
-
-%}
-
-*)
-
-include Example_instantiation.Export
+include Internal_example_instantiation.Export
