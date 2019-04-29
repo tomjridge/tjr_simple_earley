@@ -50,6 +50,10 @@ tmp:
 	OCAMLRUNPARAM="O=1000000,a=1,s=1000000,i=100,o=99" time $$run_main unstaged EEE :1x400
 # NOTE OCAMLRUNPARAM variations don't seem to make much of a difference
 
+docs/all.ml: FORCE
+	tjr.py ocamlpack `ocamldep -sort src/*.ml` > docs/all.ml
+	@echo now export the ml as html
+
 run_regression:
 	$(MAKE)
 	./run_regression.sh

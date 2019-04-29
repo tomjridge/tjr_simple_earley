@@ -17,6 +17,7 @@ for g in EEE; do
     done
 done
 
+time $run_main actions :1x400
 
 for g in aho_s aho_sml; do
     for len in 500; do
@@ -32,4 +33,3 @@ for g in aho_s aho_sml; do
 done
 
 
-time $run_main actions :1x400
