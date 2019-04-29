@@ -257,13 +257,13 @@ module Internal_with_inefficient_spec_state(Req:REQUIRED) = struct
         |> List.of_seq
       end
       in
-      { count=s.count;items;complete_items }
+      { count=s.count;items;complete_items; debug=() }
 
   (* This exposes the nt_item type to the user; might prefer to use rhs list *)
   let earley_spec : 
     expand_nt:(nt * int -> Req.nt_item list) ->
     expand_tm:(tm * int -> int list) -> 
-    initial_nt:nt -> ('b,'c) parse_result
+    initial_nt:nt -> ('b,'c,'d) parse_result
     = earley_spec
 
 end

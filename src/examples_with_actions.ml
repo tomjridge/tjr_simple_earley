@@ -195,17 +195,17 @@ module Internal3 = struct
     type 'a tm = string
     type u_tm = string
 
-    type 'a sym = string
     type u_sym = (u_nt,u_tm)Prelude.generic_sym
-    let sym2u : 'a sym -> u_sym = fun x -> Nt x
+    type 'a sym = u_sym
+    let sym2u : 'a sym -> u_sym = fun x -> x
     type uni_val
 
     let u_nt2string x = x
     let u_sym2string x = x
 
     (* from A ; FIXME *)
-    let nt : 'a nt -> 'a sym = fun x -> x
-    let tm : 'a tm -> 'a sym = fun x -> x
+    let nt : 'a nt -> 'a sym = fun x -> Nt x
+    let tm : 'a tm -> 'a sym = fun x -> Tm x
 
     let _E : int nt ="E"
     let _S : string nt = "S"
@@ -247,11 +247,17 @@ open Internal3
 (** Just a string *)
 type u_nt = Internal3.Internal2_reqs.u_nt 
 
+type 'a nt = 'a Internal3.Internal2_reqs.nt
+let nt2u: 'a nt -> u_nt = Internal3.Internal2_reqs.nt2u
+
 (** Just a string *)
 type u_tm = Internal3.Internal2_reqs.u_tm 
 
 (** A [generic_sym] over u_nt and u_tm *)
 type u_sym = Internal2_reqs.u_sym
+
+(** Used for actions *)
+type uni_val = Internal2_reqs.uni_val
 
 (** A list of u_sym, and an action *)
 type u_rhs = Internal3.C.u_rhs

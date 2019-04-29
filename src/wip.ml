@@ -1,3 +1,4 @@
+(*
 (** A simple specification of general parsing (not only Earley). For
    the implementation, see {!Earley_unstaged}. *)
 
@@ -304,3 +305,4 @@ module Internal_example_parse_function = struct
       let res = B.earley_spec ~expand_nt ~expand_tm ~initial_nt in
       {res with items=()}  (* can't expose general items *)
 end
+*)

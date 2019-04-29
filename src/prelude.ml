@@ -61,10 +61,11 @@ type ('nt,'tm,'nt_item,'input) grammar_etc = {
 (** {2 Parsing result type} *)
 
 (** Result of parse; complete items is something like (i,sym) -> j set *)
-type ('b,'c) parse_result = {
+type ('b,'c,'d) parse_result = {
   count: int;
   items:'b;
-  complete_items:'c  
+  complete_items:'c;
+  debug: 'd;
 }
 
 

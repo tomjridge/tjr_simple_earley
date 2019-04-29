@@ -29,7 +29,11 @@ run_tests:
 	@echo
 	time $$run_main unstaged EEE :1x100
 	@echo
+	time $$run_main unstaged EEE :1x200
+	@echo
 	time $$run_main simple EEE :1x100
+	@echo
+	time $$run_main simple EEE :1x200
 
 run_longer_tests:
 	$(MAKE)

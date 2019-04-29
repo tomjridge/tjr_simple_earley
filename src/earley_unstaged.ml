@@ -42,9 +42,6 @@ module Make(Nt_tm:Prelude.NT_TM) = struct
          can revert to using hashtbl *)
 
 
-      (* length of array for todo_done *)
-      let array_len = 100
-
       let empty_state = { 
         count=0;
         todo=[]; 
@@ -182,7 +179,7 @@ module Make(Nt_tm:Prelude.NT_TM) = struct
           | None -> Int_set.empty
           | Some set -> set
         in
-        { count=s.count;items;complete_items }
+        { count=s.count;items;complete_items;debug=s.complete2 }
         (* s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq *)
 
   end (* Internal *)
@@ -190,7 +187,7 @@ module Make(Nt_tm:Prelude.NT_TM) = struct
   open Nt_tm
   let earley_unstaged : 
 expand_nt:(nt * int -> 'nt_item list) ->
-expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c)parse_result
+expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c,'d)parse_result
     = Internal.earley
 
 end
