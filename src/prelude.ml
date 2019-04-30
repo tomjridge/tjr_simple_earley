@@ -158,3 +158,35 @@ type ('a,'b,'c) generic_item =
         Pervasives.compare (f itm1) (f itm2))
 *)
 
+
+
+(** {2 Module types} *)
+
+(** A selection of different (but related) module types. *)
+
+(** All defined types are known *)
+module type Mt_full = sig
+[%%include "i_nt_tm.inc"]
+[%%include "i_sym.inc"]
+[%%include "i_sym_vals.inc"]
+[%%include "i_nt_item.inc"]
+[%%include "i_nt_item_vals.inc"]
+[%%include "i_extra_items.inc"]
+end
+
+(** Abstract sym, sym_list and nt_item *)
+module type Mt_abstract = sig
+[%%include "i_nt_tm.inc"]
+(* [%%include "i_sym.inc"] *)
+type sym
+type sym_list
+[%%include "i_sym_vals.inc"]
+(* [%%include "i_nt_item.inc"] *)
+type nt_item
+[%%include "i_nt_item_vals.inc"]
+[%%include "i_extra_items.inc"]
+end
+
+
+
+

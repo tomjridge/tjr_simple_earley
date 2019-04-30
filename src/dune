@@ -1,14 +1,18 @@
 (library
   (public_name tjr_simple_earley)
-  (flags (:standard -w -27-8-40-32-39))
-;  (wrapped false)
-  (preprocess (pps ppx_jane))
-;   (modules Misc Prelude Earley_spec Earley_unstaged Earley_base Earley_simple Examples); Earley_base Earley_unstaged ; Impl
-  (libraries ppx_jane)
-)
 
-; (executable
-;   (name example)
-;   (flags (:standard -w -27-8-40-32-39))
-;   (modules Example)
-;   (libraries xxx))
+  (flags (:standard -w -27-8-40-32-39))
+
+  (preprocessor_deps (glob_files *.inc))
+
+
+;;   (preprocess 
+;;     (per_module
+;;       ((pps ppx_jane) Earley_base)
+;;       ((pps ppx_include) Tmp) ))  ;; per_module doesn't work with merlin?
+
+  (preprocess 
+    (pps ppx_jane ppx_include))
+
+  (libraries ppx_jane ppx_include)
+)
