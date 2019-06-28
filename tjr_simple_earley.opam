@@ -18,6 +18,7 @@ depends: [
   "ppx_jane"
   "core"  # for profiling, in bin/
   "tjr_profile"  # for profiling, in bin/
+  "ppx_include"
 #  "tjr_lib"
 #  "tjr_profile"
 #  "tjr_monad"
