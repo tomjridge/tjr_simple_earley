@@ -1,3 +1,5 @@
+(** Config: profiling and logging; controlled by ppx_optcomp *)
+
 [%%import "earley_optcomp_config.ml"]
 
 [%%if PROFILING_ENABLED]

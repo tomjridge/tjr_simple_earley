@@ -46,3 +46,20 @@ let _ : ('a -> 'b option) -> 'a list -> 'b option = iter_till_some
 
 module Int_set = Set.Make(
   struct type t = int let compare: t -> t -> int = Pervasives.compare end)
+
+
+(** {2 Logging} 
+
+NOTE logging is enabled/disabled by a ppx_optcomp flag.
+*)
+
+[%%import "earley_optcomp_config.ml"]
+
+[%%if LOGGING_ENABLED]
+let log = fun (x:unit Lazy.t) -> Lazy.force x [@@inline]
+[%%else]
+let log = fun (x:unit Lazy.t) -> () [@@inline]
+[%%endif]
+
+
+

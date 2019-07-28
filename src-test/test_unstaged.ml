@@ -1,5 +1,5 @@
 (** This is almost a direct copy of test_spec *)
-open Prelude
+open Misc
 open Spec_common
 
 module Internal = Earley_unstaged.Make(Nt_tm)
