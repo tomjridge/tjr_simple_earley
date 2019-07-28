@@ -15,8 +15,8 @@ let _ =
     match Array.to_list Sys.argv |> List.tl with
     | ["simple";grammar;input] -> 
       let input = make_input input in
-      Params.input := input;
-      Params.grammar:=grammar;
+      Test_params.input := input;
+      Test_params.grammar:=grammar;
       Printf.printf "parser=simple; grammar=%s; input_length=%d (%s)\n%!" 
         grammar 
         (String.length input)
@@ -24,8 +24,8 @@ let _ =
       Simple_test.main()
     | ["spec";grammar;input] -> 
       let input = make_input input in
-      Params.input := input;
-      Params.grammar:=grammar;
+      Test_params.input := input;
+      Test_params.grammar:=grammar;
       Printf.printf "parser=spec; grammar=%s; input_length=%d (%s)\n%!" 
         grammar 
         (String.length input)
@@ -33,8 +33,8 @@ let _ =
       Test_spec.main()
     | ["unstaged";grammar;input] -> 
       let input = make_input input in
-      Params.input := input;
-      Params.grammar:=grammar;
+      Test_params.input := input;
+      Test_params.grammar:=grammar;
       Printf.printf "parser=unstaged; grammar=%s; input_length=%d (%s)\n%!" 
         grammar 
         (String.length input)
@@ -42,8 +42,8 @@ let _ =
       Test_unstaged.main ()
     | ["actions";(*grammar;*)input] ->
       let input = make_input input in
-      Params.input := input;
-      (* Params.grammar := grammar; *)
+      Test_params.input := input;
+      (* Test_params.grammar := grammar; *)
       Printf.printf "actions; grammar=EEE; input_length=%d (%s)\n%!" 
         (String.length input)
         __FILE__;

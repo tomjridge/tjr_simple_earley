@@ -1,8 +1,9 @@
 (** A simple implementation of Earley parsing datastructures, based on
    {!Earley_base}. A more efficient version would not use {!Prelude.Simple_items}. FIXME *)
 
+open Earley_intf
 open Misc
-open Prelude
+(* open Prelude *)
 
 
 (** Construct the Earley parsing function.  *)
@@ -10,7 +11,7 @@ module Make(Nt_tm:NT_TM) = struct
   module Internal = struct
 
     module Derived_types = struct
-      include Prelude.Simple_items(Nt_tm)
+      include Earley_intf.Simple_items(Nt_tm)
     end
 
     (** Used to instantiate {!module: Earley_base.Make} *)

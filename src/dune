@@ -1,18 +1,14 @@
 (library
   (public_name tjr_simple_earley)
-
   (flags (:standard -w -27-8-40-32-39))
+  (preprocess  (pps ppx_optcomp ppx_let))
+  (preprocessor_deps (file earley_optcomp_config.ml))
+  (libraries ppx_optcomp ppx_let)
+)
 
-  (preprocessor_deps (glob_files *.inc))
 
-
+;;  (preprocessor_deps (glob_files *.inc))
 ;;   (preprocess 
 ;;     (per_module
 ;;       ((pps ppx_jane) Earley_base)
 ;;       ((pps ppx_include) Tmp) ))  ;; per_module doesn't work with merlin?
-
-  (preprocess 
-    (pps ppx_jane ppx_include))
-
-  (libraries ppx_jane ppx_include)
-)

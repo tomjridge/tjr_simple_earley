@@ -1,0 +1,5 @@
+(library 
+         (name test)
+         (flags (:standard -open Tjr_simple_earley -open Earley_intf -open Examples))
+         (libraries tjr_simple_earley examples extlib)
+)

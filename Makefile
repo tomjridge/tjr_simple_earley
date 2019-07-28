@@ -59,11 +59,11 @@ run_regression:
 	./run_regression.sh
 
 
-disable_log:
-	echo "let log (x:unit Lazy.t) = ()" >src/log.ml
-
-enable_log:
-	echo "let log (x:unit Lazy.t) = Lazy.force x" >src/log.ml
+# disable_log:
+# 	echo "let log (x:unit Lazy.t) = ()" >src/log.ml
+# 
+# enable_log:
+# 	echo "let log (x:unit Lazy.t) = Lazy.force x" >src/log.ml
 
 clean:
 	dune clean 

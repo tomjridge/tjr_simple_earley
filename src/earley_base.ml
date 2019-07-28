@@ -6,7 +6,7 @@
    k+1. This version of the code tries to assume as little as possible
    about the representation of the underlying structures.  *)
 
-open Prelude
+open Earley_intf
 
 
 (** What is required by the [Make] functor *) 
@@ -169,7 +169,7 @@ module Make(A:REQUIRED_BY_BASE) = struct
       end
       in
       fun ~grammar ~parse_tm ~input ->
-        let mark = !base_mark_ref in
+        let mark = fun (_s:string) -> () in (* FIXME *)
         let {parse_tm}=parse_tm in
         let {nt_input_to_rhss}=grammar in
         let new_items ~nt ~input ~pos = 

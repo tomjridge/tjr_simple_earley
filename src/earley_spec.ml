@@ -1,10 +1,12 @@
 (** A simple specification of general parsing (not only Earley). For
    the implementation, see {!Earley_unstaged}. *)
 
-open Prelude
+open Earley_intf
+
+let mark = (fun (_s:string) -> ()) (* FIXME *)
 
 module type REQUIRED = sig
-  include Prelude.REQUIRED
+  include Earley_intf.REQUIRED
   type sym_item = { i_:int; sym:sym; j_:int }
   type sym_at_k = { sym:sym; k_:int } 
 
@@ -52,8 +54,6 @@ module Internal(S:sig include REQUIRED type state end) = struct
       ~(note_blocked_cuts: nt_item -> int list -> unit m)
       ~(note_complete_cuts: nt_item list -> int -> unit m)
     = 
-
-    let mark = !spec_mark_ref in
 
     (* process a blocked item *)
     let cut_blocked_item = fun itm -> 
@@ -280,7 +280,7 @@ module Internal_example_parse_function = struct
     let module A = struct
       type nonrec nt = nt
       type nonrec tm = tm      
-      include Prelude.Simple_items(struct 
+      include Earley_intf.Simple_items(struct 
           type nonrec nt = nt
           type nonrec tm = tm
         end)

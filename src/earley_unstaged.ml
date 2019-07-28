@@ -1,17 +1,17 @@
 
 (** Use {!Earley_spec} to produce an efficient O(n^3) parser. *)
 
-open Prelude
+(* open Prelude *)
 open Misc
 
 
 (** Construct the parse function. *)
-module Make(Nt_tm:Prelude.NT_TM) = struct
+module Make(Nt_tm:Earley_intf.NT_TM) = struct
 
   module Internal = struct
 
     
-    module Simple_items = Prelude.Simple_items(Nt_tm)
+    module Simple_items = Earley_intf.Simple_items(Nt_tm)
     open Simple_items
 
     module Extended_items = struct 
@@ -83,7 +83,7 @@ module Make(Nt_tm:Prelude.NT_TM) = struct
               Int_set.elements set)
         |> fun x -> x,s
       in
-      let mark = !unstaged_mark_ref in
+      let mark = fun _s -> () in (* FIXME *)
       (* let mark x = () in *)
       let _add_item (itm:item) s =
         mark "xa";
@@ -179,7 +179,7 @@ module Make(Nt_tm:Prelude.NT_TM) = struct
           | None -> Int_set.empty
           | Some set -> set
         in
-        { count=s.count;items;complete_items;debug=s.complete2 }
+        Earley_intf.{ count=s.count;items;complete_items;debug=s.complete2 }
         (* s.todo_done |> Hashtbl.to_seq_keys |> List.of_seq *)
 
   end (* Internal *)
@@ -187,7 +187,7 @@ module Make(Nt_tm:Prelude.NT_TM) = struct
   open Nt_tm
   let earley_unstaged : 
 expand_nt:(nt * int -> 'nt_item list) ->
-expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c,'d)parse_result
+expand_tm:(tm * int -> int list) -> initial_nt:nt -> ('b,'c,'d)Earley_intf.parse_result
     = Internal.earley
 
 end
