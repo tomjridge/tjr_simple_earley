@@ -1,5 +1,6 @@
-(** Apply actions to the result of an Earley parse *)
+(** Apply actions to the result of an Earley parse. *)
 
+(* FIXME the following rather inefficient *)
 
 module Internal(T:sig
     type nt
@@ -10,7 +11,21 @@ end) = struct
   
   open T
 
-  (** Apply actions for a given symbol, between two indices. *)
+  (** Apply actions for a given symbol, between two indices.
+
+NOTES
+
+- argument apply_tm takes a tm and a span (i,j) and returns at most
+  one result
+- for/tm: see comment in code
+- for_nt/false case: uses backtracking to iterate over the
+  possibilities
+- for_nt/false case: we iterate over the cut options till we find a
+  possible rhs, and then we apply the action
+- for_syms cases: we treat [] and [sym] specially
+
+      
+  *)
   let apply_actions 
       (* (type nt tm sym uni_val) *)
       ~is_nt ~dest_nt ~dest_tm ~get_rhss
@@ -89,16 +104,18 @@ nt:nt -> i:int -> j:int -> (int * nt * int) list -> uni_val option
   (** 
 
 So we need:
-  - the grammar and actions, in the form of get_rhss
-  - the parse results, in the form of cut and apply_tm
-    - apply_tm can just return a string, and we can then retrict
+{ul
+  {- the grammar and actions, in the form of get_rhss}
+  {- the parse results, in the form of cut and apply_tm
+    {ul{- apply_tm can just return a string, and we can then retrict
       actions to nts only (although this seems like a proper
-      restriction for not much extra work)
-  - the initial nonterminal S
-  - the span i,j  (where S should match i,j exactly, and i is
-    presumably 0) 
-    - for this we need to be able to call something like max_extent
-      (0,S) to get j
+      restriction for not much extra work)}}}
+  {- the initial nonterminal S}
+  {- the span i,j  (where S should match i,j exactly, and i is
+    presumably 0)
+    {ul {- for this we need to be able to call something like max_extent
+      (0,S) to get j}}}
+}
 
 *)
   

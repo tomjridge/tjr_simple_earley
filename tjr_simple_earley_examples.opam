@@ -1,7 +1,7 @@
 opam-version : "2.0"
-name         : "tjr_simple_earley"
+name         : "tjr_simple_earley_examples"
 version      : "0.0.1"
-synopsis     : "Simple Earley-style parser"
+synopsis     : "Simple Earley-style parser (examples)"
 
 maintainer   : "Tom Ridge <tom.j.ridge@googlemail.com>"
 authors      : "Tom Ridge <tom.j.ridge@googlemail.com>"
@@ -12,15 +12,7 @@ dev-repo     : "git+https://github.com/tomjridge/tjr_simple_earley.git"
 # ----------------------------------------------------------------------
 
 depends: [
-  "ocamlfind"
-  "dune"
-  "ppx_jane"
-  "core"  # for profiling, in bin/
-  "tjr_profile"  # for profiling, in bin/
-  "ppx_include"
-#  "tjr_lib"
-#  "tjr_profile"
-#  "tjr_monad"
+  "tjr_simple_earley"
 ]
 
 # ----------------------------------------------------------------------

@@ -1,5 +1,5 @@
 (library 
-         (name examples)
+         (public_name tjr_simple_earley_examples)
          (flags (:standard -w -8-32 -open Tjr_simple_earley))
          (libraries tjr_simple_earley)
 )
