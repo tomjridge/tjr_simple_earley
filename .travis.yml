@@ -3,6 +3,4 @@ services:
   - docker
 
 script:
-  - git clone https://github.com/tomjridge/impfs_base_docker_image.git
-  - make -C impfs_base_docker_image
-  - make -C .dockerfile
+  - docker build .

@@ -1,5 +1,7 @@
 (executables
-  (public_names earley_main)
-  (package tjr_simple_earley)
+  (names earley_main)
+;  (package tjr_simple_earley_examples)
   (flags (:standard -w -27-8-40-32-33-39 -open Tjr_simple_earley -open Tjr_simple_earley_examples -open Test))
-  (libraries tjr_simple_earley tjr_simple_earley_examples tjr_profile core extlib test)) ; core for timing
+  (libraries tjr_simple_earley tjr_simple_earley_examples tjr_profile core extlib test) ; core for timing
+
+)
