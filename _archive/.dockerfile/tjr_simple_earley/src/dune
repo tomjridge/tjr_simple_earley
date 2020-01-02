@@ -1,0 +1,14 @@
+(library
+  (public_name tjr_simple_earley)
+  (flags (:standard -w -27-8-40-32-39))
+;  (wrapped false)
+  (preprocess (pps ppx_jane))
+  ;  (modules Earley_base ) ; Impl
+  (libraries ppx_jane)
+)
+
+; (executable
+;   (name example)
+;   (flags (:standard -w -27-8-40-32-39))
+;   (modules Example)
+;   (libraries xxx))
