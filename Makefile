@@ -19,6 +19,13 @@ docs: FORCE
 promote_docs: FORCE
 	PROMOTE_DOCS=true $(MAKE) docs
 
+run_all: 
+	$(MAKE) run_tests
+	$(MAKE) run_longer_tests
+	$(MAKE) run_examples
+	$(MAKE) run_actions
+	$(MAKE) run_regression
+
 
 run_examples:
 	$(MAKE) run_tests
