@@ -45,7 +45,7 @@ let _ : ('a -> 'b option) -> 'a list -> 'b option = iter_till_some
 
 
 module Int_set = Set.Make(
-  struct type t = int let compare: t -> t -> int = Pervasives.compare end)
+  struct type t = int let compare: t -> t -> int = Int.compare end)
 
 
 (** {2 Logging} 

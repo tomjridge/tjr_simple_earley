@@ -25,7 +25,7 @@ let main () =
         | _ -> None)
       |> List.sort (fun itm1 itm2 -> 
         let f {nt;i_;k_;bs} = nt,i_,k_,List.length bs,bs in
-        Pervasives.compare (f itm1) (f itm2))
+        Stdlib.compare (f itm1) (f itm2))
       |> List.map (fun itm -> itm |> itm_to_string)
       |> String.concat "\n"
       |> fun text -> ExtLib.output_file ~filename ~text;

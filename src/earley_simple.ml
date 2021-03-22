@@ -34,22 +34,22 @@ module Make(Nt_tm:NT_TM) = struct
 
       module Set_nt_item = Set.Make(struct 
           type t = nt_item 
-          let compare : t -> t -> int = Pervasives.compare end)
+          let compare : t -> t -> int = Stdlib.compare end)
 
       type ixk = i_t*nt
       module Set_ixk = Set.Make(
-        struct type t = ixk let compare : t -> t -> int = Pervasives.compare end)
+        struct type t = ixk let compare : t -> t -> int = Stdlib.compare end)
 
       module Map_nt = Map.Make(
-        struct type t = nt let compare : t -> t -> int = Pervasives.compare end)
+        struct type t = nt let compare : t -> t -> int = Stdlib.compare end)
       type 'a map_nt = 'a Map_nt.t
 
       module Map_int = Map.Make(
-        struct type t = int let compare : t -> t -> int = Pervasives.compare end)
+        struct type t = int let compare : t -> t -> int = Stdlib.compare end)
       type 'a map_int = 'a Map_int.t
 
       module Map_tm = Map.Make(
-        struct type t = tm let compare : t -> t -> int = Pervasives.compare end)
+        struct type t = tm let compare : t -> t -> int = Stdlib.compare end)
 
       type nt_item_set = Set_nt_item.t
       let elements = Set_nt_item.elements
