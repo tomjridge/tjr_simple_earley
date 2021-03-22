@@ -41,3 +41,59 @@ A generic specification of parsing can be found in file `src/earley_spec.ml`. Se
 ## Animated GIF
 
 See [here](https://drive.google.com/file/d/1yttQ85buceu1ZCGi4Vzy5OBydwifoxUb/view?usp=sharing)
+
+Sample output:
+
+~~~
+time $run_main spec EEE :1x100
+begin -------------------------------------------------
+parser=spec; grammar=EEE; input_length=100 (bin/earley_main.ml)
+15759 nt_items produced (src-test/test_spec.ml)
+end ---------------------------------------------------
+
+real	0m4.800s
+user	0m4.301s
+sys	0m0.394s
+
+time $run_main unstaged EEE :1x100
+begin -------------------------------------------------
+parser=unstaged; grammar=EEE; input_length=100 (bin/earley_main.ml)
+15757 nt_items produced (src-test/test_unstaged.ml)
+end ---------------------------------------------------
+
+real	0m0.234s
+user	0m0.205s
+sys	0m0.015s
+
+time $run_main unstaged EEE :1x200
+begin -------------------------------------------------
+parser=unstaged; grammar=EEE; input_length=200 (bin/earley_main.ml)
+61507 nt_items produced (src-test/test_unstaged.ml)
+end ---------------------------------------------------
+
+real	0m1.171s
+user	0m1.125s
+sys	0m0.040s
+
+time $run_main simple EEE :1x100
+begin -------------------------------------------------
+parser=simple; grammar=EEE; input_length=100 (bin/earley_main.ml)
+15757 nt_items produced (src-test/simple_test.ml)
+end ---------------------------------------------------
+
+real	0m0.193s
+user	0m0.154s
+sys	0m0.025s
+
+time $run_main simple EEE :1x200
+begin -------------------------------------------------
+parser=simple; grammar=EEE; input_length=200 (bin/earley_main.ml)
+61507 nt_items produced (src-test/simple_test.ml)
+end ---------------------------------------------------
+
+real	0m0.692s
+user	0m0.661s
+sys	0m0.019s
+~~~
+
+Also [here](https://gist.github.com/tomjridge/27b3c804397b758b8102d6c51e749400)
