@@ -1,5 +1,4 @@
-
-FROM ocaml/opam2:4.07
+FROM ocaml/opam2:4.11
 
 # some of the following apt packages are likely already installed
 RUN sudo apt-get install -y git make

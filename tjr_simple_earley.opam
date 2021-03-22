@@ -6,7 +6,7 @@ authors: ["Tom Ridge <tom.j.ridge@googlemail.com>"]
 homepage: "https://github.com/tomjridge/tjr_simple_earley"
 doc: "https://tomjridge.github.io/tjr_simple_earley/ocamldoc/index.html"
 bug-reports: "https://github.com/tomjridge/tjr_simple_earley/issues"
-depends: ["ocamlfind" "dune" "ppx_jane" "core" "tjr_profile" "ppx_include"]
+depends: ["ocamlfind" "dune" "ppx_jane" "core" "tjr_profile"]
 build: [
   ["dune" "subst"] {pinned}
   [
