@@ -5,22 +5,14 @@
 (** {2 Sets, maps implementation} *)
 
 type 'e set = {
-  add: 'e -> unit;
-  mem: 'e -> bool;
-  add_list: 'e list -> unit;
-  to_list : unit -> 'e list;
-}
-
-type 'e set_factory = {
-  make_set: unit -> 'e set;
+  add      : 'e -> unit;
+  mem      : 'e -> bool;
+  add_list : 'e list -> unit;
+  to_list  : unit -> 'e list;
 }
 
 type ('k,'v) map_to_set = {
   find: 'k -> 'v set; (* defaults to empty *)
-}
-
-type ('k,'v) map_factory = {
-  make_map: unit -> ('k,'v) map_to_set
 }
 
 
@@ -34,21 +26,35 @@ let make_set () =
   let to_list () = tbl |> Hashtbl.to_seq_keys |> List.of_seq in
   {add;mem;add_list;to_list}
 
-let set_factory = {make_set}
-
+(* map where the values are sets *)
 let make_map () = 
   let tbl = Hashtbl.create 10 in
   let find k = 
     Hashtbl.find_opt tbl k |> function
     | Some set -> set
     | None -> 
-      let set = set_factory.make_set () in
+      let set = make_set () in
       Hashtbl.add tbl k set;
       set
   in
   {find}
 
-let map_factory = {make_map}  
+
+(*
+type 'e set_factory = {
+  make_set: unit -> 'e set;
+}
+*)
+
+(*
+type ('k,'v) map_factory = {
+  make_map: unit -> ('k,'v) map_to_set
+}
+*)
+
+(* let set_factory = {make_set} *)
+
+(* let map_factory = {make_map}   *)
 
 
 (** {2 Earley} *)
@@ -79,15 +85,15 @@ module Make_compound_types(S:S) = struct
 
   (* runtime *)
   type runtime_ops = {
-    get_blocked_items: int -> sym -> nt_item list;
-    get_complete_items: int -> sym -> int list;
-    add_item: item -> unit;
-    add_items: item list -> unit;
-    pop_todo: unit -> item option;
-    note_blocked_cuts: nt_item -> int list -> unit; 
-    note_complete_cuts: nt_item list -> int -> unit;
-    note_matched_tm: int -> tm -> int list -> unit;
-    incr_count: unit -> unit;
+    get_blocked_items  : int -> sym -> nt_item list;
+    get_complete_items : int -> sym -> int list;
+    add_item           : item -> unit;
+    add_items          : item list -> unit;
+    pop_todo           : unit -> item option;
+    note_blocked_cuts  : nt_item -> int list -> unit; 
+    note_complete_cuts : nt_item list -> int -> unit;
+    note_matched_tm    : int -> tm -> int list -> unit;
+    incr_count         : unit -> unit;
   }
 
   (* grammar, typically provided at runtime *)
