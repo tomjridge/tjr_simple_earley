@@ -2,8 +2,6 @@
    coding style, with mutable datastructures. Self-contained single
    file implementation. Unstaged, efficient O(n^3). *)
 
-type ('a,'b) staged = {apply:'a->'b}
-
 (** {2 Sets, maps implementation} *)
 
 type 'e set = {
