@@ -42,23 +42,6 @@ let make_map () =
   {find}
 
 
-(*
-type 'e set_factory = {
-  make_set: unit -> 'e set;
-}
-*)
-
-(*
-type ('k,'v) map_factory = {
-  make_map: unit -> ('k,'v) map_to_set
-}
-*)
-
-(* let set_factory = {make_set} *)
-
-(* let map_factory = {make_map}   *)
-
-
 (** {2 Earley} *)
 
 module type S = sig
@@ -92,13 +75,13 @@ module Make_compound_types(S:S) = struct
     add_item           : item -> unit;
     add_items          : item list -> unit;
     pop_todo           : unit -> item option;
+    incr_count         : unit -> unit;
+    get_state          : unit -> 's;
+    debug              : 's -> unit;
+  }
     (* note_blocked_cuts  : nt_item -> int list -> unit;  *)
     (* note_complete_cuts : nt_item list -> int -> unit; *)
     (* note_matched_tm    : int -> tm -> int list -> unit; *)
-    incr_count         : unit -> unit;
-    get_state : unit -> 's;
-    debug: 's -> unit;
-  }
 
   (* grammar, typically provided at runtime *)
   type grammar_ops = {
@@ -226,7 +209,7 @@ module Make(S:S) = struct
       todo      = ref [];
       todo_done = make_set ();
       blocked   = make_map ();
-      complete  = make_map()
+      complete  = make_map ()
     }
 
     let make_runtime ~debug = 
@@ -242,16 +225,16 @@ module Make(S:S) = struct
           todo_done.add itm; todo:=itm::!todo;
           (* we add new blocked items and new complete items here *)
           match itm with
-          | N x -> begin
+          | N x -> (
               let (nt,i,k,bs) = dest_nt_item x in            
               match syms_nil bs with
-              | true -> 
-                (complete.find (i,_NT nt)).add k
+              | true -> ()
               | false -> 
                 let _S = syms_hd bs in
-                (blocked.find (k,_S)).add x
-            end
-          | _ -> ()
+                (blocked.find (k,_S)).add x)
+          | C {i_;sym;j_} -> 
+            (complete.find (i_,sym)).add j_
+          | EXP _ -> ()
       in
       let add_items itms = List.iter add_item itms in
       let pop_todo () = 
@@ -302,18 +285,14 @@ module Instance_1 = struct
 
   (* pretty printing *)
   let pp = object (s)
-    method nt=(fun s -> s)
-    method tm=(fun s -> s)
-    method sym=(function Nt nt -> s#nt nt | Tm tm -> s#tm tm)
-    method sym_list=(fun xs -> 
-        Printf.sprintf "[ %s ]" (String.concat ";" (List.map s#sym xs)))
-    method nt_item=(fun {nt;i;k;bs} -> 
-        Printf.sprintf "{ %s; %d; %d; %s }" (s#nt nt) i k (s#sym_list bs))
-    method sym_item=(fun {i_;sym;j_} -> 
-        Printf.sprintf "( %d, %s, %d )" i_ (s#sym sym) j_)
-    method sym_at_k=(fun {sym; k_} -> 
-        Printf.sprintf "(%s, %d)" (s#sym sym) k_) 
-    method item=(function
+    method nt       =(fun s -> s)
+    method tm       =(fun s -> s)
+    method sym      =(function Nt nt -> s#nt nt | Tm tm -> s#tm tm)
+    method sym_list =(fun xs -> Printf.sprintf "[ %s ]" (String.concat ";" (List.map s#sym xs)))
+    method nt_item  =(fun {nt;i;k;bs} -> Printf.sprintf "{ %s; %d; %d; %s }" (s#nt nt) i k (s#sym_list bs))
+    method sym_item =(fun {i_;sym;j_} -> Printf.sprintf "( %d, %s, %d )" i_ (s#sym sym) j_)
+    method sym_at_k =(fun {sym; k_} -> Printf.sprintf "(%s, %d)" (s#sym sym) k_) 
+    method item     =(function
         | N x -> Printf.sprintf "(N %s)" (s#nt_item x)
         | C x -> Printf.sprintf "(C %s)" (s#sym_item x)
         | EXP x -> Printf.sprintf "(X %s)" (s#sym_at_k x))
