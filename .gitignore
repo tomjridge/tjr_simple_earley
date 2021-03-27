@@ -5,3 +5,4 @@ _build/
 .dockerfile/tjr_simple_earley/
 /src/earley_spec.ml.html
 /tjr_simple_earley_examples.install
+/earley_main.exe

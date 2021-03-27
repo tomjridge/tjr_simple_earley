@@ -48,5 +48,11 @@ let _ =
         (String.length input)
         __FILE__;
       Test_actions.main ()
+    | ["earley_2021q1";input] ->
+      let input = make_input input in
+      Printf.printf "earley_2021q1; grammar=EEE; input_length=%d (%s)\n%!" 
+        (String.length input)
+        __FILE__;
+      Earley_2021q1.Test.run input
   end;
   Printf.printf "end ---------------------------------------------------\n%!";

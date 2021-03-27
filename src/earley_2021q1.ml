@@ -2,6 +2,8 @@
    coding style, with mutable datastructures. Self-contained single
    file implementation. Unstaged, efficient O(n^3). *)
 
+let dont_log = true
+
 (** {2 Sets, maps implementation} *)
 
 type 'e set = {
@@ -79,21 +81,23 @@ module Make_compound_types(S:S) = struct
   type sym_at_k = { sym:sym; k_:int } 
 
   type item = 
-    | Nt_item of nt_item
-    | Sym_item of sym_item
-    | Sym_at_k of sym_at_k
+    | N of nt_item
+    | C of sym_item
+    | EXP of sym_at_k
 
   (* runtime *)
-  type runtime_ops = {
+  type 's runtime_ops = {
     get_blocked_items  : int -> sym -> nt_item list;
     get_complete_items : int -> sym -> int list;
     add_item           : item -> unit;
     add_items          : item list -> unit;
     pop_todo           : unit -> item option;
-    note_blocked_cuts  : nt_item -> int list -> unit; 
-    note_complete_cuts : nt_item list -> int -> unit;
-    note_matched_tm    : int -> tm -> int list -> unit;
+    (* note_blocked_cuts  : nt_item -> int list -> unit;  *)
+    (* note_complete_cuts : nt_item list -> int -> unit; *)
+    (* note_matched_tm    : int -> tm -> int list -> unit; *)
     incr_count         : unit -> unit;
+    get_state : unit -> 's;
+    debug: 's -> unit;
   }
 
   (* grammar, typically provided at runtime *)
@@ -151,54 +155,51 @@ module Make(S:S) = struct
            don't change, so accesses to r.field will be hoisted *)
 
         (* process a blocked item *)
-        let cut_blocked_item = fun itm -> 
-          let k_,_S = itm|>dot_k, itm|>dot_bs|>syms_hd in
-          r.get_complete_items k_ _S |> fun js ->
-          r.note_blocked_cuts itm js;
-          js |> List.map (fun j -> Nt_item (cut itm j)) |> r.add_items;
+        let cut_blocked_item itm = 
+          let k_,_S = (itm|>dot_k), (itm|>dot_bs|>syms_hd) in
+          let js = r.get_complete_items k_ _S in
+          r.add_items (js |> List.map (fun j -> N (cut itm j)));
           ()
 
-        let cut_complete_item =
-          fun {i_;sym;j_} -> 
-          r.get_blocked_items i_ sym |> fun itms ->
-          r.note_complete_cuts itms j_;
-          itms |> List.map (fun itm -> Nt_item (cut itm j_)) |> r.add_items;
+        let cut_complete_item {i_;sym;j_} =
+          let itms = r.get_blocked_items i_ sym in
+          r.add_items (itms |> List.map (fun itm -> N (cut itm j_)));
           ()
+
+        let is_complete bs = syms_nil bs
 
         (* process an item *)
         let step itm =
           match itm with 
-          | Nt_item itm -> begin
+          | N itm -> begin
               r.incr_count();
               let bs = itm|>dot_bs in
-              match bs|>syms_nil with
-              | true ->  (* item is complete *)
+              match is_complete bs with
+              | true ->  
                 let i_,sym,j_ = (itm|>dot_i), _NT (itm|>dot_nt), (itm|>dot_k) in
-                let itm = Sym_item {i_; sym; j_ } in
-                r.add_item itm;
+                r.add_item (C {i_; sym; j_ });
                 ()
-              | false ->  (* item is not complete *)
-                let k_,_S,bs = (itm|>dot_k), (syms_hd bs), (syms_tl bs) in
-                (* record that we need to expand _S *)
-                r.add_item (Sym_at_k { k_; sym=_S});
-                (* and we need to process the item against complete items *)
+              | false -> 
+                let k_,_S = (itm|>dot_k), (syms_hd bs) in                
+                r.add_item (EXP { k_; sym=_S});
                 cut_blocked_item itm;
                 ()
             end
-          | Sym_item itm -> cut_complete_item itm
-          | Sym_at_k {sym;k_} -> 
+          | C itm -> cut_complete_item itm
+          | EXP {sym;k_} -> 
             match is_nt sym with
             | true -> 
               let xs : nt_item list = g.expand_nt (dest_nt sym,k_) in
-              r.add_items (List.map (fun x -> Nt_item x) xs);
+              r.add_items (List.map (fun x -> N x) xs);
               ()
             | false -> 
               let tm = dest_tm sym in
               let js = g.expand_tm input tm k_ in
-              r.note_matched_tm k_ tm js;
+              r.add_items (js |> List.map (fun j_ -> C {i_=k_;sym; j_}));
               ()
 
         let rec loop () = 
+          r.debug (r.get_state());
           match r.pop_todo () with
           | None -> ()
           | Some itm -> step itm; loop ()
@@ -220,7 +221,7 @@ module Make(S:S) = struct
       complete  : ( int*sym, int ) map_to_set;
     }    
 
-    let empty_state = {
+    let empty_state () = {
       count     = ref 0;
       todo      = ref [];
       todo_done = make_set ();
@@ -228,15 +229,29 @@ module Make(S:S) = struct
       complete  = make_map()
     }
 
-    let make_runtime () = 
-      let s = empty_state in
+    let make_runtime ~debug = 
+      let s = empty_state () in
       let {count;todo;todo_done;blocked;complete} = s in
       let get_blocked_items i _S = (blocked.find (i,_S)).to_list () in
       let get_complete_items k _S = (complete.find (k,_S)).to_list () in
       let add_item itm = 
         match todo_done.mem itm with
         | true -> ()
-        | false -> todo_done.add itm; todo:=itm::!todo
+        | false -> 
+          assert(dont_log || (Printf.printf "Adding item\n"; true));
+          todo_done.add itm; todo:=itm::!todo;
+          (* we add new blocked items and new complete items here *)
+          match itm with
+          | N x -> begin
+              let (nt,i,k,bs) = dest_nt_item x in            
+              match syms_nil bs with
+              | true -> 
+                (complete.find (i,_NT nt)).add k
+              | false -> 
+                let _S = syms_hd bs in
+                (blocked.find (k,_S)).add x
+            end
+          | _ -> ()
       in
       let add_items itms = List.iter add_item itms in
       let pop_todo () = 
@@ -244,33 +259,23 @@ module Make(S:S) = struct
         | [] -> None 
         | x::xs -> todo:=xs; Some x
       in
-      let note_blocked_cuts itm js = 
-        let (nt,i,k,bs) = dest_nt_item itm in
-        let _S = syms_hd bs in
-        (complete.find (k,_S)).add_list js
-      in
-      let note_complete_cuts itms j = 
-        itms |> List.iter (fun itm -> 
-            let (nt,i,k,bs) = dest_nt_item itm in
-            let _S = syms_hd bs in
-            (complete.find (k,_S)).add j)
-      in
-      let note_matched_tm i tm js =
-        js |> List.iter (fun j -> 
-            (complete.find (i,_TM tm)).add j)
-      in
       let incr_count () = incr count in
+      let get_state () = s in
       s,{ get_blocked_items; get_complete_items; add_item; add_items; pop_todo;
-        note_blocked_cuts; note_complete_cuts; note_matched_tm; incr_count }
+          (* note_blocked_cuts; note_complete_cuts; note_matched_tm;  *)
+          incr_count;
+          get_state; debug }
 
-    let earley ~grammar ~input ~initial_nt:nt = 
-      let state,runtime = make_runtime () in
-      let itms = grammar.expand_nt (nt,0) in
-      runtime.add_items (itms |> List.map (fun x -> Nt_item x));
+    let earley ~debug ~grammar ~input ~initial_nt:nt = 
+      let state,runtime = make_runtime ~debug in
+      (* An alternative would be to just add EXP (nt,0) as item *)
+      runtime.add_item (EXP {sym=_NT nt;k_=0});
       earley ~runtime ~grammar ~input;
       state
       
-    let _ : grammar:grammar_ops -> input:input -> initial_nt:nt -> state = earley
+    let _ : 
+      debug:(state -> unit) ->
+      grammar:grammar_ops -> input:input -> initial_nt:nt -> state = earley
       
   end
 
@@ -295,6 +300,25 @@ module Instance_1 = struct
   module Made = Make(S)
   open Made
 
+  (* pretty printing *)
+  let pp = object (s)
+    method nt=(fun s -> s)
+    method tm=(fun s -> s)
+    method sym=(function Nt nt -> s#nt nt | Tm tm -> s#tm tm)
+    method sym_list=(fun xs -> 
+        Printf.sprintf "[ %s ]" (String.concat ";" (List.map s#sym xs)))
+    method nt_item=(fun {nt;i;k;bs} -> 
+        Printf.sprintf "{ %s; %d; %d; %s }" (s#nt nt) i k (s#sym_list bs))
+    method sym_item=(fun {i_;sym;j_} -> 
+        Printf.sprintf "( %d, %s, %d )" i_ (s#sym sym) j_)
+    method sym_at_k=(fun {sym; k_} -> 
+        Printf.sprintf "(%s, %d)" (s#sym sym) k_) 
+    method item=(function
+        | N x -> Printf.sprintf "(N %s)" (s#nt_item x)
+        | C x -> Printf.sprintf "(C %s)" (s#sym_item x)
+        | EXP x -> Printf.sprintf "(X %s)" (s#sym_at_k x))
+  end
+  
   (* provide values V *)
   module V : V = struct
     let is_nt = function Nt _ -> true | Tm _ -> false
@@ -322,11 +346,58 @@ module Instance_1 = struct
   type grammar_ops = Made.grammar_ops
   type state = Made_with_V.state
 
-  let earley : grammar:grammar_ops -> input:input -> initial_nt:input -> state = earley
+  let debug state = 
+    assert(dont_log || (
+        Printf.printf "State: ";
+        !(state.todo) |> List.iter (fun x -> print_endline (pp#item x));
+        true));
+    ()
+
+  let debug state = ()
+
+  let earley : grammar:grammar_ops -> input:input -> initial_nt:input -> state = earley ~debug 
+
 end
 open Instance_1
+open Instance_1.S
+open Instance_1.Made
 
 type grammar_ops = Instance_1.grammar_ops
 type state = Instance_1.state
 
 let earley : grammar:grammar_ops -> input:string -> initial_nt:string -> state = earley
+
+
+(** {2 Test} *)
+
+module Test = struct
+
+  (* E -> E E E | "1" | eps *)
+  let expand_nt (nt,i) = 
+    match nt with
+    | "E" -> [{nt="E";i;k=i;bs=[Nt "E"; Nt "E"; Nt "E"]};
+              {nt="E";i;k=i;bs=[Tm "1"]};
+              {nt="E";i;k=i;bs=[Tm "eps"]}]
+    | _ -> failwith "Nonterminal not recognized"
+
+  let expand_tm input tm i =
+    assert(dont_log || (Printf.printf "expand_tm: (%s) @ %d\n" tm i; true));
+    match tm with
+    | "1" -> (
+      match i < String.length input && String.get input i = '1' with
+      | true -> [i+1]
+      | false -> [])
+    | "eps" -> 
+      match i <= String.length input with
+      | true -> [i]
+      | false -> failwith "impossible"
+
+  let grammar = {expand_tm;expand_nt}
+
+  let run input = 
+    let s = earley ~grammar ~input ~initial_nt:"E" in
+    Printf.printf "%s: count is %d\n" __MODULE__ (!(s.count))              
+
+end
+
+

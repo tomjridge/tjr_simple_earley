@@ -97,3 +97,5 @@ sys	0m0.019s
 ~~~
 
 Also [here](https://gist.github.com/tomjridge/27b3c804397b758b8102d6c51e749400)
+
+Version of 2021q1, timings [here](https://gist.github.com/tomjridge/36ec17d16035768ee0212377b66e42e5)
