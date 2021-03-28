@@ -92,7 +92,8 @@ end
 
 module Make_V(S:S) = struct
   open S
-  open (Make_compound_types(S))
+  module Made_compound_types = Make_compound_types(S)
+  open Made_compound_types
 
   module type V = sig
     (* sym *)
@@ -121,9 +122,10 @@ end
 
 
 module Make(S:S) = struct
-  open S      
-  include Make_compound_types(S)
-  include Make_V(S)
+  open S
+  module Made_V = Make_V(S)
+  include Made_V
+  include Made_V.Made_compound_types
 
   module Make_with_V(V:V) = struct
     open V
@@ -268,6 +270,7 @@ end
   
 (** {2 Typical instances} *)
 
+(** Instance 1: nt is string, tm is string *)
 module Instance_1 = struct
 
   module S = struct
@@ -278,10 +281,11 @@ module Instance_1 = struct
     type nt_item = { nt:nt; i:int; k:int; bs: sym_list }
     type input = string
   end
-  open S
+  include S
 
   module Made = Make(S)
-  open Made
+  include Made
+  include Made.Made_compound_types
 
   (* pretty printing *)
   let pp = object (s)
@@ -320,7 +324,7 @@ module Instance_1 = struct
   end
 
   module Made_with_V = Make_with_V(V)
-  open Made_with_V
+  include Made_with_V
 
   type grammar_ops = Made.grammar_ops
   type state = Made_with_V.state
@@ -334,22 +338,78 @@ module Instance_1 = struct
 
   let debug state = ()
 
-  let earley : grammar:grammar_ops -> input:input -> initial_nt:input -> state = earley ~debug 
+  let earley : grammar:grammar_ops -> input:input -> initial_nt:string -> state = earley ~debug 
 
 end
+
+(*
 open Instance_1
 open Instance_1.S
 open Instance_1.Made
 
 type grammar_ops = Instance_1.grammar_ops
 type state = Instance_1.state
+*)
 
-let earley : grammar:grammar_ops -> input:string -> initial_nt:string -> state = earley
+
+
+(** Instance 2: nonterms and terms are ints *)
+module Instance_2 = struct
+
+  module S = struct
+    type nt = int (* even *)
+    type tm = int (* odd *)
+    type sym = int 
+    type sym_list = sym list
+    type nt_item = { nt:nt; i:int; k:int; bs: sym_list }
+    type input = string
+  end
+  include S
+
+  module Made = Make(S)
+  include Made
+  include Made.Made_compound_types
+  
+  (* provide values V *)
+  module V : V = struct
+    let is_nt x = x mod 2=0
+    let _NT nt = nt
+    let _TM tm = tm
+    let dest_nt nt = nt
+    let dest_tm tm = tm
+
+    let syms_nil = function [] -> true | _ -> false
+    let syms_hd (x::xs) = x
+    let syms_tl (x::xs) = xs
+      
+    let dot_nt x = x.nt
+    let dot_i x = x.i
+    let dot_k x = x.k
+    let dot_bs x = x.bs
+    let dest_nt_item {nt;i;k;bs} = (nt,i,k,bs)
+
+    let cut {nt;i;k;bs} j = {nt;i;k=j;bs=syms_tl bs}
+  end
+  include V
+
+  module Made_with_V = Make_with_V(V)
+  include Made_with_V
+
+  type grammar_ops = Made.grammar_ops
+  type state = Made_with_V.state
+
+  let debug state = ()
+
+  let earley : grammar:grammar_ops -> input:input -> initial_nt:int -> state = earley ~debug
+end
+
 
 
 (** {2 Test} *)
 
 module Test = struct
+
+  open Instance_1
 
   (* E -> E E E | "1" | eps *)
   let expand_nt (nt,i) = 
@@ -371,7 +431,7 @@ module Test = struct
       | true -> [i]
       | false -> failwith "impossible"
 
-  let grammar = {expand_tm;expand_nt}
+  let grammar : grammar_ops = {expand_nt;expand_tm}  (* type included, but fields not *)
 
   let run input = 
     let s = earley ~grammar ~input ~initial_nt:"E" in
@@ -380,3 +440,103 @@ module Test = struct
 end
 
 
+(** {2 Examples} *)
+
+(** Model a simple grammar for expressing rules etc
+
+{[
+E -> E E E | "1" | "eps";
+
+F -> F;
+]}
+
+*)
+module Grammar = struct
+
+  let meta_grammar p = 
+    let open (struct
+      let a = p#a
+      let ( || ) = p#alt
+      let seq = p#seq
+      let list_sep = p#list_of
+      let ws = p#ws
+      let re = p#re
+
+      
+      let nt       = re "[A-Z]+"
+      let tm       = re {|["][a-z][A-Za-z]*["]|}
+      let sym      = nt || tm
+      let rhs      = list_sep ~sep:ws sym
+      let bar      = seq [ws; a"|"; ws]
+      let rhs_list = list_sep ~sep:bar rhs
+      let rule     = seq [ nt; a "->"; rhs_list; a ";" ]
+      let g        = list_sep ~sep:ws rule
+    end)
+    in
+    g
+
+  let _ = meta_grammar
+
+  (* FIXME maybe define a parsing context, which allows to declare new
+     nts, tms, add tm expansions etc; add rules; add actions *)
+
+
+  (* E -> E E E | "1" | "eps" *)
+  let example_grammar p = 
+    let open (struct
+      let a = p#a
+      let _E = p#_E
+
+      let g = [
+        (_E, [ [_E;_E;_E]; [a"1"]; [a""]])
+      ]                      
+    end)
+    in
+    g
+  
+  let p = object
+    method a x = `A x
+    method _E = `E
+  end
+
+  let g : (([ `A of string | `E ] as 'a) * 'a list list) list = (example_grammar p)
+                                                               
+  (* map to int; terminals are odd, nonterms are even *)
+  let to_int = function
+    | `E -> 0
+    | `A "1" -> 1
+    | `A "" -> 3
+
+  (* convert g to ints *)
+  let g = g |> List.map (fun (nt,rhs_s) -> 
+      (to_int nt, List.map (fun rhs -> List.map to_int rhs) rhs_s))
+
+  let _ : (int * int list list) list = g
+
+  let expand_tm input tm i =
+    match tm with
+    | 1 -> (
+        match i < String.length input && String.get input i = '1' with
+        | true -> [i+1]
+        | false -> [])
+    | 3 -> 
+      match i <= String.length input with
+      | true -> [i]
+      | false -> failwith "impossible"
+           
+  (* process g to get function from nt to rhs_s *)
+  let arr = Array.make 1 []  (* needs to hold all nts *)
+  let _ = 
+    g |> List.iter (fun (nt,rhs_s) -> 
+        arr.(nt) <- rhs_s)
+        
+  open Instance_2
+
+  let expand_nt (nt,i) = 
+    arr.(nt) |> List.map (fun rhs -> {nt;i;k=i;bs=rhs})
+
+  let grammar : grammar_ops = {expand_tm;expand_nt}
+
+  let earley ~input = earley ~grammar ~input ~initial_nt:0
+
+end
