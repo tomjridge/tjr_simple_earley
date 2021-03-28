@@ -54,5 +54,8 @@ let _ =
         (String.length input)
         __FILE__;
       Earley_2021q1.Test.run input
+    | ["test_helper";input] ->
+      let input = make_input input in
+      let _ = Earley_2021q1.Test_helper.test input in ()
   end;
   Printf.printf "end ---------------------------------------------------\n%!";

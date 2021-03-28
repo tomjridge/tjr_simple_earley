@@ -93,7 +93,7 @@ end
 module Make_V(S:S) = struct
   open S
   module Made_compound_types = Make_compound_types(S)
-  open Made_compound_types
+  (* open Made_compound_types *)
 
   module type V = sig
     (* sym *)
@@ -440,19 +440,111 @@ module Test = struct
 end
 
 
+(** {2 Helper functions to build a grammar} *)
+
+module Helper() = struct
+
+
+  type nt = int (* even *)
+  type tm = int (* odd *)
+  type sym = int
+
+  let max_nt=ref 0
+  let max_tm=ref 1
+
+  (* map where the values are opaque *)
+  type ('e,'f) tm_map = {
+    set:'e -> 'f -> unit;
+    get:'e -> 'f;
+    (* mem:'e -> bool; *)
+  }
+
+  let wf_tm tm = tm mod 2 = 1 && tm <= !max_tm
+  let wf_nt nt = nt mod 2 = 0 && nt <= !max_nt
+
+  (* error to get the expand_tm function without setting it first *)
+  let tm_map () = 
+    (* let expand_tm ~input ~i = [] in *)
+    let tbl = Hashtbl.create 10 in
+    let get k = 
+      Hashtbl.find_opt tbl k |> function
+      | Some f -> f
+      | None -> failwith "tm_map"
+    in
+    let set k f = 
+      Hashtbl.replace tbl k f
+    in
+    (* let mem k = Hashtbl.mem tbl k in *)
+    {set;get}
+
+  let tm_map = tm_map ()
+
+  let expand_tm (input:string) tm (i:int) : int list =
+    tm_map.get tm |> fun f -> f ~input ~i
+
+  (* expect to get a list of rules *)
+  let nt_map () = 
+    let tbl = Hashtbl.create 10 in
+    let get k = 
+      Hashtbl.find_opt tbl k |> function
+      | Some f -> f
+      | None -> 
+        let v = ref [] in
+        Hashtbl.replace tbl k v;
+        v
+    in
+    let set k f = Hashtbl.replace tbl k f in
+    {set;get}
+
+  let nt_map = nt_map ()
+
+  open Instance_2
+
+  let expand_nt (nt,i) = 
+    !(nt_map.get nt) |> fun rhs_s -> 
+    rhs_s |> List.map (fun rhs -> {nt;i;k=i;bs=rhs})
+
+  let g = 
+    object
+      method mk_nt=
+        max_nt:=2 + !max_nt;
+        !max_nt
+      method mk_tm expand =
+        max_tm:=2 + !max_tm;
+        let tm = !max_tm in
+        tm_map.set tm expand;          
+        tm
+
+      (** set_tm allows to override a possibly-dummy expand function
+          provided when tm was declared *)
+      method set_tm tm f = 
+        tm_map.set tm f
+      method add_rule nt rhs =
+        let xs = nt_map.get nt in
+        xs:=rhs::!xs
+      method add_rules nt rules = 
+        let xs = nt_map.get nt in
+        xs:=rules @ !xs
+      method grammar : grammar_ops =
+        { expand_nt; expand_tm }
+    end
+
+end
+
+
 (** {2 Examples} *)
+ 
+module Tmp = struct
 
-(** Model a simple grammar for expressing rules etc
+  (** Model a simple grammar for expressing rules etc
 
-{[
-E -> E E E | "1" | "eps";
+      {[
+        E -> E E E | "1" | "eps";
 
-F -> F;
-]}
+        F -> F;
+      ]}
 
-*)
-module Grammar = struct
-
+  *)
   let meta_grammar p = 
     let open (struct
       let a = p#a
@@ -462,7 +554,7 @@ module Grammar = struct
       let ws = p#ws
       let re = p#re
 
-      
+
       let nt       = re "[A-Z]+"
       let tm       = re {|["][a-z][A-Za-z]*["]|}
       let sym      = nt || tm
@@ -477,9 +569,6 @@ module Grammar = struct
 
   let _ = meta_grammar
 
-  (* FIXME maybe define a parsing context, which allows to declare new
-     nts, tms, add tm expansions etc; add rules; add actions *)
-
 
   (* E -> E E E | "1" | "eps" *)
   let example_grammar p = 
@@ -493,14 +582,15 @@ module Grammar = struct
     end)
     in
     g
-  
-  let p = object
-    method a x = `A x
-    method _E = `E
-  end
+
+  let p = 
+    object
+      method a x = `A x
+      method _E = `E
+    end
 
   let g : (([ `A of string | `E ] as 'a) * 'a list list) list = (example_grammar p)
-                                                               
+
   (* map to int; terminals are odd, nonterms are even *)
   let to_int = function
     | `E -> 0
@@ -523,13 +613,13 @@ module Grammar = struct
       match i <= String.length input with
       | true -> [i]
       | false -> failwith "impossible"
-           
+
   (* process g to get function from nt to rhs_s *)
   let arr = Array.make 1 []  (* needs to hold all nts *)
   let _ = 
     g |> List.iter (fun (nt,rhs_s) -> 
         arr.(nt) <- rhs_s)
-        
+
   open Instance_2
 
   let expand_nt (nt,i) = 
@@ -538,5 +628,49 @@ module Grammar = struct
   let grammar : grammar_ops = {expand_tm;expand_nt}
 
   let earley ~input = earley ~grammar ~input ~initial_nt:0
+end
 
+
+
+
+
+(** Same example, using the Helper *)
+module Test_helper = struct
+
+  module EEE = struct
+    open Helper()
+
+    (** Terminals *)
+
+    let one = g#mk_tm (fun ~input ~i -> 
+        match i < String.length input && String.get input i = '1' with
+        | true -> [i+1]
+        | false -> [])
+
+    let eps = g#mk_tm (fun ~input ~i -> 
+        match i <= String.length input with
+        | true -> [i]
+        | false -> failwith "impossible")
+
+
+    (** Non-terminals *)
+
+    let _E = g#mk_nt
+
+
+    (** Rules and grammar *)
+
+    (* E -> E E E | "1" | eps *)
+    let _ = g#add_rules _E [
+        [ _E; _E; _E ];
+        [one];
+        [eps]
+      ]
+
+    let grammar = g#grammar
+  end
+
+  let test input = EEE.(
+      Printf.printf "%s: testing Instance_2 with helper\n" __FILE__;
+      Instance_2.earley ~grammar ~input ~initial_nt:_E)
 end

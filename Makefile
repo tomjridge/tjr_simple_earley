@@ -7,7 +7,7 @@ default: all
 all:: 
 	$(MAKE) earley_main.exe
 
-earley_main.exe: 
+earley_main.exe: FORCE
 	dune build bin/earley_main.exe
 	cp _build/default/bin/earley_main.exe .
 
@@ -32,6 +32,12 @@ run_2021:
 	time ./earley_main.exe earley_2021q1 :1x300
 	time ./earley_main.exe earley_2021q1 :1x400
 # see https://gist.github.com/tomjridge/36ec17d16035768ee0212377b66e42e5 for timings
+
+test_helper: earley_main.exe
+	$(MAKE)
+	time ./earley_main.exe test_helper :1x100
+	time ./earley_main.exe test_helper :1x200
+	time ./earley_main.exe test_helper :1x400
 
 run_tests:
 	$(MAKE)
